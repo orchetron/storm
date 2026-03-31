@@ -1,0 +1,131 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 480" width="900" height="480">
+  <defs>
+    <pattern id="grid2" width="40" height="40" patternUnits="userSpaceOnUse">
+      <circle cx="20" cy="20" r="0.5" fill="#E5E7EB" opacity="0.6"/>
+    </pattern>
+  </defs>
+
+  <!-- Background -->
+  <rect width="900" height="480" fill="#FFFFFF"/>
+  <rect width="900" height="480" fill="url(#grid2)"/>
+  <rect x="0" y="0" width="2" height="480" fill="#82AAFF" opacity="0.3"/>
+
+  <!-- Reference code -->
+  <text x="50" y="45" fill="#82AAFF" font-family="monospace" font-size="10" opacity="0.5" letter-spacing="1">REF: DIFF_ENGINE_02</text>
+
+  <!-- Title -->
+  <text x="50" y="85" fill="#1F2328" font-family="'Helvetica Neue', Arial, sans-serif" font-size="32" font-weight="bold">CELL-LEVEL DIFFING</text>
+
+  <!-- Description -->
+  <text x="50" y="118" fill="#656D76" font-family="'Helvetica Neue', Arial, sans-serif" font-size="14">Each cell is a typed array slot. The diff engine compares frame N against</text>
+  <text x="50" y="138" fill="#656D76" font-family="'Helvetica Neue', Arial, sans-serif" font-size="14">frame N+1 and emits output only for cells that changed. Everything else is skipped.</text>
+
+  <!-- Frame N grid -->
+  <text x="50" y="185" fill="#8B949E" font-family="monospace" font-size="10">FRAME N</text>
+
+  <g transform="translate(50, 196)">
+    <!-- Row of cells -->
+    <rect x="0" y="0" width="52" height="36" rx="3" fill="#F6F8FA" stroke="#D1D9E0"/>
+    <text x="26" y="23" fill="#656D76" font-family="monospace" font-size="12" text-anchor="middle">H</text>
+
+    <rect x="58" y="0" width="52" height="36" rx="3" fill="#F6F8FA" stroke="#D1D9E0"/>
+    <text x="84" y="23" fill="#656D76" font-family="monospace" font-size="12" text-anchor="middle">e</text>
+
+    <rect x="116" y="0" width="52" height="36" rx="3" fill="#F6F8FA" stroke="#D1D9E0"/>
+    <text x="142" y="23" fill="#656D76" font-family="monospace" font-size="12" text-anchor="middle">l</text>
+
+    <rect x="174" y="0" width="52" height="36" rx="3" fill="#F6F8FA" stroke="#D1D9E0"/>
+    <text x="200" y="23" fill="#656D76" font-family="monospace" font-size="12" text-anchor="middle">l</text>
+
+    <rect x="232" y="0" width="52" height="36" rx="3" fill="#F6F8FA" stroke="#D1D9E0"/>
+    <text x="258" y="23" fill="#656D76" font-family="monospace" font-size="12" text-anchor="middle">o</text>
+
+    <rect x="304" y="0" width="52" height="36" rx="3" fill="#F6F8FA" stroke="#D1D9E0"/>
+    <text x="330" y="23" fill="#656D76" font-family="monospace" font-size="12" text-anchor="middle">⠋</text>
+
+    <rect x="362" y="0" width="52" height="36" rx="3" fill="#F6F8FA" stroke="#D1D9E0"/>
+    <text x="388" y="23" fill="#656D76" font-family="monospace" font-size="12" text-anchor="middle">L</text>
+
+    <rect x="420" y="0" width="52" height="36" rx="3" fill="#F6F8FA" stroke="#D1D9E0"/>
+    <text x="446" y="23" fill="#656D76" font-family="monospace" font-size="12" text-anchor="middle">o</text>
+
+    <rect x="478" y="0" width="52" height="36" rx="3" fill="#F6F8FA" stroke="#D1D9E0"/>
+    <text x="504" y="23" fill="#656D76" font-family="monospace" font-size="12" text-anchor="middle">a</text>
+
+    <rect x="536" y="0" width="52" height="36" rx="3" fill="#F6F8FA" stroke="#D1D9E0"/>
+    <text x="562" y="23" fill="#656D76" font-family="monospace" font-size="12" text-anchor="middle">d</text>
+
+    <rect x="594" y="0" width="52" height="36" rx="3" fill="#F6F8FA" stroke="#D1D9E0"/>
+    <text x="620" y="23" fill="#656D76" font-family="monospace" font-size="12" text-anchor="middle">i</text>
+
+    <rect x="652" y="0" width="52" height="36" rx="3" fill="#F6F8FA" stroke="#D1D9E0"/>
+    <text x="678" y="23" fill="#656D76" font-family="monospace" font-size="12" text-anchor="middle">n</text>
+
+    <rect x="710" y="0" width="52" height="36" rx="3" fill="#F6F8FA" stroke="#D1D9E0"/>
+    <text x="736" y="23" fill="#656D76" font-family="monospace" font-size="12" text-anchor="middle">g</text>
+  </g>
+
+  <!-- Frame N+1 grid -->
+  <text x="50" y="272" fill="#8B949E" font-family="monospace" font-size="10">FRAME N+1</text>
+
+  <g transform="translate(50, 283)">
+    <rect x="0" y="0" width="52" height="36" rx="3" fill="#F6F8FA" stroke="#D1D9E0"/>
+    <text x="26" y="23" fill="#656D76" font-family="monospace" font-size="12" text-anchor="middle">H</text>
+
+    <rect x="58" y="0" width="52" height="36" rx="3" fill="#F6F8FA" stroke="#D1D9E0"/>
+    <text x="84" y="23" fill="#656D76" font-family="monospace" font-size="12" text-anchor="middle">e</text>
+
+    <rect x="116" y="0" width="52" height="36" rx="3" fill="#F6F8FA" stroke="#D1D9E0"/>
+    <text x="142" y="23" fill="#656D76" font-family="monospace" font-size="12" text-anchor="middle">l</text>
+
+    <rect x="174" y="0" width="52" height="36" rx="3" fill="#F6F8FA" stroke="#D1D9E0"/>
+    <text x="200" y="23" fill="#656D76" font-family="monospace" font-size="12" text-anchor="middle">l</text>
+
+    <rect x="232" y="0" width="52" height="36" rx="3" fill="#F6F8FA" stroke="#D1D9E0"/>
+    <text x="258" y="23" fill="#656D76" font-family="monospace" font-size="12" text-anchor="middle">o</text>
+
+    <!-- THE CHANGED CELL — highlighted -->
+    <rect x="304" y="0" width="52" height="36" rx="3" fill="#EBF2FF" stroke="#82AAFF" stroke-width="1.5"/>
+    <text x="330" y="23" fill="#82AAFF" font-family="monospace" font-size="13" text-anchor="middle" font-weight="bold">⠙</text>
+
+    <rect x="362" y="0" width="52" height="36" rx="3" fill="#F6F8FA" stroke="#D1D9E0"/>
+    <text x="388" y="23" fill="#656D76" font-family="monospace" font-size="12" text-anchor="middle">L</text>
+
+    <rect x="420" y="0" width="52" height="36" rx="3" fill="#F6F8FA" stroke="#D1D9E0"/>
+    <text x="446" y="23" fill="#656D76" font-family="monospace" font-size="12" text-anchor="middle">o</text>
+
+    <rect x="478" y="0" width="52" height="36" rx="3" fill="#F6F8FA" stroke="#D1D9E0"/>
+    <text x="504" y="23" fill="#656D76" font-family="monospace" font-size="12" text-anchor="middle">a</text>
+
+    <rect x="536" y="0" width="52" height="36" rx="3" fill="#F6F8FA" stroke="#D1D9E0"/>
+    <text x="562" y="23" fill="#656D76" font-family="monospace" font-size="12" text-anchor="middle">d</text>
+
+    <rect x="594" y="0" width="52" height="36" rx="3" fill="#F6F8FA" stroke="#D1D9E0"/>
+    <text x="620" y="23" fill="#656D76" font-family="monospace" font-size="12" text-anchor="middle">i</text>
+
+    <rect x="652" y="0" width="52" height="36" rx="3" fill="#F6F8FA" stroke="#D1D9E0"/>
+    <text x="678" y="23" fill="#656D76" font-family="monospace" font-size="12" text-anchor="middle">n</text>
+
+    <rect x="710" y="0" width="52" height="36" rx="3" fill="#F6F8FA" stroke="#D1D9E0"/>
+    <text x="736" y="23" fill="#656D76" font-family="monospace" font-size="12" text-anchor="middle">g</text>
+  </g>
+
+  <!-- Arrow from changed cell to output -->
+  <line x1="380" y1="322" x2="380" y2="370" stroke="#D1D9E0" stroke-width="1"/>
+  <polygon points="376,368 380,376 384,368" fill="#D1D9E0"/>
+
+  <!-- Target identified box -->
+  <rect x="290" y="385" width="180" height="40" rx="4" fill="#EBF2FF" stroke="#82AAFF" stroke-width="1" opacity="0.8"/>
+  <text x="380" y="408" fill="#82AAFF" font-family="monospace" font-size="11" text-anchor="middle">MUTATION DETECTED</text>
+
+  <!-- Right side stats -->
+  <g transform="translate(600, 380)">
+    <text x="0" y="14" fill="#656D76" font-family="'Helvetica Neue', Arial, sans-serif" font-size="12">13 cells on row</text>
+    <text x="0" y="34" fill="#656D76" font-family="'Helvetica Neue', Arial, sans-serif" font-size="12">1 cell changed</text>
+    <text x="0" y="54" fill="#1F2328" font-family="'Helvetica Neue', Arial, sans-serif" font-size="12" font-weight="bold">12 cells skipped</text>
+  </g>
+
+  <!-- Bottom line -->
+  <line x1="50" y1="455" x2="860" y2="455" stroke="#D1D9E0" stroke-width="0.5"/>
+  <text x="455" y="472" fill="#8B949E" font-family="monospace" font-size="9" text-anchor="middle">output: cursor_move(6,2) + char("⠙") — 3 bytes total · everything else untouched</text>
+</svg>

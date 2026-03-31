@@ -1,0 +1,106 @@
+{
+  "name": "@orchetron/storm-tui",
+  "version": "0.1.0",
+  "description": "Storm — Compositor-based terminal UI framework. Fast. Layered. Unstoppable.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./components": {
+      "import": "./dist/components/index.js",
+      "types": "./dist/components/index.d.ts"
+    },
+    "./hooks": {
+      "import": "./dist/hooks/index.js",
+      "types": "./dist/hooks/index.d.ts"
+    },
+    "./widgets": {
+      "import": "./dist/widgets/index.js",
+      "types": "./dist/widgets/index.d.ts"
+    },
+    "./templates": {
+      "import": "./dist/templates/index.js",
+      "types": "./dist/templates/index.d.ts"
+    },
+    "./testing": {
+      "import": "./dist/testing/index.js",
+      "types": "./dist/testing/index.d.ts"
+    },
+    "./devtools": {
+      "import": "./dist/devtools/index.js",
+      "types": "./dist/devtools/index.d.ts"
+    },
+    "./headless": {
+      "import": "./dist/hooks/headless/index.js",
+      "types": "./dist/hooks/headless/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "!dist/__tests__",
+    "bin",
+    "assets/*.svg",
+    "assets/*.png",
+    "LICENSE",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "keywords": [
+    "tui",
+    "terminal",
+    "cli",
+    "react",
+    "ui",
+    "components",
+    "hooks",
+    "devtools",
+    "ai",
+    "agent",
+    "typescript"
+  ],
+  "author": "Orchetron",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/orchetron/storm-tui"
+  },
+  "homepage": "https://github.com/orchetron/storm-tui",
+  "bugs": {
+    "url": "https://github.com/orchetron/storm-tui/issues"
+  },
+  "bin": {
+    "create-storm-app": "./bin/create-storm-app.mjs"
+  },
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:bench": "vitest run --config vitest.config.ts src/__tests__/benchmarks.test.ts",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "react-reconciler": "^0.31.0"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0 || ^19.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.33",
+    "@types/react": "^19.0.0",
+    "chafa-wasm": "^0.3.3",
+    "react": "^19.0.0",
+    "typescript": "^5.7.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

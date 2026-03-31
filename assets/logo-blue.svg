@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="500" height="500">
+  <!--
+    Storm TUI Logo — Electric Arc Blue (#82AAFF)
+
+    Terminal source (each ██ pair = 1 square block):
+        ██
+      ██  ██
+    ██  ◆◆  ██
+      ██  ██
+        ██
+
+    5×5 grid, diamond pattern. Each cell = 100×100.
+  -->
+
+  <!-- Row 0: center block -->
+  <rect x="200" y="0" width="100" height="100" fill="#82AAFF"/>
+
+  <!-- Row 1: left + right blocks -->
+  <rect x="100" y="100" width="100" height="100" fill="#82AAFF"/>
+  <rect x="300" y="100" width="100" height="100" fill="#82AAFF"/>
+
+  <!-- Row 2: far-left + far-right blocks -->
+  <rect x="0"   y="200" width="100" height="100" fill="#82AAFF"/>
+  <rect x="400" y="200" width="100" height="100" fill="#82AAFF"/>
+
+  <!-- Row 2: ◆◆ center gems — square diamonds (equal width & height, touching) -->
+  <polygon points="200,250 225,225 250,250 225,275" fill="#FFFFFF"/>
+  <polygon points="250,250 275,225 300,250 275,275" fill="#FFFFFF"/>
+
+  <!-- Row 3: left + right blocks -->
+  <rect x="100" y="300" width="100" height="100" fill="#82AAFF"/>
+  <rect x="300" y="300" width="100" height="100" fill="#82AAFF"/>
+
+  <!-- Row 4: center block -->
+  <rect x="200" y="400" width="100" height="100" fill="#82AAFF"/>
+</svg>

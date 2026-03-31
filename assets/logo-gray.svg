@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="500" height="500">
+  <!-- Storm TUI Logo — Gray (muted/secondary) -->
+  <rect x="200" y="0" width="100" height="100" fill="#888888"/>
+  <rect x="100" y="100" width="100" height="100" fill="#888888"/>
+  <rect x="300" y="100" width="100" height="100" fill="#888888"/>
+  <rect x="0"   y="200" width="100" height="100" fill="#888888"/>
+  <rect x="400" y="200" width="100" height="100" fill="#888888"/>
+  <polygon points="200,250 225,225 250,250 225,275" fill="#AAAAAA"/>
+  <polygon points="250,250 275,225 300,250 275,275" fill="#AAAAAA"/>
+  <rect x="100" y="300" width="100" height="100" fill="#888888"/>
+  <rect x="300" y="300" width="100" height="100" fill="#888888"/>
+  <rect x="200" y="400" width="100" height="100" fill="#888888"/>
+</svg>

@@ -1,0 +1,19 @@
+[package]
+name = "storm-wasm"
+version = "0.1.0"
+edition = "2021"
+description = "Storm TUI hot-path WASM module — buffer, diff, charWidth, renderLine"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+wasm-bindgen = "0.2"
+
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = false     # Rust LTO handles optimization; wasm-opt has compat issues
+
+[profile.release]
+opt-level = "z"      # Optimize for size (small WASM binary)
+lto = true           # Link-time optimization
+strip = true         # Strip debug info

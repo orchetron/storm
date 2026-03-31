@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 720" font-family="'SF Mono', 'Fira Code', 'JetBrains Mono', monospace" font-size="13">
+  <defs>
+    <linearGradient id="stormGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#7B5EFF;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#3DFFB6;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#0B0E14;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#111720;stop-opacity:1" />
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="800" height="720" rx="12" fill="url(#bgGrad)"/>
+  <rect x="1" y="1" width="798" height="718" rx="12" fill="none" stroke="#1A2030" stroke-width="1"/>
+
+  <!-- Title -->
+  <text x="400" y="36" text-anchor="middle" fill="#C8CED8" font-size="18" font-weight="bold">⚡ Storm Rendering Pipeline</text>
+
+  <!-- Box 1: React Components -->
+  <rect x="200" y="55" width="400" height="56" rx="8" fill="#1A2030" stroke="#7B5EFF" stroke-width="1.5"/>
+  <text x="400" y="76" text-anchor="middle" fill="#C8CED8" font-weight="bold" font-size="14">Your React Components</text>
+  <text x="400" y="97" text-anchor="middle" fill="#6B7A8D" font-size="11">JSX, hooks, state, props — the code you write</text>
+
+  <!-- Arrow 1 -->
+  <line x1="400" y1="111" x2="400" y2="135" stroke="#3D4A5C" stroke-width="1.5"/>
+  <polygon points="394,131 400,140 406,131" fill="#3D4A5C"/>
+
+  <!-- Box 2: Reconciler -->
+  <rect x="200" y="140" width="400" height="56" rx="8" fill="#1A2030" stroke="#7B5EFF" stroke-width="1.5"/>
+  <text x="400" y="161" text-anchor="middle" fill="#C8CED8" font-weight="bold" font-size="14">React Reconciler</text>
+  <text x="400" y="182" text-anchor="middle" fill="#6B7A8D" font-size="11">Only re-renders components with state changes</text>
+
+  <!-- Arrow 2 -->
+  <line x1="400" y1="196" x2="400" y2="220" stroke="#3D4A5C" stroke-width="1.5"/>
+  <polygon points="394,216 400,225 406,216" fill="#3D4A5C"/>
+
+  <!-- Box 3: Layout Engine -->
+  <rect x="200" y="225" width="400" height="70" rx="8" fill="#1A2030" stroke="#3DFFB6" stroke-width="1.5"/>
+  <text x="400" y="249" text-anchor="middle" fill="#C8CED8" font-weight="bold" font-size="14">Layout Engine</text>
+  <text x="400" y="267" text-anchor="middle" fill="#3DFFB6" font-size="11">Pure TypeScript — Flexbox + CSS Grid</text>
+  <text x="400" y="284" text-anchor="middle" fill="#6B7A8D" font-size="11">Viewport culling: off-screen elements skipped entirely</text>
+
+  <!-- Arrow 3 -->
+  <line x1="400" y1="295" x2="400" y2="319" stroke="#3D4A5C" stroke-width="1.5"/>
+  <polygon points="394,315 400,324 406,315" fill="#3D4A5C"/>
+
+  <!-- Box 4: Cell Buffer -->
+  <rect x="200" y="324" width="400" height="70" rx="8" fill="#1A2030" stroke="#FFB547" stroke-width="1.5"/>
+  <text x="400" y="348" text-anchor="middle" fill="#C8CED8" font-weight="bold" font-size="14">Cell Buffer</text>
+  <text x="400" y="366" text-anchor="middle" fill="#FFB547" font-size="11">Typed Arrays: Int32Array (fg/bg) + Uint8Array (attrs)</text>
+  <text x="400" y="383" text-anchor="middle" fill="#6B7A8D" font-size="11">No JS objects per cell — minimal GC pressure</text>
+
+  <!-- Fork arrow -->
+  <line x1="400" y1="394" x2="400" y2="418" stroke="#3D4A5C" stroke-width="1.5"/>
+  <line x1="400" y1="418" x2="250" y2="418" stroke="#3D4A5C" stroke-width="1.5"/>
+  <line x1="400" y1="418" x2="550" y2="418" stroke="#3D4A5C" stroke-width="1.5"/>
+  <line x1="250" y1="418" x2="250" y2="440" stroke="#3D4A5C" stroke-width="1.5"/>
+  <line x1="550" y1="418" x2="550" y2="440" stroke="#3D4A5C" stroke-width="1.5"/>
+  <polygon points="244,436 250,445 256,436" fill="#3D4A5C"/>
+  <polygon points="544,436 550,445 556,436" fill="#3D4A5C"/>
+
+  <!-- Box 5a: Cell Diff -->
+  <rect x="80" y="445" width="340" height="100" rx="8" fill="#1A2030" stroke="#7B5EFF" stroke-width="1.5"/>
+  <text x="250" y="468" text-anchor="middle" fill="#C8CED8" font-weight="bold" font-size="13">Cell-Level Dirty Diff</text>
+  <text x="250" y="488" text-anchor="middle" fill="#6B7A8D" font-size="11">Compare typed arrays row-by-row</text>
+  <text x="250" y="505" text-anchor="middle" fill="#6B7A8D" font-size="11">Build ANSI only for changed rows</text>
+  <rect x="112" y="516" width="276" height="20" rx="4" fill="#0B0E14" stroke="#7B5EFF" stroke-width="0.5"/>
+  <text x="250" y="530" text-anchor="middle" fill="#7B5EFF" font-size="10">Optional: Rust WASM renderLine (3.5× faster)</text>
+
+  <!-- Box 5b: DECSTBM -->
+  <rect x="460" y="445" width="260" height="100" rx="8" fill="#1A2030" stroke="#3DFFB6" stroke-width="1.5"/>
+  <text x="590" y="468" text-anchor="middle" fill="#C8CED8" font-weight="bold" font-size="13">DECSTBM Scroll</text>
+  <text x="590" y="488" text-anchor="middle" fill="#6B7A8D" font-size="11">Terminal GPU shifts pixels</text>
+  <text x="590" y="505" text-anchor="middle" fill="#6B7A8D" font-size="11">Paint only new rows</text>
+  <rect x="480" y="516" width="220" height="20" rx="4" fill="#0B0E14" stroke="#3DFFB6" stroke-width="0.5"/>
+  <text x="590" y="530" text-anchor="middle" fill="#3DFFB6" font-size="10">155 bytes vs ~5,000 bytes/frame</text>
+
+  <!-- Merge arrows -->
+  <line x1="250" y1="545" x2="250" y2="570" stroke="#3D4A5C" stroke-width="1.5"/>
+  <line x1="590" y1="545" x2="590" y2="570" stroke="#3D4A5C" stroke-width="1.5"/>
+  <line x1="250" y1="570" x2="400" y2="570" stroke="#3D4A5C" stroke-width="1.5"/>
+  <line x1="590" y1="570" x2="400" y2="570" stroke="#3D4A5C" stroke-width="1.5"/>
+  <line x1="400" y1="570" x2="400" y2="594" stroke="#3D4A5C" stroke-width="1.5"/>
+  <polygon points="394,590 400,599 406,590" fill="#3D4A5C"/>
+
+  <!-- Box 6: Terminal -->
+  <rect x="200" y="599" width="400" height="70" rx="8" fill="#1A2030" stroke="url(#stormGrad)" stroke-width="2"/>
+  <text x="400" y="623" text-anchor="middle" fill="#C8CED8" font-weight="bold" font-size="14">Terminal (stdout)</text>
+  <text x="400" y="641" text-anchor="middle" fill="#6B7A8D" font-size="11">Synchronized output — no tearing</text>
+  <text x="400" y="658" text-anchor="middle" fill="#6B7A8D" font-size="11">60fps cap · Adaptive color depth · Event coalescing</text>
+
+  <!-- Bottom tagline -->
+  <text x="400" y="700" text-anchor="middle" fill="#3D4A5C" font-size="11">97% of cells unchanged on a typical scroll frame. Storm skips them entirely.</text>
+</svg>
