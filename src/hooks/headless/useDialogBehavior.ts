@@ -85,11 +85,11 @@ export function useDialogBehavior(options: UseDialogBehaviorOptions): UseDialogB
     onCloseRef.current?.();
   }, [forceUpdate]);
 
-  // Focus trap: capture ALL keyboard input at highest priority when visible.
-  // Scroll-related keys are forwarded to the active ScrollView so that
-  // ScrollViews inside the dialog can be keyboard-scrolled.
+  // Focus trap handler: only consumes Escape and Tab.
+  // All other keys pass through to child components (ScrollView, TextInput, Select, etc.)
   const handleInput = useCallback((event: KeyEvent) => {
     if (event.key === "escape") {
+      event.consumed = true;
       if (!isControlledRef.current) {
         internalVisibleRef.current = false;
         forceUpdate();
@@ -97,19 +97,17 @@ export function useDialogBehavior(options: UseDialogBehaviorOptions): UseDialogB
       onCloseRef.current?.();
       return;
     }
-    // Forward scroll-related keys to the active ScrollView inside the dialog
-    const activeId = focus.activeScrollId;
-    if (activeId) {
-      const entry = focus.entries.get(activeId);
-      if (entry) {
-        if (event.key === "pageup") entry.onScroll?.(-10);
-        else if (event.key === "pagedown") entry.onScroll?.(10);
-        else if (event.key === "up" && event.shift) entry.onScroll?.(-1);
-        else if (event.key === "down" && event.shift) entry.onScroll?.(1);
-        else if (event.key === "left") entry.onHScroll?.(-1);
-        else if (event.key === "right") entry.onHScroll?.(1);
+    if (event.key === "tab") {
+      event.consumed = true;
+      if (event.shift) {
+        focus.cyclePrev();
+      } else {
+        focus.cycleNext();
       }
+      return;
     }
+    // All other keys: do NOT set event.consumed — they propagate to normal
+    // handlers (ScrollView keyboard scroll, TextInput, Select, etc.)
   }, [forceUpdate, focus]);
 
   useInput(handleInput, { isActive: effectiveVisible, priority: trapPriority });

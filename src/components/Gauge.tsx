@@ -9,11 +9,12 @@
  * The filled portion of the arc is colored, empty portion is dim.
  */
 
-import React from "react";
+import React, { useId } from "react";
 import { useColors } from "../hooks/useColors.js";
 import { BrailleCanvas } from "../utils/braille-canvas.js";
 import type { StormLayoutStyleProps } from "../styles/styleProps.js";
 import { usePluginProps } from "../hooks/usePluginProps.js";
+import { useMeasure } from "../hooks/useMeasure.js";
 
 export interface GaugeThreshold {
   /** The value at which this threshold color activates (0-100). */
@@ -285,6 +286,8 @@ function renderArc(
   );
 }
 
+const DEFAULT_GAUGE_WIDTH = 20;
+
 export const Gauge = React.memo(function Gauge(rawProps: GaugeProps): React.ReactElement {
   const colors = useColors();
   const props = usePluginProps("Gauge", rawProps as unknown as Record<string, unknown>) as unknown as GaugeProps;
@@ -292,7 +295,7 @@ export const Gauge = React.memo(function Gauge(rawProps: GaugeProps): React.Reac
     value,
     label,
     color = colors.brand.primary,
-    width = 20,
+    width: widthProp,
     thresholds,
     showValue = false,
     variant = "bar",
@@ -306,6 +309,12 @@ export const Gauge = React.memo(function Gauge(rawProps: GaugeProps): React.Reac
     minWidth,
     maxWidth: mw,
   } = props;
+
+  // Auto-measure width from layout when not explicitly provided
+  const measureId = useId();
+  const autoMeasure = widthProp === undefined;
+  const measured = useMeasure(autoMeasure ? `gauge-${measureId}` : "");
+  const width = widthProp ?? measured?.width ?? DEFAULT_GAUGE_WIDTH;
 
   const clamped = Math.max(0, Math.min(100, value));
   const barColor = resolveColor(clamped, color, thresholds);
@@ -324,17 +333,27 @@ export const Gauge = React.memo(function Gauge(rawProps: GaugeProps): React.Reac
     ...(mw !== undefined ? { maxWidth: mw } : {}),
   };
 
-  if (props.renderValue) {
+  /** Wrap result in a measurement box when auto-measuring. */
+  const wrapMeasure = (el: React.ReactElement): React.ReactElement => {
+    if (!autoMeasure) return el;
     return React.createElement(
+      "tui-box",
+      { _measureId: `gauge-${measureId}`, flex: 1 },
+      el,
+    );
+  };
+
+  if (props.renderValue) {
+    return wrapMeasure(React.createElement(
       "tui-box",
       outerBoxProps,
       props.renderValue(value, label),
-    );
+    ));
   }
 
   if (variant === "arc") {
-    return renderArc(clamped, barColor, width, label, showValue, outerBoxProps);
+    return wrapMeasure(renderArc(clamped, barColor, width, label, showValue, outerBoxProps));
   }
 
-  return renderBar(clamped, barColor, width, label, showValue, outerBoxProps);
+  return wrapMeasure(renderBar(clamped, barColor, width, label, showValue, outerBoxProps));
 });

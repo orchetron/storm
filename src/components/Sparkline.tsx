@@ -9,11 +9,12 @@
  * - "line": braille-based connected line (mini LineChart)
  */
 
-import React from "react";
+import React, { useId } from "react";
 import { BrailleCanvas } from "../utils/braille-canvas.js";
 import type { StormLayoutStyleProps } from "../styles/styleProps.js";
 import { usePluginProps } from "../hooks/usePluginProps.js";
 import { useColors } from "../hooks/useColors.js";
+import { useMeasure } from "../hooks/useMeasure.js";
 
 export interface SparklineProps extends StormLayoutStyleProps {
   data: readonly number[];
@@ -42,6 +43,8 @@ const BLOCKS = ["\u2581", "\u2582", "\u2583", "\u2584", "\u2585", "\u2586", "\u2
 // ▁▂▃▄▅▆▇█
 
 const MAX_HEIGHT = 4;
+/** Default height when not explicitly provided. 3 rows gives good visual resolution. */
+const DEFAULT_SPARKLINE_HEIGHT = 3;
 
 /**
  * Resample data to fit within the target width using averaging.
@@ -174,11 +177,26 @@ export const Sparkline = React.memo(function Sparkline(rawProps: SparklineProps)
     maxWidth,
   } = props;
 
-  const height = Math.max(1, Math.min(props.height ?? 1, MAX_HEIGHT));
-  const targetWidth = props.width ?? data.length;
+  // Auto-measure width from layout when not explicitly provided
+  const measureId = useId();
+  const autoMeasure = props.width === undefined;
+  const measured = useMeasure(autoMeasure ? `sparkline-${measureId}` : "");
+
+  const height = Math.max(1, Math.min(props.height ?? DEFAULT_SPARKLINE_HEIGHT, MAX_HEIGHT));
+  const targetWidth = props.width ?? measured?.width ?? data.length;
+
+  /** Wrap result in a measurement box when auto-measuring. */
+  const wrapMeasure = (el: React.ReactElement): React.ReactElement => {
+    if (!autoMeasure) return el;
+    return React.createElement(
+      "tui-box",
+      { _measureId: `sparkline-${measureId}`, flex: 1 },
+      el,
+    );
+  };
 
   if (data.length === 0) {
-    return React.createElement("tui-text", null, "");
+    return wrapMeasure(React.createElement("tui-text", null, ""));
   }
 
   // Resample data to target width
@@ -213,7 +231,7 @@ export const Sparkline = React.memo(function Sparkline(rawProps: SparklineProps)
   // ── Line mode ─────────────────────────────────────────────────
 
   if (mode === "line") {
-    return renderLineMode(
+    return wrapMeasure(renderLineMode(
       samples,
       dataMin,
       dataMax,
@@ -225,7 +243,7 @@ export const Sparkline = React.memo(function Sparkline(rawProps: SparklineProps)
       outerBoxProps,
       props.renderLabel,
       data,
-    );
+    ));
   }
 
   // ── Bar mode (original) ───────────────────────────────────────
@@ -274,11 +292,11 @@ export const Sparkline = React.memo(function Sparkline(rawProps: SparklineProps)
     if (!needsPerBarColor) {
       // Fast path: uniform color
       const line = levels.map((level) => BLOCKS[Math.min(level, BLOCKS.length - 1)]!).join("");
-      return React.createElement(
+      return wrapMeasure(React.createElement(
         "tui-text",
         { color },
         line,
-      );
+      ));
     }
 
     // Per-bar coloring: batch consecutive same-color chars into spans
@@ -299,7 +317,7 @@ export const Sparkline = React.memo(function Sparkline(rawProps: SparklineProps)
       );
       runStart = runEnd;
     }
-    return React.createElement("tui-box", { flexDirection: "row" }, ...children);
+    return wrapMeasure(React.createElement("tui-box", { flexDirection: "row" }, ...children));
   }
 
   // Multi-row mode: render from top row (highest) to bottom row (lowest)
@@ -406,9 +424,9 @@ export const Sparkline = React.memo(function Sparkline(rawProps: SparklineProps)
     }
   }
 
-  return React.createElement(
+  return wrapMeasure(React.createElement(
     "tui-box",
     outerBoxProps,
     ...rows,
-  );
+  ));
 });

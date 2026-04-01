@@ -85,6 +85,56 @@ npx tsx app.tsx
 
 `render()` enters the alternate screen buffer, enables raw mode and mouse reporting, then renders your React tree. `waitUntilExit()` returns a promise that resolves when the app exits.
 
+## The Golden Rules
+
+Before you write any Storm code, know these three things:
+
+### Rule 1: Use `useRef` + `requestRender()` for animation and live data
+
+```tsx
+// WRONG — triggers full React reconciliation every tick (slow)
+const [frame, setFrame] = useState(0);
+useEffect(() => { setInterval(() => setFrame(f => f + 1), 100) }, []);
+
+// RIGHT — imperative repaint, 10-20x faster
+const frameRef = useRef(0);
+const { requestRender } = useTui();
+useTick(100, () => { frameRef.current++; });
+```
+
+`useState` is for structural changes (switching screens, adding items). For anything that updates frequently (animation, scroll, live metrics), use refs + `requestRender()` or `useTick()`.
+
+**Storm will warn you automatically.** If more than 10 full React reconciliation passes happen in one second, Storm writes a performance warning to stderr pointing you here. The warning fires once per 5 seconds in development, and is capped at 3 occurrences in production.
+
+### Rule 2: Use `useCleanup()`, not `useEffect` cleanup
+
+```tsx
+// WRONG — cleanup function will NOT fire in Storm's reconciler
+useEffect(() => {
+  const timer = setInterval(tick, 1000);
+  return () => clearInterval(timer);  // Never runs!
+}, []);
+
+// RIGHT
+const timerRef = useRef<ReturnType<typeof setInterval>>();
+if (!timerRef.current) timerRef.current = setInterval(tick, 1000);
+useCleanup(() => { clearInterval(timerRef.current!); });
+```
+
+### Rule 3: ScrollView needs a height constraint
+
+```tsx
+// WRONG — expands forever, never scrolls
+<ScrollView>{children}</ScrollView>
+
+// RIGHT
+<ScrollView height={20}>{children}</ScrollView>
+// or
+<ScrollView flex={1}>{children}</ScrollView>
+```
+
+These rules are the top reasons new apps feel slow or broken. For the full list of gotchas, see [Common Pitfalls](pitfalls.md).
+
 ## Layout Basics
 
 Storm uses a flexbox layout engine. Every `Box` is a flex container. The default flex direction is `column` (vertical stacking).
@@ -480,38 +530,6 @@ The returned `TuiApp` object provides:
 | `input` | Access to the `InputManager` |
 | `pluginManager` | Register lifecycle plugins |
 
-## Testing
-
-Storm includes testing utilities for headless rendering:
-
-```tsx
-import { renderForTest, expectOutput } from "@orchetron/storm-tui/testing";
-
-const result = renderForTest(<MyComponent />);
-expectOutput(result).toContainText("Hello");
-```
-
-## Headless Rendering (CI / Testing / Non-interactive)
-
-Use `renderToString()` for headless rendering without a terminal:
-
-```tsx
-import { renderToString, Box, Text } from "@orchetron/storm-tui";
-
-const { output, cleanup } = renderToString(
-  <Box padding={1}>
-    <Text bold>Build succeeded</Text>
-    <Text color="#34D399">✓ 42 tests passed</Text>
-  </Box>,
-  { width: 60, height: 10 }
-);
-
-console.log(output);  // Plain text with ANSI colors
-cleanup();
-```
-
-This is useful for CI output, testing, and embedding Storm components in non-TUI contexts.
-
 ## Next Steps
 
 - [Components](./components.md) -- all 92 components with props and examples
@@ -525,3 +543,47 @@ This is useful for CI output, testing, and embedding Storm components in non-TUI
 - [Recipes](./recipes.md) -- copy-paste patterns for real apps
 - [Common Pitfalls](./pitfalls.md) -- avoid the top mistakes
 - [Performance](./performance.md) -- cell-level diff, WASM, frame rate control
+
+## Testing Your App
+
+Storm includes testing utilities for rendering components without a terminal:
+
+```tsx
+import { renderForTest } from "@orchetron/storm-tui/testing";
+
+const result = renderForTest(<MyComponent />);
+expect(result.hasText("Hello")).toBe(true);
+
+// Simulate input
+result.pressEnter();
+result.type("hello world");
+result.fireKey({ key: "tab" });
+
+// Assert output
+expect(result.getLine(0)).toContain("Expected text");
+```
+
+For headless rendering in CI or non-interactive contexts, use `renderToString()`:
+
+```tsx
+import { renderToString, Box, Text } from "@orchetron/storm-tui";
+
+const { output, cleanup } = renderToString(
+  <Box padding={1}>
+    <Text bold>Build succeeded</Text>
+  </Box>,
+  { width: 60, height: 10 }
+);
+
+console.log(output);
+cleanup();
+```
+
+## Platform Support
+
+| Platform | Status |
+|---|---|
+| macOS | Fully supported |
+| Linux | Fully supported |
+| Windows Terminal | Experimental -- basic rendering works, some features (mouse, OSC sequences) may not work |
+| Legacy Windows Console | Not supported |

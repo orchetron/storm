@@ -53,3 +53,19 @@ export {
   type EnableDevToolsOptions,
   type DevToolsHandle,
 } from "./enable.js";
+export {
+  createProfiler,
+  type Profiler,
+  type ProfilerSnapshot,
+  type FrameTiming,
+  type ProfilerAlertCallback,
+} from "./profiler.js";
+export {
+  setActiveProfiler,
+  getActiveProfiler,
+} from "./profiler-registry.js";
+export {
+  enableCrashLog,
+  type CrashLogOptions,
+  type CrashLogData,
+} from "./crash-log.js";

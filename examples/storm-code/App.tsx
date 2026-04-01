@@ -205,7 +205,7 @@ export function App(): React.ReactElement {
   useInput(
     useCallback(
       (e) => {
-        if (e.key === "t" && !e.ctrl && !e.meta) {
+        if (e.key === "t" && e.ctrl && !e.meta) {
           toggleTheme();
           requestRender();
         }

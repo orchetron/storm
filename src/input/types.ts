@@ -44,6 +44,14 @@ export interface KeyEvent {
   ctrl: boolean;
   shift: boolean;
   meta: boolean;
+  /**
+   * Set to true by a prioritized handler to indicate the event was consumed.
+   * When no prioritized handler consumes the event, it propagates to normal handlers.
+   * This allows focus-trap handlers (e.g. Modal) to selectively capture only the
+   * keys they care about (Escape, Tab) while letting other keys pass through to
+   * child components (ScrollView, TextInput, Select, etc.).
+   */
+  consumed?: boolean;
 }
 
 // ── Mouse events ────────────────────────────────────────────────────

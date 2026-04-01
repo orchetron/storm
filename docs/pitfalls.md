@@ -547,7 +547,7 @@ Storm has two ways to trigger a repaint:
 **`flushSync(() => { setState(...) })`** — React state update + repaint. Use when the component TREE needs to change (new messages, phase transitions, conditional rendering). Triggers full React reconciliation + layout rebuild + paint.
 
 ```tsx
-// ❌ Wrong: using useState for a spinner animation
+// WRONG: using useState for a spinner animation
 const [frame, setFrame] = useState(0);
 setInterval(() => setFrame(f => f + 1), 80); // Full reconciliation 12x/sec
 

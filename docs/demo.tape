@@ -16,7 +16,7 @@ Require npx
 
 # Hidden: navigate and clear
 Hide
-Type "cd /Users/hardy30894/Documents/untitled\\ folder/ORCH/orchetron-fabric/packages/storm-tui"
+Type "cd storm-tui"
 Enter
 Sleep 1s
 Type "clear"

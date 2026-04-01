@@ -4,6 +4,9 @@
  * Instead of 100 independent setInterval timers (one per Spinner/animation),
  * all animations register with a single scheduler that ticks at a fixed rate.
  * This prevents timer thrashing and ensures consistent frame timing.
+ *
+ * Safety: if no callbacks remain for maxIdleMs (default 5000), the timer
+ * is automatically stopped to prevent timer leaks.
  */
 
 export type AnimationCallback = (frameTime: number) => void;
@@ -11,11 +14,14 @@ export type AnimationCallback = (frameTime: number) => void;
 export class AnimationScheduler {
   private callbacks = new Set<AnimationCallback>();
   private timer: ReturnType<typeof setInterval> | null = null;
+  private idleTimer: ReturnType<typeof setTimeout> | null = null;
   private intervalMs: number;
+  private maxIdleMs: number;
   private requestRender: (() => void) | null = null;
 
-  constructor(intervalMs: number = 80) {
+  constructor(intervalMs: number = 80, maxIdleMs: number = 5000) {
     this.intervalMs = intervalMs;
+    this.maxIdleMs = maxIdleMs;
   }
 
   /** Set the render trigger function */
@@ -26,10 +32,15 @@ export class AnimationScheduler {
   /** Register an animation callback. Returns unsubscribe function. */
   add(callback: AnimationCallback): () => void {
     this.callbacks.add(callback);
+    // A callback was added — cancel any pending idle shutdown
+    this.clearIdleTimer();
     this.ensureRunning();
     return () => {
       this.callbacks.delete(callback);
-      if (this.callbacks.size === 0) this.stop();
+      if (this.callbacks.size === 0) {
+        // Start idle timer — if no new callbacks arrive in maxIdleMs, stop
+        this.startIdleTimer();
+      }
     };
   }
 
@@ -50,7 +61,7 @@ export class AnimationScheduler {
     }, this.intervalMs);
   }
 
-  /** Stop the timer when no animations are active */
+  /** Stop the animation timer */
   private stop(): void {
     if (this.timer !== null) {
       clearInterval(this.timer);
@@ -58,8 +69,28 @@ export class AnimationScheduler {
     }
   }
 
+  /** Start idle shutdown timer */
+  private startIdleTimer(): void {
+    this.clearIdleTimer();
+    this.idleTimer = setTimeout(() => {
+      this.idleTimer = null;
+      if (this.callbacks.size === 0) {
+        this.stop();
+      }
+    }, this.maxIdleMs);
+  }
+
+  /** Cancel pending idle shutdown */
+  private clearIdleTimer(): void {
+    if (this.idleTimer !== null) {
+      clearTimeout(this.idleTimer);
+      this.idleTimer = null;
+    }
+  }
+
   /** Clean up everything */
   destroy(): void {
+    this.clearIdleTimer();
     this.stop();
     this.callbacks.clear();
     this.requestRender = null;

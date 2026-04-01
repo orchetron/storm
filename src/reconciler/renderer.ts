@@ -317,6 +317,7 @@ function paintElement(
   scrollOffsetY: number,
   ctx: RenderContext,
   stickyFromParent = false,
+  inheritedBg: number = DEFAULT_COLOR,
 ): void {
   const layout = element.layoutNode.layout;
   let y = layout.y - scrollOffsetY;
@@ -347,16 +348,16 @@ function paintElement(
 
   switch (element.type) {
     case TUI_BOX:
-      paintBox(buffer, element, clip, scrollOffsetX, scrollOffsetY, ctx);
+      paintBox(buffer, element, clip, scrollOffsetX, scrollOffsetY, ctx, inheritedBg);
       break;
     case TUI_TEXT:
-      paintText(buffer, element, clip, x, y, ctx);
+      paintText(buffer, element, clip, x, y, ctx, inheritedBg);
       break;
     case TUI_SCROLL_VIEW:
-      paintScrollView(buffer, element, clip, scrollOffsetX, scrollOffsetY, ctx);
+      paintScrollView(buffer, element, clip, scrollOffsetX, scrollOffsetY, ctx, inheritedBg);
       break;
     case TUI_TEXT_INPUT:
-      paintTextInput(buffer, element, clip, x, y, ctx);
+      paintTextInput(buffer, element, clip, x, y, ctx, inheritedBg);
       break;
     case TUI_OVERLAY:
       // Overlays painted in second pass; skip in normal paint
@@ -444,17 +445,19 @@ function paintOverlay(
 
   storeMeasureLayout(element, ctx);
 
-  // Draw border
+  // Draw border — pass overlay bg for border cell backgrounds
   const borderStyle = props["borderStyle"] as BorderStyle | undefined;
+  const overlayBgRaw = props["backgroundColor"] as string | number | undefined;
+  const overlayBg = overlayBgRaw !== undefined ? parseColor(overlayBgRaw) : DEFAULT_COLOR;
   if (borderStyle && borderStyle !== "none") {
     paintBorder(buffer, overlayX, overlayY, overlayWidth, overlayHeight, borderStyle,
-      parseColor(props["borderColor"] as string | number | undefined), clip);
+      parseColor(props["borderColor"] as string | number | undefined), clip, ALL_SIDES, NO_DIM, overlayBg);
   }
 
-  // Paint children
+  // Paint children — propagate overlay backgroundColor to descendants
   for (const child of element.children) {
     if (isTuiElement(child)) {
-      paintElement(buffer, child, clip, 0, 0, ctx);
+      paintElement(buffer, child, clip, 0, 0, ctx, false, overlayBg);
     }
   }
 }
@@ -485,6 +488,7 @@ function paintBox(
   scrollOffsetX: number,
   scrollOffsetY: number,
   ctx: RenderContext,
+  inheritedBg: number = DEFAULT_COLOR,
 ): void {
   const layout = element.layoutNode.layout;
   const x = layout.x - scrollOffsetX;
@@ -500,12 +504,13 @@ function paintBox(
     buffer.fill(x, y, layout.width, layout.height, " ", DEFAULT_COLOR, opaqueBg);
   }
 
-  // Draw border
+  // Draw border — use this box's bg or inherited bg for border cell backgrounds
   const borderStyle = props["borderStyle"] as BorderStyle | undefined;
+  const borderBg = bgColorRaw !== undefined ? parseColor(bgColorRaw) : inheritedBg;
   if (borderStyle && borderStyle !== "none") {
     const { sides, dim } = extractBorderFlags(props);
     paintBorder(buffer, x, y, layout.width, layout.height, borderStyle,
-      parseColor(props["borderColor"] as string | number | undefined), clip, sides, dim);
+      parseColor(props["borderColor"] as string | number | undefined), clip, sides, dim, borderBg);
   }
 
   // Fill background color (inside border, covering padding + content area)
@@ -565,11 +570,15 @@ function paintBox(
     });
   }
 
+  // Compute inherited background for children: this box's backgroundColor wins,
+  // otherwise cascade whatever was inherited from ancestors.
+  const childBg = bgColorRaw !== undefined ? parseColor(bgColorRaw) : inheritedBg;
+
   // Paint children — propagate stickyChildren flag via parameter (no prop mutation)
   const stickyChildren = props["stickyChildren"] === true;
   for (const child of element.children) {
     if (isTuiElement(child)) {
-      paintElement(buffer, child, childClip, scrollOffsetX, scrollOffsetY, ctx, stickyChildren);
+      paintElement(buffer, child, childClip, scrollOffsetX, scrollOffsetY, ctx, stickyChildren, childBg);
     }
   }
 }
@@ -581,6 +590,7 @@ function paintText(
   x: number,
   y: number,
   ctx: RenderContext,
+  inheritedBg: number = DEFAULT_COLOR,
 ): void {
   const layout = element.layoutNode.layout;
   const props = element.props;
@@ -638,9 +648,11 @@ function paintText(
           cy++;
         }
         if (cy >= clip.y1 && cy < clip.y2 && cx >= clip.x1 && cx < clip.x2) {
-          // When text has no explicit bg (DEFAULT_COLOR), preserve the parent's
-          // backgroundColor fill instead of overwriting it with transparent.
-          const effectiveBg = run.bg !== DEFAULT_COLOR ? run.bg : buffer.getBg(cx, cy);
+          // When text has no explicit bg (DEFAULT_COLOR), use the inherited
+          // ancestor backgroundColor, falling back to the buffer's existing bg.
+          const effectiveBg = run.bg !== DEFAULT_COLOR ? run.bg
+            : inheritedBg !== DEFAULT_COLOR ? inheritedBg
+            : buffer.getBg(cx, cy);
           buffer.setCell(cx, cy, { char: g.text, fg: run.fg, bg: effectiveBg, attrs: run.attrs, ulColor: run.ulColor });
           if (cw === 2 && cx + 1 < clip.x2) {
             buffer.setCell(cx + 1, cy, { char: "", fg: run.fg, bg: effectiveBg, attrs: run.attrs, ulColor: run.ulColor });
@@ -713,7 +725,9 @@ function paintText(
           styleIdx = j;
         }
         const style = styleIdx >= 0 && styleIdx < styleMap.length ? styleMap[styleIdx]! : (runs[0] ?? { fg: DEFAULT_COLOR, bg: DEFAULT_COLOR, attrs: Attr.NONE, ulColor: DEFAULT_COLOR });
-        const effectiveBg = style.bg !== DEFAULT_COLOR ? style.bg : buffer.getBg(colX, y);
+        const effectiveBg = style.bg !== DEFAULT_COLOR ? style.bg
+          : inheritedBg !== DEFAULT_COLOR ? inheritedBg
+          : buffer.getBg(colX, y);
         buffer.setCell(colX, y, { char: remaining[j]!, fg: style.fg, bg: effectiveBg, attrs: style.attrs, ulColor: style.ulColor });
       }
     }
@@ -762,6 +776,7 @@ function paintScrollView(
   scrollOffsetX: number,
   scrollOffsetY: number,
   ctx: RenderContext,
+  inheritedBg: number = DEFAULT_COLOR,
 ): void {
   const layout = element.layoutNode.layout;
   const x = layout.x - scrollOffsetX;
@@ -775,13 +790,14 @@ function paintScrollView(
     buffer.fill(x, y, layout.width, layout.height, " ", DEFAULT_COLOR, opaqueBg);
   }
 
-  // Draw border
+  // Draw border — use this scroll view's bg or inherited bg for border cell backgrounds
   const borderStyle = props["borderStyle"] as BorderStyle | undefined;
+  const borderBg = svBgRaw !== undefined ? parseColor(svBgRaw) : inheritedBg;
   let borderOffset = 0;
   if (borderStyle && borderStyle !== "none") {
     const { sides, dim } = extractBorderFlags(props);
     paintBorder(buffer, x, y, layout.width, layout.height, borderStyle,
-      parseColor(props["borderColor"] as string | number | undefined), clip, sides, dim);
+      parseColor(props["borderColor"] as string | number | undefined), clip, sides, dim, borderBg);
     borderOffset = 1;
   }
 
@@ -876,11 +892,15 @@ function paintScrollView(
     });
   }
 
+  // Compute inherited background for children: this scroll view's backgroundColor wins,
+  // otherwise cascade whatever was inherited from ancestors.
+  const childBg = svBgRaw !== undefined ? parseColor(svBgRaw) : inheritedBg;
+
   // Paint children with scroll offset — propagate stickyChildren via parameter (no prop mutation)
   const stickyChildren = props["stickyChildren"] === true;
   for (const child of element.children) {
     if (isTuiElement(child)) {
-      paintElement(buffer, child, viewportClip, scrollOffsetX + scrollLeft, scrollOffsetY + scrollTop, ctx, stickyChildren);
+      paintElement(buffer, child, viewportClip, scrollOffsetX + scrollLeft, scrollOffsetY + scrollTop, ctx, stickyChildren, childBg);
     }
   }
 
@@ -893,7 +913,7 @@ function paintScrollView(
       parseColor(props["scrollbarTrackColor"] as string | number | undefined),
       (props["scrollbarChar"] as string | undefined),
       (props["scrollbarTrackChar"] as string | undefined),
-      ctx);
+      ctx, childBg);
   }
 
   // Paint horizontal scrollbar at bottom of viewport
@@ -903,7 +923,7 @@ function paintScrollView(
       viewportWidth - (hasVBar ? 1 : 0), scrollLeft, contentWidth, clip,
       parseColor(props["scrollbarThumbColor"] as string | number | undefined),
       parseColor(props["scrollbarTrackColor"] as string | number | undefined),
-      ctx);
+      ctx, childBg);
   }
 }
 
@@ -914,6 +934,7 @@ function paintTextInput(
   x: number,
   y: number,
   ctx: RenderContext,
+  inheritedBg: number = DEFAULT_COLOR,
 ): void {
   const layout = element.layoutNode.layout;
   const props = element.props;
@@ -937,7 +958,7 @@ function paintTextInput(
       if (cx < clip.x1 || cx >= clip.x2) continue;
       const char = j < display.length ? display[j]! : " ";
       // Preserve parent's backgroundColor when text input has no explicit bg
-      const effectiveBg = buffer.getBg(cx, y);
+      const effectiveBg = inheritedBg !== DEFAULT_COLOR ? inheritedBg : buffer.getBg(cx, y);
       buffer.setCell(cx, y, {
         char,
         fg: displayFg,
@@ -986,6 +1007,7 @@ function paintBorder(
   clip: ClipRect,
   sides: BorderSideFlags = ALL_SIDES,
   dimFlags: BorderDimFlags = NO_DIM,
+  inheritedBg: number = DEFAULT_COLOR,
 ): void {
   if (style === "none" || width < 2 || height < 2) return;
   const chars = BORDER_CHARS[style];
@@ -995,7 +1017,9 @@ function paintBorder(
   const write = (cx: number, cy: number, char: string, attrs: number) => {
     if (cx >= clip.x1 && cx < clip.x2 && cy >= clip.y1 && cy < clip.y2) {
       // Preserve parent's backgroundColor when border has no explicit bg
-      const effectiveBg = bg !== DEFAULT_COLOR ? bg : buffer.getBg(cx, cy);
+      const effectiveBg = bg !== DEFAULT_COLOR ? bg
+        : inheritedBg !== DEFAULT_COLOR ? inheritedBg
+        : buffer.getBg(cx, cy);
       buffer.setCell(cx, cy, { char, fg, bg: effectiveBg, attrs, ulColor: DEFAULT_COLOR });
     }
   };
@@ -1068,6 +1092,7 @@ function paintScrollbar(
   thumbChar: string | undefined = undefined,
   trackChar: string | undefined = undefined,
   ctx?: RenderContext,
+  inheritedBg: number = DEFAULT_COLOR,
 ): void {
   if (height <= 0 || contentHeight <= 0) return;
 
@@ -1093,7 +1118,7 @@ function paintScrollbar(
 
     const isThumb = i >= thumbOffset && i < thumbOffset + thumbHeight;
     // Preserve parent's backgroundColor for scrollbar track
-    const effectiveBg = buffer.getBg(x, cy);
+    const effectiveBg = inheritedBg !== DEFAULT_COLOR ? inheritedBg : buffer.getBg(x, cy);
     buffer.setCell(x, cy, {
       char: isThumb ? resolvedThumbChar : resolvedTrackChar,
       fg: isThumb ? resolvedThumbColor : resolvedTrackColor,
@@ -1134,6 +1159,7 @@ function paintHScrollbar(
   thumbColor: number = DEFAULT_COLOR,
   trackColor: number = DEFAULT_COLOR,
   ctx?: RenderContext,
+  inheritedBg: number = DEFAULT_COLOR,
 ): void {
   if (width <= 0 || contentWidth <= 0) return;
 
@@ -1156,7 +1182,7 @@ function paintHScrollbar(
 
     const isThumb = i >= thumbOffset && i < thumbOffset + thumbWidth;
     // Preserve parent's backgroundColor for horizontal scrollbar track
-    const effectiveBg = buffer.getBg(cx, y);
+    const effectiveBg = inheritedBg !== DEFAULT_COLOR ? inheritedBg : buffer.getBg(cx, y);
     buffer.setCell(cx, y, {
       char: isThumb ? "\u2501" : "\u2500",
       fg: isThumb ? resolvedThumbColor : resolvedTrackColor,

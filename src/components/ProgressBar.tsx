@@ -7,10 +7,11 @@
  * Supports ETA display based on elapsed time and progress rate.
  */
 
-import React, { useRef } from "react";
+import React, { useId, useRef } from "react";
 import { useTui } from "../context/TuiContext.js";
 import { useColors } from "../hooks/useColors.js";
 import { useCleanup } from "../hooks/useCleanup.js";
+import { useMeasure } from "../hooks/useMeasure.js";
 import type { StormLayoutStyleProps } from "../styles/styleProps.js";
 import { DEFAULTS } from "../styles/defaults.js";
 import { usePluginProps } from "../hooks/usePluginProps.js";
@@ -60,7 +61,7 @@ export const ProgressBar = React.memo(function ProgressBar(rawProps: ProgressBar
   const props = usePluginProps("ProgressBar", rawProps as unknown as Record<string, unknown>) as unknown as ProgressBarProps;
   const {
     value,
-    width = DEFAULTS.progressBar.width,
+    width: widthProp,
     height,
     color = colors.brand.primary,
     trackColor = colors.text.dim,
@@ -78,6 +79,12 @@ export const ProgressBar = React.memo(function ProgressBar(rawProps: ProgressBar
     minWidth,
     maxWidth,
   } = props;
+
+  // Auto-measure width from layout when not explicitly provided
+  const measureId = useId();
+  const autoMeasure = widthProp === undefined;
+  const measured = useMeasure(autoMeasure ? `progressbar-${measureId}` : "");
+  const width = widthProp ?? measured?.width ?? DEFAULTS.progressBar.width;
 
   const { requestRender } = useTui();
   const indeterminatePosRef = useRef(0);
@@ -150,6 +157,13 @@ export const ProgressBar = React.memo(function ProgressBar(rawProps: ProgressBar
       ...(maxWidth !== undefined ? { maxWidth } : {}),
     };
 
+    if (autoMeasure) {
+      return React.createElement(
+        "tui-box",
+        { _measureId: `progressbar-${measureId}`, flex: 1 },
+        React.createElement("tui-box", indBoxProps, ...indChildren),
+      );
+    }
     return React.createElement("tui-box", indBoxProps, ...indChildren);
   }
 
@@ -248,9 +262,18 @@ export const ProgressBar = React.memo(function ProgressBar(rawProps: ProgressBar
     ...(maxWidth !== undefined ? { maxWidth } : {}),
   };
 
-  return React.createElement(
+  const inner = React.createElement(
     "tui-box",
     outerBoxProps,
     ...children,
   );
+
+  if (autoMeasure) {
+    return React.createElement(
+      "tui-box",
+      { _measureId: `progressbar-${measureId}`, flex: 1 },
+      inner,
+    );
+  }
+  return inner;
 });

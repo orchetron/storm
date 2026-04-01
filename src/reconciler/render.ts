@@ -11,7 +11,7 @@
 
 import React from "react";
 import Reconciler from "react-reconciler";
-import { hostConfig } from "./host.js";
+import { hostConfig, setCustomElementLifecycleHooks } from "./host.js";
 import { createRoot, type TuiRoot } from "./types.js";
 import { paint, repaint } from "./renderer.js";
 import { Screen, type ScreenOptions } from "../core/screen.js";
@@ -28,18 +28,22 @@ import { ScrollView } from "../components/ScrollView.js";
 
 const TuiReconciler = Reconciler(hostConfig);
 
-// ── Dev-mode: useEffect cleanup detection ───────────────────────────
+// ── useEffect cleanup detection ──────────────────────────────────────
 // Storm's custom reconciler doesn't reliably fire useEffect cleanup
 // functions. This is the #1 footgun for new users. We monkey-patch
 // React.useEffect to detect when a callback returns a cleanup function
-// and emit a one-time dev-mode warning pointing to useCleanup() instead.
+// and emit a warning pointing to useCleanup() instead.
+// Works in both dev and production, but production is quieter (max 3 warnings).
 const _warnedCallSites = new Set<string>();
 let _useEffectPatched = false;
+let _useEffectWarnCount = 0;
+const _USE_EFFECT_MAX_PROD_WARNINGS = 3;
 
 function patchUseEffect(): void {
-  if (_useEffectPatched || process.env.NODE_ENV === "production") return;
+  if (_useEffectPatched) return;
   _useEffectPatched = true;
 
+  const isProduction = process.env.NODE_ENV === "production";
   const originalUseEffect = React.useEffect;
   (React as any).useEffect = (
     callback: () => void | (() => void),
@@ -48,7 +52,23 @@ function patchUseEffect(): void {
     const wrappedCallback = () => {
       const result = callback();
       if (typeof result === "function") {
-        // Generate a call-site key from the stack trace to warn only once per location
+        // In production, limit warnings to first N occurrences
+        if (isProduction) {
+          _useEffectWarnCount++;
+          if (_useEffectWarnCount <= _USE_EFFECT_MAX_PROD_WARNINGS) {
+            process.stderr.write(
+              "[storm-tui] Warning: useEffect cleanup function detected. " +
+              "Use useCleanup() instead. See docs/pitfalls.md#4\n",
+            );
+          }
+          if (_useEffectWarnCount === _USE_EFFECT_MAX_PROD_WARNINGS) {
+            process.stderr.write(
+              "[storm-tui] ... suppressing further useEffect cleanup warnings.\n",
+            );
+          }
+          return result;
+        }
+        // Dev mode: warn once per call site
         let callSiteKey = "unknown";
         try {
           const stack = new Error().stack;
@@ -202,10 +222,22 @@ export interface TuiApp {
   setTerminalBg: (hex: string | null) => void;
 }
 
+let _nonTtyWarned = false;
+
 export function render(
   initialElement: React.ReactElement,
   options: RenderOptions = {},
 ): TuiApp {
+  // Non-TTY detection — warn once if stdout is not a terminal
+  const stdout = options.stdout ?? process.stdout;
+  if (!stdout.isTTY && !_nonTtyWarned) {
+    _nonTtyWarned = true;
+    process.stderr.write(
+      "[storm-tui] Warning: stdout is not a TTY. Running in headless mode — " +
+      "some features (mouse, alt-screen, colors) are disabled.\n",
+    );
+  }
+
   // Verify React reconciler compatibility
   if (process.env.NODE_ENV !== "production") {
     const reconcilerVersion = (Reconciler as any).version ?? "unknown";
@@ -218,7 +250,7 @@ export function render(
     }
   }
 
-  // Activate dev-mode useEffect cleanup detection (no-op in production)
+  // Activate useEffect cleanup detection (works in both dev and production)
   patchUseEffect();
 
   let element = initialElement;
@@ -226,6 +258,11 @@ export function render(
   const input = new InputManager(screen.stdin);
   const renderCtx = new RenderContext();
   const pluginManager = new PluginManager();
+  // Wire custom element lifecycle hooks into the reconciler host config
+  setCustomElementLifecycleHooks(
+    (type, element) => pluginManager.notifyCustomElementMount(type, element),
+    (type, element) => pluginManager.notifyCustomElementUnmount(type, element),
+  );
   const middlewarePipeline = new MiddlewarePipeline();
   // Wire middleware onOutput hooks into the screen's output path
   screen.setOutputTransform((output) => middlewarePipeline.runOutput(output));
@@ -236,9 +273,18 @@ export function render(
     doFullPaint();
   });
 
-  // ── Dev-mode: frequent full-paint warning ───────────────────────
+  // ── useState performance warning ─────────────────────────────────
+  // Tracks full React reconciliation passes (doFullPaint calls) per
+  // second. If >10 happen in 1s, it's likely useState being used for
+  // animation/scroll instead of useRef + requestRender().
+  // Warns in both dev and production, but production caps at 3 warnings.
   let fullPaintCount = 0;
-  let lastPaintWarningTime = 0;
+  let fullPaintWindowStart = 0;
+  let lastStateWarnTime = 0;
+  let stateWarnProdCount = 0;
+  const STATE_WARN_THRESHOLD = 10;      // reconciliations per second
+  const STATE_WARN_COOLDOWN = 5000;     // ms between warnings
+  const STATE_WARN_MAX_PROD = 3;        // max warnings in production
 
   // ── Frame rate limiting ──────────────────────────────────────────
   // Multiple events (scroll, keys, state changes) can fire in rapid
@@ -426,20 +472,29 @@ export function render(
       pluginManager.runAfterRender({ renderTimeMs: renderTime, cellsChanged: diffResult.changedLines });
       options.onRender?.(metrics);
 
-      // Dev-mode: warn if full paints are happening too frequently
-      if (process.env.NODE_ENV !== "production") {
-        fullPaintCount++;
-        const warnNow = performance.now();
-        if (warnNow - lastPaintWarningTime > 2000) {
-          if (fullPaintCount > 30) { // >15/sec over 2 seconds
-            console.warn(
-              `Storm TUI: ${fullPaintCount} full repaints in 2s (${Math.round(fullPaintCount / 2)}/sec). ` +
-              "Likely caused by useState being used for animation. " +
-              "Use useRef + requestRender() for animations/scroll — see docs/pitfalls.md",
+      // Warn if full React reconciliation passes are happening too frequently.
+      // This fires in both dev and production (capped at STATE_WARN_MAX_PROD in prod).
+      {
+        const warnNow = Date.now();
+        if (warnNow - fullPaintWindowStart > 1000) {
+          // New 1-second window
+          fullPaintCount = 1;
+          fullPaintWindowStart = warnNow;
+        } else {
+          fullPaintCount++;
+        }
+        if (fullPaintCount > STATE_WARN_THRESHOLD && warnNow - lastStateWarnTime > STATE_WARN_COOLDOWN) {
+          const isProduction = process.env.NODE_ENV === "production";
+          const shouldWarn = !isProduction || stateWarnProdCount < STATE_WARN_MAX_PROD;
+          if (shouldWarn) {
+            if (isProduction) stateWarnProdCount++;
+            lastStateWarnTime = warnNow;
+            process.stderr.write(
+              "[storm-tui] Performance: " + fullPaintCount + " state updates/sec detected. " +
+              "If this is animation or scroll, use useRef + requestRender() instead of useState. " +
+              "See docs/getting-started.md — The Golden Rules.\n",
             );
           }
-          fullPaintCount = 0;
-          lastPaintWarningTime = warnNow;
         }
       }
     } catch (err) {
@@ -555,6 +610,17 @@ export function render(
   const origConsoleLog = console.log;
   const origConsoleWarn = console.warn;
   const origConsoleError = console.error;
+  // Always silence console.warn/error in alt screen mode to prevent React dev
+  // warnings from corrupting the TUI display. console.log is only patched if
+  // patchConsole is explicitly true.
+  // In production, React doesn't emit warnings so this is a no-op effectively.
+  const suppressedWarnings: string[] = [];
+  const silentWarn = (...args: unknown[]) => {
+    suppressedWarnings.push(args.map(a => typeof a === "string" ? a : String(a)).join(" "));
+  };
+  console.warn = silentWarn;
+  console.error = silentWarn;
+
   if (options.patchConsole === true) {
     const writeThrough = (...args: unknown[]) => {
       const msg = args.map(a => typeof a === "string" ? a : JSON.stringify(a)).join(" ");
@@ -645,6 +711,8 @@ export function render(
 
   /** Run all sync cleanups (useCleanup, plugin teardown). Safe to call multiple times. */
   function runSyncCleanups(): void {
+    // Disconnect custom element lifecycle hooks
+    setCustomElementLifecycleHooks(null, null);
     // Run all plugin cleanup hooks
     pluginManager.runCleanup();
     // Run all registered sync cleanups (timers, listeners, etc.)
@@ -656,15 +724,17 @@ export function render(
 
   function unmount(error?: Error): void {
     if (error) exitError = error;
+    // 1. Set unmounted FIRST — prevents any microtask/timer from firing during cleanup
     unmounted = true;
-    // Cancel any pending frame timer
+    // 2. Cancel any pending frame timer — prevents stale repaint from racing with cleanup
     if (pendingTimer !== null) {
       clearTimeout(pendingTimer);
       pendingTimer = null;
     }
-    // Destroy the animation scheduler (stops its timer)
+    frameScheduled = false;
+    // 3. Destroy the animation scheduler (stops its timer)
     renderCtx.animationScheduler.destroy();
-    // Run sync cleanups
+    // 4. Run sync cleanups — safe now that no pending timers can interleave
     runSyncCleanups();
     unsubScroll();
     unsubTab();
@@ -676,11 +746,15 @@ export function render(
       TuiReconciler.updateContainer(null, container, null, () => {
         input.stop();
         screen.stop();
-        // Restore console if patched
+        // Restore console
+        console.warn = origConsoleWarn;
+        console.error = origConsoleError;
         if (options.patchConsole === true) {
           console.log = origConsoleLog;
-          console.warn = origConsoleWarn;
-          console.error = origConsoleError;
+        }
+        // Show any suppressed warnings after TUI exits
+        if (suppressedWarnings.length > 0 && process.env.NODE_ENV !== "production") {
+          origConsoleWarn(`[storm-tui] ${suppressedWarnings.length} console warnings were suppressed during TUI session.`);
         }
         if (exitError) {
           exitReject?.(exitError);

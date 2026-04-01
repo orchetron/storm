@@ -1,10 +1,12 @@
 /**
- * PerformanceHUD — real-time performance profiler overlay.
+ * PerformanceHUD -- real-time performance profiler overlay.
  *
  * Developer tool for debugging rendering performance.
  * Renders a compact bordered box showing FPS, render time, cell diff count,
- * and memory usage. FPS is color-coded: green >30, amber 15-30, red <15.
+ * memory usage, GC pressure, buffer size, timer count, and layout time.
+ * FPS is color-coded: green >30, amber 15-30, red <15.
  * Render time color-coded: green <8ms, amber 8-16ms, red >16ms.
+ * GC pressure color-coded: green <30%, amber 30-70%, red >70%.
  * Uses dim styling to avoid distracting from the main UI.
  *
  * @module
@@ -29,8 +31,20 @@ export interface PerformanceHUDProps {
   cellsChanged?: number;
   /** Total cells in buffer */
   totalCells?: number;
-  /** Memory usage in MB */
+  /** Memory usage in MB (RSS) */
   memoryMB?: number;
+  /** Heap used in MB */
+  heapUsedMB?: number;
+  /** Heap total in MB */
+  heapTotalMB?: number;
+  /** GC pressure estimate (0-1) */
+  gcPressure?: number;
+  /** Cell buffer size in KB */
+  bufferKB?: number;
+  /** Number of active timers/cleanups */
+  activeTimerCount?: number;
+  /** Layout computation time in ms */
+  layoutMs?: number;
   /** Position */
   position?: "top-right" | "bottom-right" | "top-left" | "bottom-left";
   /** Custom render for each metric row */
@@ -52,6 +66,12 @@ function fpsColor(fps: number, colors: import("../theme/colors.js").StormColors)
 function renderTimeColor(ms: number, colors: import("../theme/colors.js").StormColors): string {
   if (ms < 8) return colors.success;
   if (ms <= 16) return colors.warning;
+  return colors.error;
+}
+
+function gcPressureColor(pressure: number, colors: import("../theme/colors.js").StormColors): string {
+  if (pressure < 0.3) return colors.success;
+  if (pressure <= 0.7) return colors.warning;
   return colors.error;
 }
 
@@ -88,6 +108,12 @@ export const PerformanceHUD = React.memo(function PerformanceHUD(rawProps: Perfo
     cellsChanged = 0,
     totalCells = 0,
     memoryMB,
+    heapUsedMB,
+    heapTotalMB,
+    gcPressure,
+    bufferKB,
+    activeTimerCount,
+    layoutMs,
     position = "top-right",
     renderMetric,
     historySize = HISTORY_SIZE,
@@ -97,6 +123,8 @@ export const PerformanceHUD = React.memo(function PerformanceHUD(rawProps: Perfo
   // ── History tracking (imperative, no setState) ──────────────────────
   const fpsHistoryRef = useRef<number[]>([]);
   const rtHistoryRef = useRef<number[]>([]);
+  const memHistoryRef = useRef<number[]>([]);
+  const gcHistoryRef = useRef<number[]>([]);
 
   if (visible) {
     // Push current values and trim to historySize
@@ -104,6 +132,14 @@ export const PerformanceHUD = React.memo(function PerformanceHUD(rawProps: Perfo
     if (fpsHistoryRef.current.length > historySize) fpsHistoryRef.current.shift();
     rtHistoryRef.current.push(renderTimeMs);
     if (rtHistoryRef.current.length > historySize) rtHistoryRef.current.shift();
+    if (memoryMB !== undefined) {
+      memHistoryRef.current.push(memoryMB);
+      if (memHistoryRef.current.length > historySize) memHistoryRef.current.shift();
+    }
+    if (gcPressure !== undefined) {
+      gcHistoryRef.current.push(gcPressure * 100);
+      if (gcHistoryRef.current.length > historySize) gcHistoryRef.current.shift();
+    }
   }
 
   if (!visible) {
@@ -168,18 +204,86 @@ export const PerformanceHUD = React.memo(function PerformanceHUD(rawProps: Perfo
     ),
   );
 
-  // Line 3: Memory (if provided)
+  // Line 3: Memory — RSS / Heap Used / Heap Total with sparkline
   if (memoryMB !== undefined) {
+    const memSparkStr = miniSparkline(memHistoryRef.current);
+    const heapInfo = heapUsedMB !== undefined && heapTotalMB !== undefined
+      ? `  Heap: ${heapUsedMB.toFixed(1)}/${heapTotalMB.toFixed(1)}MB`
+      : "";
     lines.push(
       React.createElement(
-        "tui-text",
-        { key: "line-mem", dim: true, color: colors.text.dim },
-        `Mem: ${memoryMB.toFixed(1)} MB`,
+        "tui-box",
+        { key: "line-mem", flexDirection: "row" },
+        React.createElement(
+          "tui-text",
+          { key: "mem-label", dim: true, color: colors.text.dim },
+          `RSS: ${memoryMB.toFixed(1)}MB${heapInfo}`,
+        ),
+        React.createElement(
+          "tui-text",
+          { key: "mem-spark", dim: true, color: colors.text.dim },
+          ` ${memSparkStr}`,
+        ),
       ),
     );
   }
 
-  // Line 4: Component count (if provided)
+  // Line 4: GC Pressure with sparkline and color coding
+  if (gcPressure !== undefined) {
+    const gcSparkStr = miniSparkline(gcHistoryRef.current);
+    const gcPct = (gcPressure * 100).toFixed(0);
+    lines.push(
+      React.createElement(
+        "tui-box",
+        { key: "line-gc", flexDirection: "row" },
+        React.createElement(
+          "tui-text",
+          { key: "gc-label", dim: true, color: gcPressureColor(gcPressure, colors) },
+          `GC: ${gcPct}%`,
+        ),
+        React.createElement(
+          "tui-text",
+          { key: "gc-spark", dim: true, color: gcPressureColor(gcPressure, colors) },
+          ` ${gcSparkStr}`,
+        ),
+      ),
+    );
+  }
+
+  // Line 5: Buffer size in KB
+  if (bufferKB !== undefined) {
+    lines.push(
+      React.createElement(
+        "tui-text",
+        { key: "line-buf", dim: true, color: colors.text.dim },
+        `Buffer: ${bufferKB.toFixed(1)}KB`,
+      ),
+    );
+  }
+
+  // Line 6: Active timer count
+  if (activeTimerCount !== undefined) {
+    lines.push(
+      React.createElement(
+        "tui-text",
+        { key: "line-timers", dim: true, color: colors.text.dim },
+        `Timers: ${activeTimerCount}`,
+      ),
+    );
+  }
+
+  // Line 7: Layout computation time
+  if (layoutMs !== undefined) {
+    lines.push(
+      React.createElement(
+        "tui-text",
+        { key: "line-layout", dim: true, color: renderTimeColor(layoutMs, colors) },
+        `Layout: ${layoutMs.toFixed(1)}ms`,
+      ),
+    );
+  }
+
+  // Line 8: Component count (if provided)
   if (componentCount !== undefined) {
     lines.push(
       React.createElement(

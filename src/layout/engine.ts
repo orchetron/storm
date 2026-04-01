@@ -16,7 +16,7 @@ export type Justify = "start" | "center" | "end" | "space-between" | "space-arou
 export type AlignContent = "flex-start" | "flex-end" | "center" | "stretch" | "space-between" | "space-around";
 export type Overflow = "visible" | "hidden" | "scroll";
 export type Display = "flex" | "grid" | "none";
-export type GridAutoFlow = "row" | "column";
+export type GridAutoFlow = "row" | "column" | "dense";
 export type Position = "relative" | "absolute";
 
 export interface LayoutProps {
@@ -237,11 +237,13 @@ function resolveSize(
     }
   }
   // Percentage string: "50%" → 0.5 * parentSize
-  // BUG FIX: If parentSize is unlimited (scroll container), percentage is meaningless
+  // BUG FIX: If parentSize is unlimited (scroll container), percentage is meaningless.
+  // Fall back to auto sizing (return undefined) which resolves to natural content size.
+  // This matches CSS behavior where percentages in unconstrained containers fall back to auto.
   if (parentSize >= UNCONSTRAINED) {
     if (process.env.NODE_ENV !== "production" && !_warnedPercentInScroll) {
       _warnedPercentInScroll = true;
-      process.stderr.write("[storm-tui] Warning: Percentage width/height inside a ScrollView is not supported (parent size is unconstrained). Use explicit numeric values instead.\n");
+      process.stderr.write("[storm-tui] Warning: Percentage width/height inside a ScrollView is not supported (parent size is unconstrained). Falling back to auto sizing. Use explicit numeric values instead.\n");
     }
     return undefined;
   }
@@ -393,7 +395,8 @@ function resolveGridTrackSizes(
     }
   }
 
-  // Second pass: resolve auto tracks by measuring children in those tracks
+  // Second pass: resolve auto tracks by measuring children that land in them.
+  // Step 2a: Measure single-span children first (their contribution is unambiguous).
   for (let i = 0; i < tracks.length; i++) {
     const track = tracks[i]!;
     if (track.type === "auto") {
@@ -401,7 +404,6 @@ function resolveGridTrackSizes(
       for (let ci = 0; ci < children.length; ci++) {
         const p = placements[ci]!;
         const placement = axis === "col" ? p.col : p.row;
-        // Only consider children that start in this track and span 1 cell on this axis
         if (placement.start === i && placement.span === 1) {
           const child = children[ci]!;
           if (axis === "col") {
@@ -413,6 +415,48 @@ function resolveGridTrackSizes(
       }
       sizes[i] = maxSize;
       fixedTotal += maxSize;
+    }
+  }
+
+  // Step 2b: Handle multi-span children that cover auto tracks.
+  // If a child spans multiple tracks and its natural size exceeds the sum of those
+  // tracks' current sizes (+ gaps between them), distribute the excess evenly among
+  // the auto tracks in that span.
+  for (let ci = 0; ci < children.length; ci++) {
+    const p = placements[ci]!;
+    const placement = axis === "col" ? p.col : p.row;
+    if (placement.span <= 1) continue;
+
+    // Collect auto track indices within the span
+    const autoIndices: number[] = [];
+    let currentSpanTotal = 0;
+    for (let t = placement.start; t < placement.start + placement.span && t < tracks.length; t++) {
+      currentSpanTotal += sizes[t]!;
+      if (t > placement.start) currentSpanTotal += gap;
+      if (tracks[t]!.type === "auto") {
+        autoIndices.push(t);
+      }
+    }
+
+    if (autoIndices.length === 0) continue;
+
+    // Measure the child's natural size on this axis
+    const child = children[ci]!;
+    let naturalSize: number;
+    if (axis === "col") {
+      naturalSize = measureNaturalWidth(child, availableSize);
+    } else {
+      naturalSize = measureNaturalHeight(child, availableSize);
+    }
+
+    // Distribute any excess among the auto tracks
+    const excess = naturalSize - currentSpanTotal;
+    if (excess > 0) {
+      const perTrack = Math.floor(excess / autoIndices.length);
+      for (const idx of autoIndices) {
+        sizes[idx]! += perTrack;
+        fixedTotal += perTrack;
+      }
     }
   }
 
@@ -432,8 +476,13 @@ function resolveGridTrackSizes(
 
 /**
  * Compute grid layout for a node with display: "grid".
- * Handles gridTemplateColumns, gridTemplateRows, gridGap, gridAutoFlow,
- * and child placement via gridColumn/gridRow.
+ *
+ * Algorithm overview:
+ *   Phase 0: Resolve gap values (columnGap, rowGap, gap shorthand)
+ *   Phase 1: Place items with explicit gridColumn/gridRow first,
+ *            then auto-place remaining items respecting gridAutoFlow
+ *   Phase 2: Resolve track sizes (fixed -> auto -> fr)
+ *   Phase 3: Position children in cells with alignment support
  */
 function computeGridLayout(
   node: LayoutNode,
@@ -443,8 +492,14 @@ function computeGridLayout(
   innerHeight: number,
 ): void {
   const props = node.props;
-  const gap = props.gridGap ?? 0;
   const autoFlow = props.gridAutoFlow ?? "row";
+
+  // ── Phase 0: Resolve gap values ──────────────────────────────────
+  // CSS gap resolution: columnGap/rowGap override the gap shorthand.
+  // gridGap is a legacy alias for gap.
+  const gapBase = props.gap ?? props.gridGap ?? 0;
+  const colGap = props.columnGap ?? gapBase;
+  const rowGap = props.rowGap ?? gapBase;
 
   const colTracks = parseGridTemplate(props.gridTemplateColumns);
   const rowTracks = parseGridTemplate(props.gridTemplateRows);
@@ -462,8 +517,8 @@ function computeGridLayout(
     }
   }
 
-  // Phase 1: Determine placement for each child
-  // Grid for tracking occupied cells: occupied[row][col] = true
+  // ── Phase 1: Determine placement for each child ──────────────────
+  // Grid occupancy tracker: occupied[row,col] = true
   const occupied = new Map<string, boolean>();
   const markOccupied = (r: number, c: number, rs: number, cs: number) => {
     for (let ri = r; ri < r + rs; ri++) {
@@ -486,134 +541,253 @@ function computeGridLayout(
     row: { start: number; span: number };
   }
 
-  const placements: Placement[] = [];
+  const placements: (Placement | undefined)[] = new Array(visibleChildren.length).fill(undefined);
 
-  // Auto-placement cursor
-  let autoRow = 0;
-  let autoCol = 0;
-
-  // Dynamically expand row tracks as needed
+  // Dynamically expand row tracks as needed for implicit rows
   const ensureRowTracks = (needed: number) => {
     while (rowTracks.length < needed) {
       rowTracks.push({ type: "auto", value: 0 });
     }
   };
 
-  for (const child of visibleChildren) {
-    const cp = child.props;
+  // Step 1a: Place items with explicit positions first (CSS spec requirement).
+  // Items with both gridColumn and gridRow set explicitly get placed before
+  // any auto-placement occurs, so they "reserve" their cells.
+  for (let i = 0; i < visibleChildren.length; i++) {
+    const cp = visibleChildren[i]!.props;
     const colPlacement = parseGridPlacement(cp.gridColumn, -1, colTracks.length);
     const rowPlacement = parseGridPlacement(cp.gridRow, -1, rowTracks.length);
 
     const hasExplicitCol = cp.gridColumn !== undefined && !cp.gridColumn.trim().startsWith("span");
     const hasExplicitRow = cp.gridRow !== undefined && !cp.gridRow.trim().startsWith("span");
 
-    let finalCol: number;
-    let finalRow: number;
-    const colSpan = colPlacement.span;
-    const rowSpan = rowPlacement.span;
-
     if (hasExplicitCol && hasExplicitRow) {
-      // Both explicitly placed
-      finalCol = colPlacement.start;
-      finalRow = rowPlacement.start;
-    } else if (hasExplicitCol) {
+      const finalCol = colPlacement.start;
+      const finalRow = rowPlacement.start;
+      const colSpan = colPlacement.span;
+      const rowSpan = rowPlacement.span;
+      ensureRowTracks(finalRow + rowSpan);
+      markOccupied(finalRow, finalCol, rowSpan, colSpan);
+      placements[i] = {
+        col: { start: finalCol, span: colSpan },
+        row: { start: finalRow, span: rowSpan },
+      };
+    }
+  }
+
+  // Step 1b: Place items with one explicit axis (semi-explicit).
+  for (let i = 0; i < visibleChildren.length; i++) {
+    if (placements[i] !== undefined) continue;
+    const cp = visibleChildren[i]!.props;
+    const colPlacement = parseGridPlacement(cp.gridColumn, -1, colTracks.length);
+    const rowPlacement = parseGridPlacement(cp.gridRow, -1, rowTracks.length);
+
+    const hasExplicitCol = cp.gridColumn !== undefined && !cp.gridColumn.trim().startsWith("span");
+    const hasExplicitRow = cp.gridRow !== undefined && !cp.gridRow.trim().startsWith("span");
+
+    if (hasExplicitCol && !hasExplicitRow) {
       // Column fixed, find next available row
-      finalCol = colPlacement.start;
-      finalRow = 0;
+      const finalCol = colPlacement.start;
+      const colSpan = colPlacement.span;
+      const rowSpan = rowPlacement.span;
+      let finalRow = 0;
       while (isOccupied(finalRow, finalCol, rowSpan, colSpan)) {
         finalRow++;
       }
-    } else if (hasExplicitRow) {
+      ensureRowTracks(finalRow + rowSpan);
+      markOccupied(finalRow, finalCol, rowSpan, colSpan);
+      placements[i] = {
+        col: { start: finalCol, span: colSpan },
+        row: { start: finalRow, span: rowSpan },
+      };
+    } else if (!hasExplicitCol && hasExplicitRow) {
       // Row fixed, find next available column
-      finalRow = rowPlacement.start;
-      finalCol = 0;
+      const finalRow = rowPlacement.start;
+      const colSpan = colPlacement.span;
+      const rowSpan = rowPlacement.span;
+      let finalCol = 0;
       while (isOccupied(finalRow, finalCol, rowSpan, colSpan)) {
         finalCol++;
       }
-    } else {
-      // Auto-placement
-      if (autoFlow === "row") {
-        // Try to place starting from current cursor
-        while (isOccupied(autoRow, autoCol, rowSpan, colSpan) || autoCol + colSpan > colTracks.length) {
-          autoCol++;
-          if (autoCol + colSpan > colTracks.length) {
-            autoCol = 0;
-            autoRow++;
-          }
+      ensureRowTracks(finalRow + rowSpan);
+      markOccupied(finalRow, finalCol, rowSpan, colSpan);
+      placements[i] = {
+        col: { start: finalCol, span: colSpan },
+        row: { start: finalRow, span: rowSpan },
+      };
+    }
+  }
+
+  // Step 1c: Auto-place remaining items respecting gridAutoFlow.
+  // "row" (default): scan left-to-right, top-to-bottom
+  // "column": scan top-to-bottom, left-to-right
+  // "dense": like "row" but reset cursor to (0,0) for each item (backfill)
+  let autoRow = 0;
+  let autoCol = 0;
+
+  for (let i = 0; i < visibleChildren.length; i++) {
+    if (placements[i] !== undefined) continue;
+    const cp = visibleChildren[i]!.props;
+    const colPlacement = parseGridPlacement(cp.gridColumn, -1, colTracks.length);
+    const rowPlacement = parseGridPlacement(cp.gridRow, -1, rowTracks.length);
+    const colSpan = colPlacement.span;
+    const rowSpan = rowPlacement.span;
+
+    if (autoFlow === "row" || autoFlow === "dense") {
+      // Dense mode: reset cursor to top-left to try to fill earlier gaps
+      if (autoFlow === "dense") {
+        autoRow = 0;
+        autoCol = 0;
+      }
+      // Scan row-by-row for the first cell where the item fits
+      while (isOccupied(autoRow, autoCol, rowSpan, colSpan) || autoCol + colSpan > colTracks.length) {
+        autoCol++;
+        if (autoCol + colSpan > colTracks.length) {
+          autoCol = 0;
+          autoRow++;
         }
-        finalCol = autoCol;
-        finalRow = autoRow;
-        // Advance cursor
+      }
+      const finalCol = autoCol;
+      const finalRow = autoRow;
+      ensureRowTracks(finalRow + rowSpan);
+      markOccupied(finalRow, finalCol, rowSpan, colSpan);
+      placements[i] = {
+        col: { start: finalCol, span: colSpan },
+        row: { start: finalRow, span: rowSpan },
+      };
+      // Advance cursor past placed item (not for dense — it resets next iteration)
+      if (autoFlow !== "dense") {
         autoCol += colSpan;
         if (autoCol >= colTracks.length) {
           autoCol = 0;
           autoRow++;
         }
-      } else {
-        // column flow
-        while (isOccupied(autoRow, autoCol, rowSpan, colSpan) || autoRow + rowSpan > rowTracks.length) {
-          autoRow++;
-          if (autoRow + rowSpan > rowTracks.length) {
-            autoRow = 0;
-            autoCol++;
-          }
-          // Safety: ensure we don't get stuck if row tracks keep expanding
-          if (autoCol >= colTracks.length) break;
-        }
-        finalCol = autoCol;
-        finalRow = autoRow;
-        autoRow += rowSpan;
       }
+    } else {
+      // "column" flow: scan column-by-column, top-to-bottom
+      while (isOccupied(autoRow, autoCol, rowSpan, colSpan) || autoRow + rowSpan > rowTracks.length) {
+        autoRow++;
+        if (autoRow + rowSpan > rowTracks.length) {
+          autoRow = 0;
+          autoCol++;
+        }
+        // Safety: don't spin forever if columns are exhausted
+        if (autoCol >= colTracks.length) break;
+      }
+      const finalCol = autoCol;
+      const finalRow = autoRow;
+      ensureRowTracks(finalRow + rowSpan);
+      markOccupied(finalRow, finalCol, rowSpan, colSpan);
+      placements[i] = {
+        col: { start: finalCol, span: colSpan },
+        row: { start: finalRow, span: rowSpan },
+      };
+      autoRow += rowSpan;
     }
-
-    ensureRowTracks(finalRow + rowSpan);
-    markOccupied(finalRow, finalCol, rowSpan, colSpan);
-    placements.push({
-      col: { start: finalCol, span: colSpan },
-      row: { start: finalRow, span: rowSpan },
-    });
   }
 
-  // Phase 2: Resolve track sizes
-  const colSizes = resolveGridTrackSizes(colTracks, innerWidth, gap, visibleChildren, "col", placements);
-  const rowSizes = resolveGridTrackSizes(rowTracks, innerHeight, gap, visibleChildren, "row", placements);
+  // Build the final placements array (all items now have placements)
+  const finalPlacements: Placement[] = placements as Placement[];
 
-  // Precompute cumulative offsets
+  // ── Phase 2: Resolve track sizes ─────────────────────────────────
+  // Pass the correct gap for each axis (colGap for columns, rowGap for rows)
+  const colSizes = resolveGridTrackSizes(colTracks, innerWidth, colGap, visibleChildren, "col", finalPlacements);
+  const rowSizes = resolveGridTrackSizes(rowTracks, innerHeight, rowGap, visibleChildren, "row", finalPlacements);
+
+  // Precompute cumulative offsets (gap is only between tracks, not before first)
   const colOffsets: number[] = [0];
   for (let i = 0; i < colSizes.length; i++) {
-    colOffsets.push(colOffsets[i]! + colSizes[i]! + gap);
+    // Gap is applied AFTER each track except the last
+    const gapAfter = i < colSizes.length - 1 ? colGap : 0;
+    colOffsets.push(colOffsets[i]! + colSizes[i]! + gapAfter);
   }
   const rowOffsets: number[] = [0];
   for (let i = 0; i < rowSizes.length; i++) {
-    rowOffsets.push(rowOffsets[i]! + rowSizes[i]! + gap);
+    const gapAfter = i < rowSizes.length - 1 ? rowGap : 0;
+    rowOffsets.push(rowOffsets[i]! + rowSizes[i]! + gapAfter);
   }
 
-  // Phase 3: Lay out each child in its cell
+  // ── Phase 3: Lay out each child in its cell with alignment ───────
+  // Resolve the parent's alignItems to use as default for children with alignSelf="auto"
+  const parentAlignItems: Align = props.alignItems ?? "stretch";
   let maxContentBottom = 0;
   let maxContentRight = 0;
 
   for (let i = 0; i < visibleChildren.length; i++) {
     const child = visibleChildren[i]!;
-    const placement = placements[i]!;
+    const placement = finalPlacements[i]!;
 
     const cellX = innerX + (colOffsets[placement.col.start] ?? 0);
     const cellY = innerY + (rowOffsets[placement.row.start] ?? 0);
 
-    // Calculate cell width spanning multiple columns
+    // Calculate cell width spanning multiple columns (include colGap between spanned columns)
     let cellWidth = 0;
     for (let c = placement.col.start; c < placement.col.start + placement.col.span && c < colSizes.length; c++) {
       cellWidth += colSizes[c]!;
-      if (c > placement.col.start) cellWidth += gap; // include gap between spanned columns
+      if (c > placement.col.start) cellWidth += colGap;
     }
 
-    // Calculate cell height spanning multiple rows
+    // Calculate cell height spanning multiple rows (include rowGap between spanned rows)
     let cellHeight = 0;
     for (let r = placement.row.start; r < placement.row.start + placement.row.span && r < rowSizes.length; r++) {
       cellHeight += rowSizes[r]!;
-      if (r > placement.row.start) cellHeight += gap; // include gap between spanned rows
+      if (r > placement.row.start) cellHeight += rowGap;
     }
 
-    computeLayout(child, cellX, cellY, cellWidth, cellHeight);
+    // Resolve alignSelf for this child.
+    // If alignSelf is "auto" or unset, inherit from parent's alignItems (CSS Grid spec).
+    const childAlignSelf = child.props.alignSelf;
+    const effectiveAlign: Align =
+      childAlignSelf !== undefined && childAlignSelf !== "auto"
+        ? childAlignSelf
+        : parentAlignItems;
+
+    // Determine child's natural size for non-stretch alignments
+    let childW = cellWidth;
+    let childH = cellHeight;
+    let childX = cellX;
+    let childY = cellY;
+
+    if (effectiveAlign !== "stretch") {
+      // For non-stretch: measure child's natural height, don't force cell height
+      const naturalH = measureNaturalHeight(child, cellWidth);
+      childH = Math.min(naturalH, cellHeight);
+
+      switch (effectiveAlign) {
+        case "center":
+          childY = cellY + Math.floor((cellHeight - childH) / 2);
+          break;
+        case "end":
+          childY = cellY + cellHeight - childH;
+          break;
+        case "baseline":
+          // In terminal UI, baseline ~ end alignment
+          childY = cellY + cellHeight - childH;
+          break;
+        default: // "start"
+          // childY stays at cellY
+          break;
+      }
+    }
+
+    // Apply aspectRatio if defined on the child (derived dimension enforcement).
+    // This is also done inside computeLayout, but we adjust the cell constraints
+    // here so the child receives correct available space.
+    const childAR = child.props.aspectRatio;
+    if (childAR !== undefined && childAR > 0) {
+      const hasExplicitW = child.props.width !== undefined;
+      const hasExplicitH = child.props.height !== undefined;
+      if (hasExplicitW && !hasExplicitH) {
+        // Width is set; height will be derived inside computeLayout.
+        // Give unconstrained height so computeLayout can apply aspectRatio.
+        childH = UNCONSTRAINED;
+      } else if (!hasExplicitW && !hasExplicitH) {
+        // Neither dimension explicit: let width = cellWidth, derive height
+        childH = UNCONSTRAINED;
+      }
+    }
+
+    computeLayout(child, childX, childY, childW, childH);
 
     maxContentBottom = Math.max(maxContentBottom, cellY + cellHeight - innerY);
     maxContentRight = Math.max(maxContentRight, cellX + cellWidth - innerX);

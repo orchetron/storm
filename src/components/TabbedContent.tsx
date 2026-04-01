@@ -21,6 +21,12 @@ export interface TabbedContentProps extends StormContainerStyleProps {
   children: React.ReactNode;
   tabColor?: string | number;
   activeTabColor?: string | number;
+  /**
+   * Whether the TabbedContent captures keyboard input (default true).
+   * When false, Left/Right arrow keys and number keys are not consumed —
+   * useful when nested inside a Modal or another component that manages focus.
+   */
+  isFocused?: boolean;
 }
 
 // ── Compound Component API ──────────────────────────────────────
@@ -127,6 +133,7 @@ const TabbedContentBase = React.memo(function TabbedContent(rawProps: TabbedCont
     children,
     tabColor = colors.text.dim,
     activeTabColor = colors.brand.primary,
+    isFocused = true,
   } = props;
 
   const userStyles = pickStyleProps(props as unknown as Record<string, unknown>);
@@ -138,7 +145,15 @@ const TabbedContentBase = React.memo(function TabbedContent(rawProps: TabbedCont
   const activeKeyRef = useRef(activeKey);
   activeKeyRef.current = activeKey;
 
+  const isFocusedRef = useRef(isFocused);
+  isFocusedRef.current = isFocused;
+
   const handleInput = useCallback((event: KeyEvent) => {
+    // Only handle arrows when this TabbedContent is focused.
+    // This prevents nested TabbedContent from having the outer one
+    // always consume Left/Right arrow keys.
+    if (!isFocusedRef.current) return;
+
     const currentTabs = tabsRef.current;
     const cb = onTabChangeRef.current;
     if (!cb || currentTabs.length === 0) return;
@@ -146,16 +161,24 @@ const TabbedContentBase = React.memo(function TabbedContent(rawProps: TabbedCont
     const currentIndex = currentTabs.findIndex((t) => t.key === activeKeyRef.current);
     const idx = currentIndex >= 0 ? currentIndex : 0;
 
+    // Tab switching uses Left/Right arrows only.
+    // Tab key is reserved for focus management (handled by FocusManager).
     if (event.key === "left") {
       const next = idx > 0 ? idx - 1 : currentTabs.length - 1;
       cb(currentTabs[next]!.key);
     } else if (event.key === "right") {
       const next = idx < currentTabs.length - 1 ? idx + 1 : 0;
       cb(currentTabs[next]!.key);
+    } else if (event.char && /^[1-9]$/.test(event.char)) {
+      // Number keys (1-9) for direct tab selection
+      const numIdx = parseInt(event.char, 10) - 1;
+      if (numIdx < currentTabs.length) {
+        cb(currentTabs[numIdx]!.key);
+      }
     }
   }, []);
 
-  useInput(handleInput, { isActive: onTabChange !== undefined });
+  useInput(handleInput, { isActive: isFocused && onTabChange !== undefined });
 
   // Build tab bar
   const tabElements: React.ReactElement[] = [];

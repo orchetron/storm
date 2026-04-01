@@ -38,7 +38,18 @@ export interface FocusableEntry {
   tabIndex?: number;
   /** Focus group this entry belongs to. */
   groupId?: string;
+  /** When true, this entry is skipped by Tab cycling. */
+  disabled?: boolean;
 }
+
+/** Style returned by getFocusRingStyle for a focused element. */
+export interface FocusRingStyle {
+  borderColor?: string;
+  prefix?: string;
+}
+
+/** Focus ring visual mode. */
+export type FocusRingMode = "border" | "prefix" | "none";
 
 /** Callback signature for focus change notifications. */
 export type FocusChangeCallback = (focusedId: string | null, previousId: string | null) => void;
@@ -58,6 +69,19 @@ export class FocusManager {
   private registrationCounter = 0;
   /** Map from entry ID to registration order (for stable sort tiebreaking) */
   private registrationOrder = new Map<string, number>();
+
+  /** Stack of element IDs to restore focus to when a trap is released. */
+  private _focusRestoreStack: string[] = [];
+
+  /** Focus ring visual mode — components query this via getFocusRingStyle(). */
+  private _focusRingMode: FocusRingMode = "prefix";
+
+  /** Render-cycle counter — incremented on each tickRenderCycle() call. */
+  private _renderCycle = 0;
+  /** The render cycle in which focus() was last called. */
+  private _lastFocusCycle = -1;
+  /** Whether a double-focus warning was already emitted for the current cycle. */
+  private _warnedThisCycle = false;
 
   /**
    * The ScrollView that currently owns keyboard scroll events.
@@ -107,6 +131,15 @@ export class FocusManager {
   focus(id: string): void {
     if (!this.enabled) return;
     if (this.entries.has(id) && this.focusedId !== id) {
+      // Detect multiple focus() calls in the same render cycle (dev warning)
+      if (this._lastFocusCycle === this._renderCycle && !this._warnedThisCycle) {
+        this._warnedThisCycle = true;
+        process.stderr.write(
+          `[storm-tui] Warning: Multiple elements have isFocused={true}. Only '${id}' will be focused. Set isFocused={false} on others.\n`,
+        );
+      }
+      this._lastFocusCycle = this._renderCycle;
+
       const previousId = this.focusedId;
       this.focusedId = id;
       // Keep focusIndex in sync for O(1) cycling
@@ -153,6 +186,8 @@ export class FocusManager {
    * if the currently focused element is outside it.
    */
   trapFocus(groupId: string): void {
+    // Save the currently focused element so releaseFocus() can restore it
+    this._focusRestoreStack.push(this.focusedId ?? "");
     this.trapStack.push(groupId);
     // If current focus is not in the trapped group, move to first input in group
     const inputs = this.sortedInputs();
@@ -173,15 +208,29 @@ export class FocusManager {
   releaseFocus(): void {
     if (this.trapStack.length === 0) return;
     this.trapStack.pop();
-    // If focused entry is no longer in scope, re-focus
-    if (this.focusedId) {
+    // Restore focus to the element that was focused before the trap
+    const savedId = this._focusRestoreStack.pop() ?? "";
+    const previousId = this.focusedId;
+    if (savedId && this.entries.has(savedId)) {
+      // Saved element still exists — restore to it
+      this.focusedId = savedId;
       const inputs = this.sortedInputs();
-      if (inputs.length > 0 && !inputs.includes(this.focusedId)) {
-        const previousId = this.focusedId;
+      const idx = inputs.indexOf(savedId);
+      if (idx >= 0) this.focusIndex = idx;
+      this.notify();
+      if (this.focusedId !== previousId) {
+        this.notifyFocusChange(this.focusedId, previousId);
+      }
+    } else {
+      // Saved element no longer exists — fall back to first focusable
+      const inputs = this.sortedInputs();
+      if (inputs.length > 0) {
         this.focusedId = inputs[0]!;
         this.focusIndex = 0;
         this.notify();
-        this.notifyFocusChange(this.focusedId, previousId);
+        if (this.focusedId !== previousId) {
+          this.notifyFocusChange(this.focusedId, previousId);
+        }
       }
     }
   }
@@ -240,6 +289,8 @@ export class FocusManager {
     const eligible = this.order.filter((id) => {
       const e = this.entries.get(id);
       if (!e || e.type !== "input") return false;
+      // Skip disabled entries
+      if (e.disabled) return false;
       // Focus trap takes priority
       if (activeGroup !== undefined) return e.groupId === activeGroup;
       // Then scope
@@ -380,6 +431,66 @@ export class FocusManager {
   onFocusChange(fn: FocusChangeCallback): () => void {
     this.focusChangeListeners.add(fn);
     return () => { this.focusChangeListeners.delete(fn); };
+  }
+
+  // ── Tab key routing ────────────────────────────────────────────
+
+  /**
+   * Handle Tab/Shift+Tab key press. Cycles focus to the next or previous
+   * enabled input in tab order. Wraps around at the boundaries.
+   * Disabled entries are skipped automatically (sortedInputs filters them).
+   */
+  handleTabKey(shift: boolean): void {
+    if (shift) {
+      this.cyclePrev();
+    } else {
+      this.cycleNext();
+    }
+  }
+
+  // ── Focus ring ────────────────────────────────────────────────
+
+  /**
+   * Returns a visual indicator style for the given element.
+   * Components can query this to decide how to render a focus ring.
+   * Returns null if the element is not focused or the ring is disabled.
+   */
+  getFocusRingStyle(id: string): FocusRingStyle | null {
+    if (this.focusedId !== id) return null;
+    switch (this._focusRingMode) {
+      case "border":
+        return { borderColor: "blue" };
+      case "prefix":
+        return { prefix: "\u25B8 " }; // "▸ "
+      case "none":
+        return null;
+    }
+  }
+
+  /**
+   * Set the focus ring visual mode.
+   * - "border": returns borderColor for styled borders
+   * - "prefix": returns a prefix string ("▸ ") to prepend to focused text
+   * - "none": disables focus ring (getFocusRingStyle always returns null)
+   */
+  setFocusRingStyle(mode: FocusRingMode): void {
+    this._focusRingMode = mode;
+  }
+
+  /** Returns the current focus ring mode. */
+  get focusRingMode(): FocusRingMode {
+    return this._focusRingMode;
+  }
+
+  // ── Render cycle tracking (for double-focus warning) ──────────
+
+  /**
+   * Increment the render cycle counter. Call this once per paint/render cycle
+   * so the double-focus warning can detect multiple focus() calls in the same frame.
+   */
+  tickRenderCycle(): void {
+    this._renderCycle++;
+    this._warnedThisCycle = false;
   }
 
   private notify(): void {

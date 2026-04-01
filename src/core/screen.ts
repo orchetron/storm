@@ -27,6 +27,9 @@ import { DiffRenderer, type DiffResult } from "./diff.js";
 import { ScreenBuffer } from "./buffer.js";
 import type { LinkRange, RenderContext } from "./render-context.js";
 
+/** Allow forcing TTY behavior via STORM_FORCE_TTY=1 (for playground/WebSocket). */
+const FORCE_TTY = process.env.STORM_FORCE_TTY === "1";
+
 export interface ScreenOptions {
   stdout?: NodeJS.WriteStream;
   stdin?: NodeJS.ReadStream;
@@ -52,6 +55,7 @@ export class Screen {
   private _height: number;
   private active = false;
   private cleanedUp = false;
+  private _signalsBound = false;
 
   // Before-cleanup callback — lets the render loop run user cleanups (useCleanup,
   // useAsyncCleanup, plugin teardown) before terminal state is restored.
@@ -151,7 +155,7 @@ export class Screen {
     if (this.onBeforeCleanup) {
       const fn = this.onBeforeCleanup;
       this.onBeforeCleanup = null;
-      try { fn(); } catch { /* ignore — best-effort cleanup */ }
+      try { fn(); } catch (err) { if (process.env.NODE_ENV !== 'production') process.stderr.write('[storm-tui] I/O error: ' + (err as Error).message + '\n'); }
     }
   }
 
@@ -179,7 +183,7 @@ export class Screen {
     else if (caps.name !== "unknown") depth = "16";
     setColorDepth(depth);
 
-    const isTTY = this.stdout.isTTY === true;
+    const isTTY = this.stdout.isTTY === true || FORCE_TTY;
 
     if (isTTY) {
       let init = "";
@@ -207,6 +211,17 @@ export class Screen {
     // Listen for resize (only fires on TTYs, but harmless to register)
     this.stdout.on("resize", this.onResize);
 
+    // Remove any previously registered handlers before re-registering
+    // to prevent signal handler accumulation from repeated start()/stop() cycles.
+    if (this._signalsBound) {
+      process.removeListener("exit", this.onExit);
+      process.removeListener("SIGINT", this.onSignal);
+      process.removeListener("SIGTERM", this.onSignal);
+      process.removeListener("SIGHUP", this.onSignal);
+      process.removeListener("uncaughtException", this.onUncaughtException);
+      process.removeListener("unhandledRejection", this.onUnhandledRejection);
+    }
+
     // Cleanup on exit
     process.on("exit", this.onExit);
     process.on("SIGINT", this.onSignal);
@@ -216,6 +231,7 @@ export class Screen {
     // Crash handlers — restore terminal before dying
     process.on("uncaughtException", this.onUncaughtException);
     process.on("unhandledRejection", this.onUnhandledRejection);
+    this._signalsBound = true;
   }
 
   /** Stop the screen — restore terminal state. */
@@ -229,7 +245,7 @@ export class Screen {
     if (this.cleanedUp) return;
     this.cleanedUp = true;
 
-    if (this.stdout.isTTY === true) {
+    if (this.stdout.isTTY === true || FORCE_TTY) {
       let restore = "";
       restore += "\x1b]111\x07"; // Reset terminal bg to original default (OSC 111)
       restore += RESET;
@@ -249,8 +265,8 @@ export class Screen {
     if (this.useRawMode && this.stdin.isTTY) {
       try {
         this.stdin.setRawMode(this.wasRaw);
-      } catch {
-        // stdin may be destroyed
+      } catch (err) {
+        if (process.env.NODE_ENV !== 'production') process.stderr.write('[storm-tui] I/O error: ' + (err as Error).message + '\n');
       }
     }
 
@@ -268,7 +284,7 @@ export class Screen {
    *  Pass null to reset to the terminal's original default.
    *  No-op when stdout is not a TTY. */
   setTerminalBg(hexColor: string | null): void {
-    if (this.stdout.isTTY !== true) return;
+    if (this.stdout.isTTY !== true && !FORCE_TTY) return;
     if (hexColor) {
       // OSC 11 ; rgb:RR/GG/BB BEL — set terminal default background
       const r = hexColor.slice(1, 3);
@@ -306,7 +322,7 @@ export class Screen {
     // If cursor should be visible, position it and show it.
     // If not, explicitly hide it to stop the terminal's blinking hardware cursor.
     // Skip cursor control sequences when stdout is not a TTY.
-    if (this.stdout.isTTY === true) {
+    if (this.stdout.isTTY === true || FORCE_TTY) {
       if (this._cursorVisible) {
         output += cursorTo(this._cursorY, this._cursorX) + CURSOR_SHOW;
       } else {
@@ -382,8 +398,8 @@ export class Screen {
   write(data: string): void {
     try {
       this.stdout.write(data);
-    } catch {
-      // stdout may be closed
+    } catch (err) {
+      if (process.env.NODE_ENV !== 'production') process.stderr.write('[storm-tui] I/O error: ' + (err as Error).message + '\n');
     }
   }
 

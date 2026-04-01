@@ -78,3 +78,6 @@ export {
   useCalendarBehavior, type UseCalendarBehaviorOptions, type UseCalendarBehaviorResult, type CalendarDayInfo,
   useCollapsibleBehavior, type UseCollapsibleBehaviorOptions, type UseCollapsibleBehaviorResult,
 } from "./headless/index.js";
+export { useTick, type UseTickOptions } from "./useTick.js";
+export { usePhaseTimer, type PhaseEntry, type UsePhaseTimerOptions, type UsePhaseTimerResult } from "./usePhaseTimer.js";
+export { useProfiler, type UseProfilerResult } from "./useProfiler.js";

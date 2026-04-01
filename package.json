@@ -7,36 +7,44 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "default": "./dist/index.js"
     },
     "./components": {
+      "types": "./dist/components/index.d.ts",
       "import": "./dist/components/index.js",
-      "types": "./dist/components/index.d.ts"
+      "default": "./dist/components/index.js"
     },
     "./hooks": {
+      "types": "./dist/hooks/index.d.ts",
       "import": "./dist/hooks/index.js",
-      "types": "./dist/hooks/index.d.ts"
+      "default": "./dist/hooks/index.js"
     },
     "./widgets": {
+      "types": "./dist/widgets/index.d.ts",
       "import": "./dist/widgets/index.js",
-      "types": "./dist/widgets/index.d.ts"
+      "default": "./dist/widgets/index.js"
     },
     "./templates": {
+      "types": "./dist/templates/index.d.ts",
       "import": "./dist/templates/index.js",
-      "types": "./dist/templates/index.d.ts"
+      "default": "./dist/templates/index.js"
     },
     "./testing": {
+      "types": "./dist/testing/index.d.ts",
       "import": "./dist/testing/index.js",
-      "types": "./dist/testing/index.d.ts"
+      "default": "./dist/testing/index.js"
     },
     "./devtools": {
+      "types": "./dist/devtools/index.d.ts",
       "import": "./dist/devtools/index.js",
-      "types": "./dist/devtools/index.d.ts"
+      "default": "./dist/devtools/index.js"
     },
     "./headless": {
+      "types": "./dist/hooks/headless/index.d.ts",
       "import": "./dist/hooks/headless/index.js",
-      "types": "./dist/hooks/headless/index.d.ts"
+      "default": "./dist/hooks/headless/index.js"
     }
   },
   "files": [
@@ -85,7 +93,8 @@
     "test:watch": "vitest",
     "test:bench": "vitest run --config vitest.config.ts src/__tests__/benchmarks.test.ts",
     "clean": "rm -rf dist",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "playground": "cd playground && npm install --silent 2>/dev/null && node server.mjs"
   },
   "dependencies": {
     "react-reconciler": "^0.31.0"

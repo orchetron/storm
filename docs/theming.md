@@ -367,6 +367,146 @@ Supports:
 - Auto-parsed values: numbers, booleans, percentages, hex colors, quoted strings
 - File watching with 100ms debounce (auto-enabled in development)
 
+### Available Style Properties
+
+These are the properties you can use in `.storm.css` rules. Values are auto-parsed from strings: `true`/`false` become booleans, integer/float strings become numbers, percentages are preserved as strings, and everything else stays as a string.
+
+| Property | Type | Applies to |
+|---|---|---|
+| `color` | hex string or number | Text, inline components |
+| `backgroundColor` | hex string or number | Box, containers |
+| `bold` | boolean | Text |
+| `dim` | boolean | Text |
+| `italic` | boolean | Text |
+| `underline` | boolean | Text |
+| `strikethrough` | boolean | Text |
+| `inverse` | boolean | Text, Button |
+| `borderStyle` | `single`, `double`, `round`, `bold`, `classic` | Box, containers |
+| `borderColor` | hex string or number | Box, containers |
+| `padding` | number | Containers |
+| `paddingX` / `paddingY` | number | Containers |
+| `margin` | number | Layout components |
+| `marginX` / `marginY` | number | Layout components |
+| `gap` | number | Flex containers |
+| `flex` | number | Flex children |
+| `flexDirection` | `column`, `row` | Box |
+| `alignItems` | `flex-start`, `center`, `flex-end`, `stretch` | Box |
+| `justifyContent` | `flex-start`, `center`, `flex-end`, `space-between`, `space-around`, `space-evenly` | Box |
+
+### Selector Types
+
+Selectors follow CSS conventions adapted for Storm components:
+
+| Selector | Example | Specificity | Matches |
+|---|---|---|---|
+| Type | `Text` | 1 | All Text components |
+| Class | `.title` | 10 | Components with `className="title"` |
+| Type + class | `Text.title` | 11 | Text components with `className="title"` |
+| Pseudo-class | `Button:focus` | 11 | Focused Button components |
+| ID | `#submit` | 100 | Component with `id="submit"` |
+| Descendant | `Box.sidebar Text` | 12 | Text inside a Box with className "sidebar" |
+
+Higher specificity wins when multiple rules match the same element.
+
+### Complete .storm.css Example
+
+Here is a full example showing a dashboard stylesheet:
+
+```css
+/* dashboard.storm.css */
+
+:root {
+  /* Theme variables */
+  --brand: #82AAFF;
+  --brand-light: #A8C8FF;
+  --surface: #141414;
+  --surface-raised: #1C1C1C;
+  --dim: #505050;
+
+  /* Storm theme overrides (picked up by useStyleSheet themeOverrides) */
+  --storm-brand-primary: #82AAFF;
+  --storm-surface-base: #0A0A0A;
+  --storm-success: #34D399;
+}
+
+// Global defaults
+Box {
+  padding: 0;
+}
+
+Text {
+  color: #D4D4D4;
+}
+
+// Title styling
+Text.title {
+  color: var(--brand);
+  bold: true;
+}
+
+Text.subtitle {
+  color: var(--dim);
+  dim: true;
+}
+
+// Sidebar layout
+Box.sidebar {
+  borderStyle: single;
+  borderColor: var(--dim);
+  backgroundColor: var(--surface);
+  padding: 1;
+}
+
+Box.sidebar Text {
+  dim: true;
+}
+
+// Cards
+Box.card {
+  borderStyle: round;
+  borderColor: var(--brand);
+  backgroundColor: var(--surface-raised);
+  padding: 2;
+  margin: 1;
+}
+
+// Interactive states
+Button:focus {
+  inverse: true;
+  borderColor: var(--brand-light);
+}
+
+#submit {
+  color: #34D399;
+  bold: true;
+}
+```
+
+### Theme Overrides via CSS Variables
+
+Variables named `--storm-{group}-{key}` are automatically extracted and can be passed to `ThemeProvider`, bridging the gap between `.storm.css` files and the theme system:
+
+```tsx
+import { useStyleSheet, extendTheme, ThemeProvider, colors } from "@orchetron/storm-tui";
+
+function App() {
+  const { themeOverrides } = useStyleSheet({ path: "./app.storm.css", watch: true });
+  const mergedTheme = extendTheme(colors, themeOverrides);
+
+  return (
+    <ThemeProvider theme={mergedTheme}>
+      <MyContent />
+    </ThemeProvider>
+  );
+}
+```
+
+The naming convention for theme variables:
+- Flat fields: `--storm-success`, `--storm-warning`, `--storm-error`, `--storm-info`, `--storm-divider`
+- Nested fields: `--storm-brand-primary`, `--storm-text-dim`, `--storm-surface-base`, `--storm-input-border-active` (hyphens after the group name are converted to camelCase)
+
+Valid group names: `brand`, `text`, `surface`, `system`, `user`, `assistant`, `thinking`, `tool`, `approval`, `input`, `diff`, `syntax`.
+
 ---
 
 # Spacing Tokens

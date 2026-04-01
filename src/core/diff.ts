@@ -318,18 +318,6 @@ export class DiffRenderer {
     parts: string[],
     debugRainbowColor: number | null,
   ): void {
-    // Links require exact open/close bracketing across cell ranges.
-    // Cell-level diffing could leave a link partially open. Fall back to full line.
-    if (rowLinks && rowLinks.length > 0) {
-      parts.push(cursorTo(y, 0));
-      if (debugRainbowColor !== null) parts.push(bgColor(debugRainbowColor));
-      parts.push(this.renderLine(next, y, w, rowLinks));
-      // Only clear to EOL if line doesn't fill full width — writing to the
-      // last column and then emitting CSI K triggers terminal auto-wrap.
-      if (!this.lineFullWidth(next, y, w)) parts.push(`${CSI}K`);
-      return;
-    }
-
     // ── Identify runs of changed cells ────────────────────────────
     //
     // A "run" is a maximal sequence of consecutive columns where at least
@@ -385,6 +373,25 @@ export class DiffRenderer {
         last.endX = curr.endX;
       } else {
         merged.push(curr);
+      }
+    }
+
+    // Links require exact open/close bracketing across cell ranges.
+    // Cell-level diffing could leave a link partially open.
+    // Only fall back to full-line rendering if a link actually overlaps
+    // the changed cell range — links elsewhere on the row don't need it.
+    if (rowLinks && rowLinks.length > 0) {
+      const hasOverlappingLink = rowLinks.some(link =>
+        link.x2 > merged[0]!.startX && link.x1 < merged[merged.length - 1]!.endX
+      );
+      if (hasOverlappingLink) {
+        parts.push(cursorTo(y, 0));
+        if (debugRainbowColor !== null) parts.push(bgColor(debugRainbowColor));
+        parts.push(this.renderLine(next, y, w, rowLinks));
+        // Only clear to EOL if line doesn't fill full width — writing to the
+        // last column and then emitting CSI K triggers terminal auto-wrap.
+        if (!this.lineFullWidth(next, y, w)) parts.push(`${CSI}K`);
+        return;
       }
     }
 

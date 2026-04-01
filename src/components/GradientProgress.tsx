@@ -9,11 +9,12 @@
  * compatibility for the legacy `fromColor`/`toColor` props.
  */
 
-import React from "react";
+import React, { useId } from "react";
 import { interpolateColor } from "./Gradient.js";
 import type { StormLayoutStyleProps } from "../styles/styleProps.js";
 import { usePluginProps } from "../hooks/usePluginProps.js";
 import { useColors } from "../hooks/useColors.js";
+import { useMeasure } from "../hooks/useMeasure.js";
 
 export interface GradientProgressProps extends StormLayoutStyleProps {
   value: number;
@@ -48,12 +49,14 @@ function getColorAt(stops: string[], position: number): string {
   return interpolateColor(stops[segIndex]!, stops[segIndex + 1]!, t);
 }
 
+const DEFAULT_GRADIENT_WIDTH = 20;
+
 export const GradientProgress = React.memo(function GradientProgress(rawProps: GradientProgressProps): React.ReactElement {
   const colors = useColors();
   const props = usePluginProps("GradientProgress", rawProps as unknown as Record<string, unknown>) as unknown as GradientProgressProps;
   const {
     value,
-    width = 20,
+    width: widthProp,
     colors: colorsProp,
     fromColor,
     toColor,
@@ -69,6 +72,12 @@ export const GradientProgress = React.memo(function GradientProgress(rawProps: G
     minWidth,
     maxWidth,
   } = props;
+
+  // Auto-measure width from layout when not explicitly provided
+  const measureId = useId();
+  const autoMeasure = widthProp === undefined;
+  const measured = useMeasure(autoMeasure ? `gradientprogress-${measureId}` : "");
+  const width = widthProp ?? measured?.width ?? DEFAULT_GRADIENT_WIDTH;
 
   // Resolve gradient stops: colors prop > fromColor/toColor > defaults
   const defaultViolet = colors.brand.primary;
@@ -174,9 +183,18 @@ export const GradientProgress = React.memo(function GradientProgress(rawProps: G
     ...(maxWidth !== undefined ? { maxWidth } : {}),
   };
 
-  return React.createElement(
+  const inner = React.createElement(
     "tui-box",
     outerBoxProps,
     ...children,
   );
+
+  if (autoMeasure) {
+    return React.createElement(
+      "tui-box",
+      { _measureId: `gradientprogress-${measureId}`, flex: 1 },
+      inner,
+    );
+  }
+  return inner;
 });

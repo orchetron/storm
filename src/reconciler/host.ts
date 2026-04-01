@@ -29,6 +29,31 @@ type HostUpdatePayload = Record<string, unknown> | null;
 /** Extracted from react-reconciler's createReconciler parameter type. */
 type StormHostConfig = Parameters<typeof Reconciler>[0];
 
+// ── Custom element lifecycle hooks ───────────────────────────────
+// These are set by render() to wire the PluginManager's custom element
+// mount/unmount notifications into the reconciler's tree mutation calls.
+// Module-level because hostConfig is a static singleton.
+
+type ElementLifecycleHook = (type: string, element: unknown) => void;
+let _onCustomElementMount: ElementLifecycleHook | null = null;
+let _onCustomElementUnmount: ElementLifecycleHook | null = null;
+
+/**
+ * Set callbacks for custom element mount/unmount lifecycle events.
+ * Called by render() to connect the PluginManager's lifecycle hooks.
+ * @internal
+ */
+export function setCustomElementLifecycleHooks(
+  onMount: ElementLifecycleHook | null,
+  onUnmount: ElementLifecycleHook | null,
+): void {
+  _onCustomElementMount = onMount;
+  _onCustomElementUnmount = onUnmount;
+}
+
+/** Known built-in element types — anything else is a custom element. */
+const BUILTIN_TYPES = new Set(["tui-box", "tui-text", "tui-scroll-view", "tui-text-input", "tui-overlay"]);
+
 function appendChild(
   parent: HostInstance | HostContainer,
   child: HostInstance | HostTextInstance,
@@ -55,12 +80,20 @@ function appendChild(
       ref.current = child;
     }
   }
+  // Notify custom element lifecycle: mount
+  if ("type" in child && child.type !== "TEXT_NODE" && !BUILTIN_TYPES.has(child.type) && _onCustomElementMount) {
+    _onCustomElementMount(child.type, child);
+  }
 }
 
 function removeChild(
   parent: HostInstance | HostContainer,
   child: HostInstance | HostTextInstance,
 ): void {
+  // Notify custom element lifecycle: unmount (before removal)
+  if ("type" in child && child.type !== "TEXT_NODE" && !BUILTIN_TYPES.has(child.type) && _onCustomElementUnmount) {
+    _onCustomElementUnmount(child.type, child);
+  }
   const children = "children" in parent ? parent.children : [];
   const idx = children.indexOf(child);
   if (idx >= 0) children.splice(idx, 1);
@@ -91,6 +124,10 @@ function insertBefore(
     child.parent = "type" in parent && parent.type !== undefined
       ? (parent as HostInstance)
       : null;
+  }
+  // Notify custom element lifecycle: mount
+  if ("type" in child && child.type !== "TEXT_NODE" && !BUILTIN_TYPES.has(child.type) && _onCustomElementMount) {
+    _onCustomElementMount(child.type, child);
   }
 }
 
@@ -149,10 +186,18 @@ export const hostConfig: StormHostConfig = {
   appendChildToContainer(container: HostContainer, child: HostInstance | HostTextInstance): void {
     container.children.push(child);
     if ("parent" in child) child.parent = null;
+    // Notify custom element lifecycle: mount
+    if ("type" in child && child.type !== "TEXT_NODE" && !BUILTIN_TYPES.has(child.type) && _onCustomElementMount) {
+      _onCustomElementMount(child.type, child);
+    }
   },
 
   removeChild: removeChild,
   removeChildFromContainer(container: HostContainer, child: HostInstance | HostTextInstance): void {
+    // Notify custom element lifecycle: unmount (before removal)
+    if ("type" in child && child.type !== "TEXT_NODE" && !BUILTIN_TYPES.has(child.type) && _onCustomElementUnmount) {
+      _onCustomElementUnmount(child.type, child);
+    }
     const idx = container.children.indexOf(child);
     if (idx >= 0) container.children.splice(idx, 1);
     if ("parent" in child) child.parent = null;
@@ -171,6 +216,10 @@ export const hostConfig: StormHostConfig = {
       container.children.push(child);
     }
     if ("parent" in child) child.parent = null;
+    // Notify custom element lifecycle: mount
+    if ("type" in child && child.type !== "TEXT_NODE" && !BUILTIN_TYPES.has(child.type) && _onCustomElementMount) {
+      _onCustomElementMount(child.type, child);
+    }
   },
 
   clearContainer(container: HostContainer): void {

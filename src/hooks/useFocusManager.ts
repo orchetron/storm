@@ -6,7 +6,7 @@
  */
 
 import { useTui } from "../context/TuiContext.js";
-import type { FocusChangeCallback } from "../core/focus.js";
+import type { FocusChangeCallback, FocusRingMode, FocusRingStyle } from "../core/focus.js";
 
 export interface UseFocusManagerResult {
   enableFocus: () => void;
@@ -31,6 +31,12 @@ export interface UseFocusManagerResult {
    * Returns an unsubscribe function.
    */
   onFocusChange: (fn: FocusChangeCallback) => () => void;
+  /** Handle Tab/Shift+Tab key. Cycles focus to next/prev enabled input. */
+  handleTabKey: (shift: boolean) => void;
+  /** Get the focus ring style for a specific element. */
+  getFocusRingStyle: (id: string) => FocusRingStyle | null;
+  /** Set the focus ring visual mode ("border" | "prefix" | "none"). */
+  setFocusRingStyle: (mode: FocusRingMode) => void;
 }
 
 export function useFocusManager(): UseFocusManagerResult {
@@ -73,6 +79,15 @@ export function useFocusManager(): UseFocusManagerResult {
     },
     onFocusChange: (fn: FocusChangeCallback) => {
       return fm.onFocusChange(fn);
+    },
+    handleTabKey: (shift: boolean) => {
+      fm.handleTabKey(shift);
+    },
+    getFocusRingStyle: (id: string) => {
+      return fm.getFocusRingStyle(id);
+    },
+    setFocusRingStyle: (mode: FocusRingMode) => {
+      fm.setFocusRingStyle(mode);
     },
   };
 }

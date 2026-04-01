@@ -5,9 +5,12 @@
  * optional title, and divider. Escape key triggers onClose.
  *
  * Features:
- *   - Focus trap: captures ALL keyboard input at highest priority when visible
- *   - Tab cycles between interactive elements (if any) within the modal
+ *   - Focus trap: Tab/Shift+Tab cycle within the modal's focus group
+ *   - Escape closes the modal (consumed at high priority)
+ *   - All other keys pass through to child components (ScrollView, TextInput, Select, etc.)
  *   - Size presets: "sm" (30), "md" (50, default), "lg" (70), "full" (screen width - 4)
+ *   - Nested modals: each Modal gets a unique groupId; when a nested Modal closes,
+ *     focus returns to the parent Modal's trap group
  */
 
 import React, { useRef, useCallback, createContext, useContext } from "react";
@@ -21,6 +24,9 @@ import { mergeBoxStyles, pickStyleProps } from "../styles/applyStyles.js";
 import { DEFAULTS } from "../styles/defaults.js";
 import { usePersonality } from "../core/personality.js";
 import { usePluginProps } from "../hooks/usePluginProps.js";
+
+// ── Unique group ID generation for nested modal support ────────
+let nextModalId = 0;
 
 // ── Compound Component API ──────────────────────────────────────
 
@@ -52,26 +58,28 @@ function ModalRoot({ visible, onClose, size = "md", children }: ModalRootProps):
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
 
+  // Stable unique group ID for this modal instance (supports nested modals)
+  const groupIdRef = useRef(`modal-${nextModalId++}`);
+
+  // Focus trap handler: only consumes Escape and Tab.
+  // All other keys pass through to child components (ScrollView, TextInput, Select, etc.)
   const handleInput = useCallback((event: KeyEvent) => {
     if (event.key === "escape") {
+      event.consumed = true;
       onCloseRef.current?.();
       return;
     }
-    // Forward scroll-related keys to the active ScrollView inside the modal.
-    // Without this, the focus trap swallows PgUp/PgDown/Shift+arrows and
-    // ScrollViews inside the modal can never receive keyboard scroll.
-    const activeId = focus.activeScrollId;
-    if (activeId) {
-      const entry = focus.entries.get(activeId);
-      if (entry) {
-        if (event.key === "pageup") entry.onScroll?.(-10);
-        else if (event.key === "pagedown") entry.onScroll?.(10);
-        else if (event.key === "up" && event.shift) entry.onScroll?.(-1);
-        else if (event.key === "down" && event.shift) entry.onScroll?.(1);
-        else if (event.key === "left") entry.onHScroll?.(-1);
-        else if (event.key === "right") entry.onHScroll?.(1);
+    if (event.key === "tab") {
+      event.consumed = true;
+      if (event.shift) {
+        focus.cyclePrev();
+      } else {
+        focus.cycleNext();
       }
+      return;
     }
+    // All other keys: do NOT set event.consumed — they propagate to normal
+    // handlers (ScrollView keyboard scroll, TextInput, Select, etc.)
   }, [focus]);
 
   useInput(handleInput, { isActive: visible, priority: 1000 });
@@ -98,7 +106,7 @@ function ModalRoot({ visible, onClose, size = "md", children }: ModalRootProps):
     overlayProps,
     React.createElement(
       FocusGroup,
-      { trap: true, direction: "vertical" },
+      { id: groupIdRef.current, trap: true, direction: "vertical" },
       React.createElement(
         ModalContext.Provider,
         { value: ctx },
@@ -194,31 +202,32 @@ const ModalBase = React.memo(function Modal(rawProps: ModalProps): React.ReactEl
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
 
-  // Focus trap: capture ALL keyboard input at highest priority when modal is visible.
-  // This prevents any other useInput handlers from receiving events.
-  // Scroll-related keys are forwarded to the active ScrollView so that
-  // ScrollViews inside the modal can be keyboard-scrolled.
+  // Stable unique group ID for this modal instance (supports nested modals)
+  const groupIdRef = useRef(`modal-${nextModalId++}`);
+
+  // Focus trap handler: only consumes Escape and Tab.
+  // All other keys pass through to child components (ScrollView, TextInput, Select, etc.)
   const handleInput = useCallback((event: KeyEvent) => {
     if (event.key === "escape") {
+      event.consumed = true;
       onCloseRef.current?.();
       return;
     }
-    // Forward scroll-related keys to the active ScrollView inside the modal.
-    const activeId = focus.activeScrollId;
-    if (activeId) {
-      const entry = focus.entries.get(activeId);
-      if (entry) {
-        if (event.key === "pageup") entry.onScroll?.(-10);
-        else if (event.key === "pagedown") entry.onScroll?.(10);
-        else if (event.key === "up" && event.shift) entry.onScroll?.(-1);
-        else if (event.key === "down" && event.shift) entry.onScroll?.(1);
-        else if (event.key === "left") entry.onHScroll?.(-1);
-        else if (event.key === "right") entry.onHScroll?.(1);
+    if (event.key === "tab") {
+      event.consumed = true;
+      if (event.shift) {
+        focus.cyclePrev();
+      } else {
+        focus.cycleNext();
       }
+      return;
     }
+    // All other keys: do NOT set event.consumed — they propagate to normal
+    // handlers (ScrollView keyboard scroll, TextInput, Select, etc.)
   }, [focus]);
 
   // Priority 1000 ensures the modal's focus trap runs before all other input handlers.
+  // Only Escape and Tab are consumed; other keys fall through.
   useInput(handleInput, { isActive: visible, priority: 1000 });
 
   if (!visible) return null;
@@ -292,7 +301,7 @@ const ModalBase = React.memo(function Modal(rawProps: ModalProps): React.ReactEl
     overlayProps,
     React.createElement(
       FocusGroup,
-      { trap: true, direction: "vertical" },
+      { id: groupIdRef.current, trap: true, direction: "vertical" },
       React.createElement(
         "tui-box",
         { flexDirection: "column" },

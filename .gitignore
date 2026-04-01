@@ -7,3 +7,6 @@ Thumbs.db
 *.log
 .env
 .env.*
+playground/node_modules/
+playground/.tmp-example.tsx
+*.tgz

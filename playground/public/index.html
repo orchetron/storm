@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Storm Playground</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.min.css" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:         #1a1b26;
+    --bg-surface: #1f2029;
+    --bg-raised:  #24253a;
+    --bg-input:   #16161e;
+    --border:     #2f3146;
+    --border-hl:  #414868;
+    --text:       #c0caf5;
+    --text-dim:   #565f89;
+    --text-muted: #9aa5ce;
+    --accent:     #82aaff;
+    --green:      #9ece6a;
+    --red:        #f7768e;
+    --yellow:     #e0af68;
+    --orange:     #ff9e64;
+    --mono:       "SF Mono", "Cascadia Code", "JetBrains Mono", "Fira Code", Consolas, monospace;
+    --sans:       -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    overflow: hidden;
+  }
+
+  /* ── Layout ─────────────────────────────────────────────── */
+
+  #app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+
+  /* ── Top bar ────────────────────────────────────────────── */
+
+  .topbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 16px;
+    height: 48px;
+    min-height: 48px;
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .topbar-logo {
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    user-select: none;
+  }
+
+  .topbar-sep {
+    width: 1px;
+    height: 20px;
+    background: var(--border);
+  }
+
+  .topbar-select {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text);
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 5px 28px 5px 10px;
+    outline: none;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23565f89' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+  }
+  .topbar-select:hover { border-color: var(--border-hl); }
+  .topbar-select:focus { border-color: var(--accent); }
+  .topbar-select option { background: var(--bg-input); color: var(--text); }
+
+  .topbar-spacer { flex: 1; }
+
+  .topbar-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+  .topbar-status .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--text-dim);
+    transition: background 0.2s;
+  }
+  .topbar-status .dot.connected { background: var(--green); }
+  .topbar-status .dot.error     { background: var(--red); }
+
+  .btn {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 600;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 16px;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+    outline: none;
+    letter-spacing: 0.3px;
+  }
+  .btn:hover { opacity: 0.85; }
+  .btn:active { transform: scale(0.97); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  .btn-run  { background: var(--green); color: #1a1b26; }
+  .btn-stop { background: var(--red);   color: #1a1b26; }
+
+  /* ── Main panels ────────────────────────────────────────── */
+
+  .panels {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .panel-editor {
+    display: flex;
+    flex-direction: column;
+    width: 45%;
+    min-width: 280px;
+    border-right: 1px solid var(--border);
+  }
+
+  .panel-terminal {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    height: 32px;
+    min-height: 32px;
+    background: var(--bg-raised);
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    user-select: none;
+  }
+  .panel-header span { color: var(--text-muted); text-transform: none; }
+
+  /* ── Editor ─────────────────────────────────────────────── */
+
+  .editor-wrap {
+    flex: 1;
+    display: flex;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .line-numbers {
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--text-dim);
+    background: var(--bg);
+    padding: 12px 0;
+    text-align: right;
+    user-select: none;
+    min-width: 40px;
+    overflow: hidden;
+    border-right: 1px solid var(--border);
+  }
+  .line-numbers div {
+    padding: 0 8px 0 8px;
+    height: 19.5px;
+  }
+
+  .editor-textarea {
+    flex: 1;
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--text);
+    background: var(--bg);
+    border: none;
+    outline: none;
+    resize: none;
+    padding: 12px;
+    tab-size: 2;
+    white-space: pre;
+    overflow: auto;
+  }
+  .editor-textarea::placeholder { color: var(--text-dim); }
+
+  /* ── Terminal ───────────────────────────────────────────── */
+
+  .terminal-wrap {
+    flex: 1;
+    padding: 8px;
+    background: #000;
+    overflow: hidden;
+    position: relative;
+  }
+  .terminal-wrap .xterm { height: 100%; }
+
+  .terminal-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text-dim);
+    pointer-events: none;
+    z-index: 10;
+  }
+  .terminal-overlay.hidden { display: none; }
+
+  /* ── Bottom bar ─────────────────────────────────────────── */
+
+  .bottombar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 0 16px;
+    height: 28px;
+    min-height: 28px;
+    background: var(--bg-surface);
+    border-top: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    user-select: none;
+  }
+  .bottombar kbd {
+    display: inline-block;
+    padding: 0 4px;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    font-family: var(--mono);
+    font-size: 10px;
+    background: var(--bg-raised);
+    color: var(--text-muted);
+    margin: 0 2px;
+  }
+
+  /* ── Resize handle ──────────────────────────────────────── */
+
+  .resize-handle {
+    width: 4px;
+    cursor: col-resize;
+    background: transparent;
+    transition: background 0.15s;
+    flex-shrink: 0;
+  }
+  .resize-handle:hover,
+  .resize-handle.active { background: var(--accent); }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- Top bar -->
+  <div class="topbar">
+    <div class="topbar-logo">Storm Playground</div>
+    <div class="topbar-sep"></div>
+    <select id="example-select" class="topbar-select">
+      <option value="hello">hello.tsx -- Hello World</option>
+      <option value="counter">counter.tsx -- Interactive Counter</option>
+      <option value="dashboard" selected>dashboard.tsx -- Live Dashboard</option>
+      <option value="form">form.tsx -- Form Inputs</option>
+    </select>
+    <div class="topbar-spacer"></div>
+    <div class="topbar-status">
+      <div class="dot" id="status-dot"></div>
+      <span id="status-text">Connecting...</span>
+    </div>
+    <button class="btn btn-run" id="btn-run" disabled>Run</button>
+    <button class="btn btn-stop" id="btn-stop" disabled>Stop</button>
+  </div>
+
+  <!-- Panels -->
+  <div class="panels">
+    <div class="panel-editor" id="panel-editor">
+      <div class="panel-header">Editor <span id="editor-filename">&nbsp;-- dashboard.tsx</span></div>
+      <div class="editor-wrap">
+        <div class="line-numbers" id="line-numbers"></div>
+        <textarea
+          class="editor-textarea"
+          id="editor"
+          spellcheck="false"
+          autocomplete="off"
+          autocorrect="off"
+          autocapitalize="off"
+          placeholder="Select an example or write your own Storm code..."
+        ></textarea>
+      </div>
+    </div>
+    <div class="resize-handle" id="resize-handle"></div>
+    <div class="panel-terminal">
+      <div class="panel-header">Terminal</div>
+      <div class="terminal-wrap" id="terminal-wrap">
+        <div class="terminal-overlay" id="terminal-overlay">Click "Run" to start</div>
+        <div id="terminal"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom bar -->
+  <div class="bottombar">
+    <span><kbd>Ctrl</kbd>+<kbd>Enter</kbd> Run</span>
+    <span><kbd>Ctrl</kbd>+<kbd>.</kbd> Stop</span>
+    <span>Terminal input is live when a process is running</span>
+    <div style="flex:1"></div>
+    <span>Storm TUI v0.1.0</span>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.min.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  // ── Examples ────────────────────────────────────────────
+
+  const EXAMPLES = {
+    hello: `import React from "react";
+import { render, Box, Text } from "../src/index.js";
+
+function App() {
+  return (
+    <Box flexDirection="column" padding={1}>
+      <Text bold color="#82AAFF">Hello from Storm!</Text>
+      <Text dim>Press Ctrl+C to exit</Text>
+    </Box>
+  );
+}
+
+render(<App />).waitUntilExit();`,
+
+    counter: `import React, { useRef } from "react";
+import { render, Box, Text, useTui, useInput, useTick } from "../src/index.js";
+
+function Counter() {
+  const { exit } = useTui();
+  const countRef = useRef(0);
+
+  useTick(1000, () => {
+    countRef.current++;
+  });
+
+  useInput((e) => {
+    if (e.key === "c" && e.ctrl) exit();
+  });
+
+  return (
+    <Box flexDirection="column" padding={1}>
+      <Text bold color="#82AAFF">Storm Counter</Text>
+      <Text>
+        Seconds elapsed: <Text bold color="#9ECE6A">{countRef.current}</Text>
+      </Text>
+      <Text dim>Press Ctrl+C to exit</Text>
+    </Box>
+  );
+}
+
+render(<Counter />).waitUntilExit();`,
+
+    dashboard: `import React, { useRef } from "react";
+import {
+  render, Box, Text, Sparkline, Gauge, Badge,
+  Separator, Spinner, useInput, useTerminal, useTui, useTick,
+} from "../src/index.js";
+
+function Dashboard() {
+  const { width, height } = useTerminal();
+  const { exit } = useTui();
+  useInput((e) => { if (e.key === "c" && e.ctrl) exit(); });
+
+  const cpuRef = useRef(
+    Array.from({ length: 30 }, () => 20 + Math.random() * 40)
+  );
+  const memRef = useRef(55);
+
+  useTick(500, () => {
+    const arr = cpuRef.current;
+    arr.push(Math.max(5, Math.min(95,
+      arr[arr.length - 1] + (Math.random() - 0.5) * 15
+    )));
+    if (arr.length > 30) arr.shift();
+    memRef.current = Math.max(30, Math.min(85,
+      memRef.current + (Math.random() - 0.45) * 3
+    ));
+  });
+
+  const cpu = Math.round(cpuRef.current[cpuRef.current.length - 1]);
+  const mem = Math.round(memRef.current);
+
+  return (
+    <Box flexDirection="column" width={width} height={height}>
+      <Box height={1} paddingX={1}>
+        <Spinner type="dots" color="#82AAFF" />
+        <Text bold color="#82AAFF">{" Storm Dashboard"}</Text>
+        <Box flex={1} />
+        <Badge label={\`CPU \${cpu}%\`} variant={cpu > 70 ? "error" : "success"} />
+        <Text> </Text>
+        <Badge label={\`MEM \${mem}%\`} variant={mem > 70 ? "warning" : "success"} />
+      </Box>
+      <Separator style="line" color="#565F89" />
+      <Box flex={1} flexDirection="row" paddingX={1}>
+        <Box flex={1} flexDirection="column">
+          <Text bold color="#82AAFF">CPU Usage</Text>
+          <Sparkline
+            data={cpuRef.current}
+            width={Math.max(10, Math.floor(width / 2) - 4)}
+            height={3}
+            color="#82AAFF"
+          />
+        </Box>
+        <Box flex={1} flexDirection="column">
+          <Text bold color="#82AAFF">Memory</Text>
+          <Gauge
+            value={mem}
+            width={Math.max(10, Math.floor(width / 2) - 4)}
+            color={mem > 70 ? "#E0AF68" : "#9ECE6A"}
+            label={\`\${mem}%\`}
+          />
+        </Box>
+      </Box>
+    </Box>
+  );
+}
+
+render(<Dashboard />).waitUntilExit();`,
+
+    form: `import React, { useState } from "react";
+import {
+  render, Box, Text, TextInput, Checkbox,
+  useInput, useTui, useTerminal,
+} from "../src/index.js";
+
+function FormDemo() {
+  const { exit } = useTui();
+  const { width } = useTerminal();
+  const [name, setName] = useState("");
+  const [agreed, setAgreed] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+
+  useInput((e) => { if (e.key === "c" && e.ctrl) exit(); });
+
+  if (submitted) {
+    return (
+      <Box flexDirection="column" padding={1}>
+        <Text bold color="#9ECE6A">Submitted!</Text>
+        <Text>Name: {name}</Text>
+        <Text>Agreed: {agreed ? "Yes" : "No"}</Text>
+        <Text dim>Ctrl+C to exit</Text>
+      </Box>
+    );
+  }
+
+  return (
+    <Box flexDirection="column" padding={1} width={Math.min(60, width)}>
+      <Text bold color="#82AAFF">Storm Form Demo</Text>
+      <Box height={1} />
+      <Text>Name:</Text>
+      <TextInput
+        value={name}
+        onChange={setName}
+        onSubmit={() => setSubmitted(true)}
+        placeholder="Enter your name..."
+      />
+      <Box height={1} />
+      <Checkbox checked={agreed} onChange={setAgreed} label="I agree to the terms" />
+      <Box height={1} />
+      <Text dim>Press Enter to submit, Ctrl+C to exit</Text>
+    </Box>
+  );
+}
+
+render(<FormDemo />).waitUntilExit();`,
+  };
+
+  // ── DOM refs ────────────────────────────────────────────
+
+  const editor       = document.getElementById("editor");
+  const lineNumbers  = document.getElementById("line-numbers");
+  const editorFname  = document.getElementById("editor-filename");
+  const exampleSel   = document.getElementById("example-select");
+  const btnRun       = document.getElementById("btn-run");
+  const btnStop      = document.getElementById("btn-stop");
+  const statusDot    = document.getElementById("status-dot");
+  const statusText   = document.getElementById("status-text");
+  const terminalEl   = document.getElementById("terminal");
+  const termOverlay  = document.getElementById("terminal-overlay");
+  const termWrap     = document.getElementById("terminal-wrap");
+  const panelEditor  = document.getElementById("panel-editor");
+  const resizeHandle = document.getElementById("resize-handle");
+
+  // ── xterm.js setup ─────────────────────────────────────
+
+  const term = new Terminal({
+    fontFamily: "'SF Mono', 'Cascadia Code', 'JetBrains Mono', 'Fira Code', Consolas, monospace",
+    fontSize: 13,
+    lineHeight: 1.2,
+    theme: {
+      background:          "#000000",
+      foreground:          "#c0caf5",
+      cursor:              "#c0caf5",
+      cursorAccent:        "#1a1b26",
+      selectionBackground: "#364a82",
+      selectionForeground: "#c0caf5",
+      black:               "#15161e",
+      red:                 "#f7768e",
+      green:               "#9ece6a",
+      yellow:              "#e0af68",
+      blue:                "#7aa2f7",
+      magenta:             "#bb9af7",
+      cyan:                "#7dcfff",
+      white:               "#a9b1d6",
+      brightBlack:         "#414868",
+      brightRed:           "#f7768e",
+      brightGreen:         "#9ece6a",
+      brightYellow:        "#e0af68",
+      brightBlue:          "#7aa2f7",
+      brightMagenta:       "#bb9af7",
+      brightCyan:          "#7dcfff",
+      brightWhite:         "#c0caf5",
+    },
+    allowProposedApi: true,
+    cursorBlink: true,
+    convertEol: false,
+    scrollback: 5000,
+  });
+
+  const fitAddon = new FitAddon.FitAddon();
+  term.loadAddon(fitAddon);
+  term.open(terminalEl);
+
+  function fitTerminal() {
+    try { fitAddon.fit(); } catch { /* container not visible yet */ }
+  }
+  fitTerminal();
+
+  const resizeObserver = new ResizeObserver(() => fitTerminal());
+  resizeObserver.observe(termWrap);
+
+  // ── WebSocket ──────────────────────────────────────────
+
+  let ws = null;
+  let running = false;
+  let reconnectTimer = null;
+
+  function setStatus(state) {
+    statusDot.className = "dot " + state;
+    if (state === "connected") {
+      statusText.textContent = "Connected";
+      btnRun.disabled = false;
+    } else if (state === "error") {
+      statusText.textContent = "Disconnected";
+      btnRun.disabled = true;
+      btnStop.disabled = true;
+    } else {
+      statusText.textContent = "Connecting...";
+      btnRun.disabled = true;
+      btnStop.disabled = true;
+    }
+  }
+
+  function connect() {
+    if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) return;
+
+    const proto = location.protocol === "https:" ? "wss:" : "ws:";
+    ws = new WebSocket(proto + "//" + location.host);
+
+    ws.onopen = () => {
+      setStatus("connected");
+      if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+    };
+
+    ws.onclose = () => {
+      setStatus("error");
+      running = false;
+      updateRunStopState();
+      reconnectTimer = setTimeout(connect, 2000);
+    };
+
+    ws.onerror = () => { /* onclose will fire */ };
+
+    ws.onmessage = (evt) => {
+      let msg;
+      try { msg = JSON.parse(evt.data); } catch { return; }
+
+      if (msg.type === "output") {
+        termOverlay.classList.add("hidden");
+        const bytes = Uint8Array.from(atob(msg.data), c => c.charCodeAt(0));
+        term.write(bytes);
+      }
+
+      if (msg.type === "exit") {
+        running = false;
+        updateRunStopState();
+        term.write("\r\n\x1b[90m[Process exited" + (msg.code != null ? " with code " + msg.code : "") + "]\x1b[0m\r\n");
+      }
+
+      if (msg.type === "error") {
+        running = false;
+        updateRunStopState();
+        term.write("\r\n\x1b[31m[Error: " + msg.message + "]\x1b[0m\r\n");
+      }
+    };
+  }
+
+  function wsSend(obj) {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify(obj));
+    }
+  }
+
+  // ── Terminal input → WebSocket ──────────────────────────
+
+  term.onData((data) => {
+    if (running) {
+      // Encode as base64
+      const encoded = btoa(
+        new Uint8Array([...data].map(c => c.charCodeAt(0)))
+          .reduce((s, b) => s + String.fromCharCode(b), "")
+      );
+      wsSend({ type: "input", data: encoded });
+    }
+  });
+
+  // ── Run / Stop ─────────────────────────────────────────
+
+  function updateRunStopState() {
+    btnRun.disabled = running || !ws || ws.readyState !== WebSocket.OPEN;
+    btnStop.disabled = !running;
+  }
+
+  function runCode() {
+    if (running || !ws || ws.readyState !== WebSocket.OPEN) return;
+
+    term.reset();
+    termOverlay.classList.add("hidden");
+    running = true;
+    updateRunStopState();
+
+    wsSend({
+      type: "run",
+      code: editor.value,
+      cols: term.cols,
+      rows: term.rows,
+    });
+  }
+
+  function stopCode() {
+    if (!running) return;
+    wsSend({ type: "stop" });
+    running = false;
+    updateRunStopState();
+  }
+
+  btnRun.addEventListener("click", runCode);
+  btnStop.addEventListener("click", stopCode);
+
+  // ── Editor line numbers ────────────────────────────────
+
+  function updateLineNumbers() {
+    const lines = editor.value.split("\n").length;
+    let html = "";
+    for (let i = 1; i <= lines; i++) {
+      html += "<div>" + i + "</div>";
+    }
+    lineNumbers.innerHTML = html;
+  }
+
+  editor.addEventListener("input", updateLineNumbers);
+  editor.addEventListener("scroll", () => {
+    lineNumbers.style.transform = "translateY(-" + editor.scrollTop + "px)";
+  });
+
+  // ── Example loading ────────────────────────────────────
+
+  function loadExample(name) {
+    const code = EXAMPLES[name];
+    if (!code) return;
+    editor.value = code;
+    editorFname.textContent = "\u00a0-- " + name + ".tsx";
+    updateLineNumbers();
+  }
+
+  exampleSel.addEventListener("change", () => {
+    loadExample(exampleSel.value);
+    // Auto-run on example change
+    setTimeout(() => {
+      if (!running) runCode();
+    }, 100);
+  });
+
+  // ── Keyboard shortcuts ─────────────────────────────────
+
+  document.addEventListener("keydown", (e) => {
+    // Ctrl+Enter or Cmd+Enter → Run
+    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+      e.preventDefault();
+      runCode();
+    }
+    // Ctrl+. or Cmd+. → Stop
+    if ((e.ctrlKey || e.metaKey) && e.key === ".") {
+      e.preventDefault();
+      stopCode();
+    }
+  });
+
+  // ── Resizable panels ──────────────────────────────────
+
+  let resizing = false;
+
+  resizeHandle.addEventListener("mousedown", (e) => {
+    e.preventDefault();
+    resizing = true;
+    resizeHandle.classList.add("active");
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+  });
+
+  document.addEventListener("mousemove", (e) => {
+    if (!resizing) return;
+    const appRect = document.getElementById("app").getBoundingClientRect();
+    const pct = ((e.clientX - appRect.left) / appRect.width) * 100;
+    const clamped = Math.max(20, Math.min(75, pct));
+    panelEditor.style.width = clamped + "%";
+    fitTerminal();
+  });
+
+  document.addEventListener("mouseup", () => {
+    if (resizing) {
+      resizing = false;
+      resizeHandle.classList.remove("active");
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      fitTerminal();
+    }
+  });
+
+  // ── Init ───────────────────────────────────────────────
+
+  loadExample("dashboard");
+  connect();
+})();
+</script>
+</body>
+</html>

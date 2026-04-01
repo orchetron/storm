@@ -245,7 +245,9 @@ export class InputManager {
   // ── Event emission ──────────────────────────────────────────────
 
   private emitKey(event: KeyEvent): void {
-    // If prioritized handlers exist, only fire the highest-priority ones (focus trap)
+    // If prioritized handlers exist, fire the highest-priority ones first.
+    // Handlers can set event.consumed = true to prevent propagation to normal listeners.
+    // If no handler consumes the event, it falls through to normal listeners.
     if (this.prioritizedKeyListeners.size > 0) {
       let maxPriority = -Infinity;
       for (const entry of this.prioritizedKeyListeners) {
@@ -263,13 +265,13 @@ export class InputManager {
         this.warnedMultipleHandlers = true;
         process.stderr.write("[storm-tui] Warning: Multiple components are receiving keyboard input simultaneously. This usually means multiple isFocused={true} props on sibling components. Use a focus state to control which component is active. See docs/pitfalls.md#7\n");
       }
-      return; // Suppress normal listeners
+      // If a prioritized handler consumed the event, suppress normal listeners.
+      // Otherwise, let it propagate — the handler chose not to intercept this key.
+      if (event.consumed) return;
     }
-    // Dev warning: multiple non-prioritized handlers receive input simultaneously
-    if (process.env.NODE_ENV !== "production" && !this.warnedMultipleHandlers && this.keyListeners.size > 1) {
-      this.warnedMultipleHandlers = true;
-      process.stderr.write("[storm-tui] Warning: Multiple components are receiving keyboard input simultaneously. This usually means multiple isFocused={true} props on sibling components. Use a focus state to control which component is active. See docs/pitfalls.md#7\n");
-    }
+    // Note: multiple non-prioritized listeners is normal in Storm — hooks like
+    // useCollapsibleContent, useInlinePrompt, useModeCycler, ScrollView keyboard
+    // scroll, and TextInput all register independent listeners. No warning here.
     for (const handler of this.keyListeners) {
       handler(event);
     }

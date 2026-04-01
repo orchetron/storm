@@ -517,7 +517,7 @@ export { useStyleSheet, type UseStyleSheetResult } from "./hooks/useStyleSheet.j
 
 // ── Focus ───────────────────────────────────────────────────────────
 
-export { FocusManager, type FocusableEntry, type FocusChangeCallback } from "./core/focus.js";
+export { FocusManager, type FocusableEntry, type FocusChangeCallback, type FocusRingStyle, type FocusRingMode } from "./core/focus.js";
 
 // ── Render Context ──────────────────────────────────────────────
 
@@ -595,6 +595,22 @@ export {
   type EnableDevToolsOptions,
   type DevToolsHandle,
 } from "./devtools/enable.js";
+export {
+  createProfiler,
+  type Profiler,
+  type ProfilerSnapshot,
+  type FrameTiming,
+  type ProfilerAlertCallback,
+} from "./devtools/profiler.js";
+export {
+  setActiveProfiler,
+  getActiveProfiler,
+} from "./devtools/profiler-registry.js";
+export {
+  enableCrashLog,
+  type CrashLogOptions,
+  type CrashLogData,
+} from "./devtools/crash-log.js";
 
 // ── Utils ───────────────────────────────────────────────────────────
 
@@ -667,3 +683,8 @@ export {
   type AgentChatProps, type FinancialDashboardProps, type SystemDashboardProps,
   type ProjectManagerProps, type CodeReviewProps,
 } from "./templates/showcase/index.js";
+
+// Animation & timing hooks
+export { useTick, type UseTickOptions } from "./hooks/useTick.js";
+export { usePhaseTimer, type PhaseEntry, type UsePhaseTimerOptions, type UsePhaseTimerResult } from "./hooks/usePhaseTimer.js";
+export { useProfiler, type UseProfilerResult } from "./hooks/useProfiler.js";

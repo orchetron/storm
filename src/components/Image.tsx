@@ -29,13 +29,24 @@ import { usePluginProps } from "../hooks/usePluginProps.js";
 // Falls back to the built-in quarter-block renderer if unavailable.
 let chafaModule: any = null;
 let chafaReady = false;
-try {
-  const ChafaFactory = (await import("chafa-wasm")).default;
-  chafaModule = await ChafaFactory();
-  chafaReady = true;
-} catch {
-  // chafa-wasm not installed — use built-in quarter-block renderer
+let chafaInitPromise: Promise<void> | null = null;
+
+function initChafa(): Promise<void> {
+  if (chafaInitPromise) return chafaInitPromise;
+  chafaInitPromise = (async () => {
+    try {
+      const ChafaFactory = (await import("chafa-wasm")).default;
+      chafaModule = await ChafaFactory();
+      chafaReady = true;
+    } catch {
+      // chafa-wasm not installed — use built-in quarter-block renderer
+    }
+  })();
+  return chafaInitPromise;
 }
+
+// Start initialization eagerly but don't block module loading
+initChafa();
 
 /** Check if chafa-wasm acceleration is active */
 export function isChafaAccelerated(): boolean {

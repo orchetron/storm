@@ -21,12 +21,9 @@ jobs:
           node-version: ${{ matrix.node-version }}
 
       - run: npm install
-        working-directory: packages/storm-tui
 
       - name: Type check
         run: npx tsc --noEmit
-        working-directory: packages/storm-tui
 
       - name: Tests
         run: npx vitest run
-        working-directory: packages/storm-tui

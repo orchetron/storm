@@ -31,6 +31,13 @@ export interface AccordionProps extends StormContainerStyleProps {
   exclusive?: boolean;
   /** Enable animated height transitions (~150ms). */
   animated?: boolean;
+  /**
+   * Whether the accordion captures keyboard input (default true).
+   * When false, Up/Down/Enter/Space keys are not consumed — useful when
+   * the Accordion is inside a ScrollView and should let scroll keys through
+   * until the user explicitly focuses the Accordion.
+   */
+  isFocused?: boolean;
   /** Custom renderer for section headers. */
   renderSectionHeader?: (props: { key: string; title: string; expanded: boolean; focused: boolean }) => React.ReactNode;
 }
@@ -162,6 +169,7 @@ const AccordionBase = React.memo(function Accordion(rawProps: AccordionProps): R
     exclusive = false,
     color = colors.brand.primary,
     animated = false,
+    isFocused = true,
   } = props;
 
   const userStyles = pickStyleProps(props as unknown as Record<string, unknown>);
@@ -288,7 +296,7 @@ const AccordionBase = React.memo(function Accordion(rawProps: AccordionProps): R
     }
   }, [handleToggle]);
 
-  useInput(handleInput, { isActive: onToggle !== undefined });
+  useInput(handleInput, { isActive: isFocused && onToggle !== undefined });
 
   // Clamp focused index when sections shrink
   focusedRef.current = Math.min(focusedRef.current, sections.length - 1);
