@@ -27,13 +27,25 @@
 
 ## What is Storm
 
-A compositor-based terminal UI framework. Fast. Layered. Unstoppable.
+> **A compositor-based terminal UI framework.** Fast. Layered. Unstoppable.
 
-Storm treats your terminal like a display server. Every cell is a typed-array slot — `Int32` for color, `Uint8` for attributes. A layout engine solves flexbox and CSS Grid in pure TypeScript. A compositor paints elements into the buffer with clip rects, scroll offsets, and z-indexed overlays. An adaptive diff engine compares frames cell by cell and emits only what changed — 97% of the screen is skipped every frame.
+Storm treats your terminal like a display server — not a string printer.
 
-React gives you the component model. Storm gives the terminal a rendering engine it never had.
+| | |
+|---|---|
+| **Rendering** | Cell-level diff. Typed-array buffer. 97% of cells skipped per frame. |
+| **Layout** | Pure-TS flexbox + CSS Grid. No native dependencies. |
+| **Speed** | Dual-speed: React for structure, `requestRender()` for 60fps animation. |
+| **DevTools** | Time-travel debugging. Render heatmaps. Accessibility audit. |
+| **SSH** | Serve your app over SSH with built-in auth and rate limiting. |
 
-92 components. 19 AI-agent widgets. 74 hooks. 11 themes. DevTools with time-travel debugging and render heatmaps. Live `.storm.css` hot-reload. Plugin system. i18n. Declarative animations. Sub-millisecond frames at 60fps. Zero native dependencies.
+### By the numbers
+
+| 92 components | 19 AI widgets | 82 hooks | 15 headless behaviors | 12 themes |
+|:---:|:---:|:---:|:---:|:---:|
+| Input, Data, Layout, Viz, Feedback, Nav | OperationTree, MessageBubble, StreamingText... | useTick, useBuffer, useFocus, useScroll... | useSelectBehavior, useTreeBehavior... | Arctic, Midnight, Neon, Calm... |
+
+Plus: `.storm.css` hot-reload. Plugin system with async setup + scoping. i18n. Declarative animations. Online playground.
 
 <br>
 
