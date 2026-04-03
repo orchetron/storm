@@ -69,7 +69,7 @@ That's 10 lines. You have a running TUI with animated spinner and keyboard input
 
 <br>
 
-## Build an AI agent in 30 seconds
+## Build an AI agent terminal in 30 seconds
 
 ```tsx
 import { render, Box, MessageBubble, OperationTree, ApprovalPrompt,
