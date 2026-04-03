@@ -1,13 +1,11 @@
-<h1 align="center">
+<p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="assets/logo-white.png">
     <source media="(prefers-color-scheme: light)" srcset="assets/logo-black.png">
-    <img src="assets/logo-black.png" width="40" alt="" valign="middle">
+    <img src="assets/logo-black.png" width="56" alt="" valign="middle">
   </picture>
-  &nbsp;STORM
-</h1>
-
-<p align="center">
+  <br>
+  <strong style="font-size: 2em;">STORM</strong><br>
   <strong>A compositor-based terminal UI framework.</strong><br>
   Fast. Layered. Unstoppable.
 </p>
