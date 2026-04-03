@@ -202,15 +202,7 @@ npx tsx examples/storm-website.tsx       # This README's demo
 | [DevTools](docs/devtools.md) | Heatmap, audit, time-travel, inspector |
 | [Performance](docs/performance.md) | Architecture deep-dive |
 
-## Contributing
-
-See [CONTRIBUTING.md](./CONTRIBUTING.md).
-
-## License
-
-MIT
-
----
+[Contributing](./CONTRIBUTING.md) · MIT License
 
 <p align="center">
   <picture>
