@@ -1,5 +1,9 @@
 <p align="center">
-  <img src="assets/logo-blue.png" width="128" alt="Storm">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/logo-white.png">
+    <source media="(prefers-color-scheme: light)" srcset="assets/logo-black.png">
+    <img src="assets/logo-black.png" width="128" alt="Storm">
+  </picture>
 </p>
 
 <h1 align="center">storm</h1>
