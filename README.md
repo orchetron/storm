@@ -190,11 +190,7 @@ npx tsx examples/storm-website.tsx       # This README's demo
 
 ## Docs
 
-| | | | |
-|:--|:--|:--|:--|
-| [Getting Started](docs/getting-started.md) | [Components](docs/components.md) | [AI Widgets](docs/widgets.md) | [Hook Guide](docs/hook-guide.md) |
-| [Recipes](docs/recipes.md) | [Theming](docs/theming.md) | [DevTools](docs/devtools.md) | [Animations](docs/animations.md) |
-| [Pitfalls](docs/pitfalls.md) | [Plugins](docs/plugins.md) | [Performance](docs/performance.md) | [i18n](docs/i18n.md) |
+[Getting Started](docs/getting-started.md) · [Components](docs/components.md) · [AI Widgets](docs/widgets.md) · [Hook Guide](docs/hook-guide.md) · [Recipes](docs/recipes.md) · [Theming](docs/theming.md) · [DevTools](docs/devtools.md) · [Animations](docs/animations.md) · [Plugins](docs/plugins.md) · [Pitfalls](docs/pitfalls.md) · [Performance](docs/performance.md) · [i18n](docs/i18n.md)
 
 [Contributing](./CONTRIBUTING.md) · MIT License
 
