@@ -190,17 +190,11 @@ npx tsx examples/storm-website.tsx       # This README's demo
 
 ## Docs
 
-| | |
-|:--|:--|
-| [Getting Started](docs/getting-started.md) | First app in 5 minutes |
-| [Components](docs/components.md) | All 92 with props and examples |
-| [AI Widgets](docs/widgets.md) | 19 agent-specific widgets |
-| [Hook Guide](docs/hook-guide.md) | 82 hooks, 4 tiers, decision matrix |
-| [Recipes](docs/recipes.md) | Copy-paste patterns |
-| [Pitfalls](docs/pitfalls.md) | Common mistakes to avoid |
-| [Theming](docs/theming.md) | Themes, personality, live stylesheets |
-| [DevTools](docs/devtools.md) | Heatmap, audit, time-travel, inspector |
-| [Performance](docs/performance.md) | Architecture deep-dive |
+| | | | |
+|:--|:--|:--|:--|
+| [Getting Started](docs/getting-started.md) | [Components](docs/components.md) | [AI Widgets](docs/widgets.md) | [Hook Guide](docs/hook-guide.md) |
+| [Recipes](docs/recipes.md) | [Theming](docs/theming.md) | [DevTools](docs/devtools.md) | [Animations](docs/animations.md) |
+| [Pitfalls](docs/pitfalls.md) | [Plugins](docs/plugins.md) | [Performance](docs/performance.md) | [i18n](docs/i18n.md) |
 
 [Contributing](./CONTRIBUTING.md) · MIT License
 
