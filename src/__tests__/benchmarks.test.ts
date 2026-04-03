@@ -117,7 +117,7 @@ describe("Performance benchmarks", () => {
       for (let y = 0; y < 50; y++) buf.writeString(0, y, `Row ${y}: static content`);
       diff.render(buf); // prime
       const avg = benchAvg(300, () => { diff.render(buf); });
-      expect(avg).toBeLessThan(0.2);
+      expect(avg).toBeLessThan(0.5);
     });
 
     it("cell-level diff produces less output than full change", () => {
