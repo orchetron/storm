@@ -20,7 +20,7 @@
 <br>
 
 <p align="center">
-  <img src="docs/showpiece-light.gif" width="720" alt="Storm TUI">
+  <img src="examples/demo.gif" width="720" alt="Storm TUI Demo">
 </p>
 
 <br>

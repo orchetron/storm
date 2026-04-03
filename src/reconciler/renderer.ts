@@ -547,7 +547,7 @@ function paintBackgroundPattern(
     const r = Math.round(r1 + (r2 - r1) * t);
     const g = Math.round(g1 + (g2 - g1) * t);
     const b = Math.round(b1 + (b2 - b1) * t);
-    return (r << 16) | (g << 8) | b;
+    return 0x1000000 | (r << 16) | (g << 8) | b;
   }
 
   function gradientT(px: number, py: number): number {
@@ -562,11 +562,13 @@ function paintBackgroundPattern(
     return color;
   }
 
-  /** Blend a desired fg color with the existing buffer bg, respecting opacity. */
+  /** Blend a desired fg color with the existing buffer content, respecting opacity. */
   function blendFg(bx: number, by: number, fg: number): number {
     if (!useOpacity) return fg;
-    const existing = bgColor === DEFAULT_COLOR ? 0 : bgColor;
-    return lerpColor(existing, fg, opacity);
+    // Blend against the actual buffer bg at this position, not the pattern bgColor
+    const existingBg = buffer.getBg(bx, by);
+    const base = existingBg !== DEFAULT_COLOR ? existingBg : (bgColor !== DEFAULT_COLOR ? bgColor : 0);
+    return lerpColor(base, fg, opacity);
   }
 
   /** Blend a desired bg color with existing buffer content, respecting opacity. */
@@ -675,8 +677,35 @@ function paintBackgroundPattern(
             }
           }
         }
+      } else if (pattern.direction === "diagonal") {
+        // True diagonal: place text along diagonal lines going top-left → bottom-right
+        const padded = text + "   ";
+        const len = padded.length;
+        const spacing = pattern.spacing ?? (len + 2); // gap between diagonal stripes
+        // Walk diagonal stripes across the area
+        const diags = width + height;
+        for (let d = -height; d < diags; d += spacing) {
+          for (let ci = 0; ci < len; ci++) {
+            const px = d + ci;
+            const py = ci;
+            // Tile vertically too
+            for (let rep = 0; rep * len < height + len; rep++) {
+              const ry = py + rep * len;
+              const rx = px + rep * len;
+              if (rx >= 0 && rx < width && ry >= 0 && ry < height) {
+                const ch = padded[ci]!;
+                const bx = x + rx;
+                const by = y + ry;
+                if (bx < buffer.width && by < buffer.height && ch !== " ") {
+                  const fg = blendFg(bx, by, color);
+                  buffer.setCell(bx, by, { char: ch, fg, bg: bgColor, attrs, ulColor: DEFAULT_COLOR });
+                }
+              }
+            }
+          }
+        }
       } else {
-        // Tile diagonally
+        // Tile horizontally with diagonal offset per row
         const padded = text + "  ";
         const len = padded.length;
         for (let py = 0; py < height; py += 2) {
