@@ -16,12 +16,24 @@ A `StormPlugin` is a plain object implementing any combination of these capabili
 ## StormPlugin interface
 
 ```ts
-interface StormPlugin {
+interface StormPlugin<TConfig = unknown> {
   /** Plugin name -- must be unique. */
   name: string;
 
-  /** Called when the plugin is registered. */
-  setup?: (context: PluginContext) => void;
+  /** Execution priority. Lower values run first. Default: 100. */
+  priority?: number;
+
+  /** Names of plugins that must run before this one. */
+  dependencies?: string[];
+
+  /** Default configuration. Merged with user-provided config. */
+  defaultConfig?: TConfig;
+
+  /** Scope identifier. When set, onComponentProps only applies within a matching scope subtree. */
+  scope?: string;
+
+  /** Called when the plugin is registered. Receives merged config. May be async. */
+  setup?: (context: PluginContext, config: TConfig) => void | Promise<void>;
 
   /** Called before each render. */
   beforeRender?: () => void;
@@ -63,6 +75,7 @@ interface PluginContext {
   addShortcut: (shortcut: Shortcut) => void;
   renderContext: RenderContext;
   theme: StormColors;
+  bus: PluginBus;
 }
 ```
 

@@ -1,12 +1,3 @@
-/**
- * useVirtualListBehavior — headless behavior hook for virtualized lists.
- *
- * Extracts scroll offset, visible range, selected index, and keyboard
- * navigation from the VirtualList component.
- *
- * Returns state + props objects with no JSX.
- */
-
 import { useRef, useCallback } from "react";
 import { useInput } from "../useInput.js";
 import { useForceUpdate } from "../useForceUpdate.js";
@@ -57,7 +48,6 @@ export function useVirtualListBehavior<T>(options: UseVirtualListBehaviorOptions
 
   const safeItemHeight = Math.max(1, itemHeight);
 
-  // Track selected index imperatively
   const selectedRef = useRef(selectedIndexProp ?? 0);
   if (selectedIndexProp !== undefined) {
     selectedRef.current = selectedIndexProp;

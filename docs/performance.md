@@ -7,7 +7,7 @@ Storm is designed for sub-millisecond frame times. On a typical scroll frame, 97
 The pipeline runs on every frame:
 
 ```
-React Commit -> Layout Engine -> Cell Buffer -> Compositor -> Diff -> Terminal
+React Commit -> Layout Engine -> Cell Buffer -> Diff -> Terminal
 ```
 
 1. **React Commit**: The custom reconciler processes state updates and produces a tree of host elements (`tui-box`, `tui-text`, `tui-scroll`).

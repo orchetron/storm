@@ -39,9 +39,6 @@ export const autoScrollPlugin: StormPlugin = {
       return undefined;
     }
 
-    // The plugin hooks into onKey for key-sequence detection.
-    // We use this instead of addShortcut because addShortcut doesn't
-    // support multi-key chords (gg).
     this.onKey = (event: KeyEvent): KeyEvent | null => {
       // Shift+G → scroll to bottom
       if (event.key === "G" && event.shift && !event.ctrl && !event.meta) {

@@ -46,7 +46,7 @@ Your `tsconfig.json` should target ESM:
 - [Hook Guide](hook-guide.md) -- which hook for what
 - [Common Pitfalls](pitfalls.md) -- avoid the top 10 mistakes
 - [Recipes](recipes.md) -- copy-paste patterns for real apps
-- [AI Widgets](widgets.md) -- 19 purpose-built AI agent components
+- [AI Widgets](widgets.md) -- 15 purpose-built AI widgets
 - [DevTools](devtools.md) -- one-line debugging setup
 
 ## Your First App
@@ -235,7 +235,7 @@ function App() {
 render(<App />);
 ```
 
-**Note:** Storm uses a custom React reconciler with `syncContainerUpdate`, which handles most state updates automatically. Basic `setState` calls work without `flushSync`. However, `flushSync()` is recommended for immediate visual feedback -- it guarantees React processes the update synchronously before the next paint, eliminating any batching delay. For high-frequency updates (scroll, animation), prefer `useRef` + `requestRender()` instead -- see [Common Pitfalls](pitfalls.md#usestate-vs-useref--requestrender).
+**Note:** Storm uses a custom React reconciler with `syncContainerUpdate`, which handles most state updates automatically. Basic `setState` calls work without `flushSync`. However, `flushSync()` is recommended for immediate visual feedback -- it guarantees React processes the update synchronously before the next paint, eliminating any batching delay. For high-frequency updates (scroll, animation), prefer `useRef` + `requestRender()` instead -- see [Common Pitfalls](pitfalls.md#1-usestate-vs-useref--requestrender).
 
 The `KeyEvent` object contains:
 
@@ -337,7 +337,7 @@ Scroll is hit-tested: only the `ScrollView` under the mouse cursor receives scro
 
 ## Theming
 
-Storm ships with a default color palette and four presets. Use `ThemeProvider` to apply a theme:
+Storm ships with a default color palette and 11 presets. Use `ThemeProvider` to apply a theme:
 
 ```tsx
 import { render, Box, Text, ThemeProvider, neonTheme, useTheme } from "@orchetron/storm";
@@ -364,7 +364,7 @@ function App() {
 render(<App />);
 ```
 
-Built-in presets: `neonTheme` (hyper-saturated gold), `calmTheme` (muted warm tones), `highContrastTheme` (WCAG accessibility), `monochromeTheme` (all greys). See the [Theming Guide](./theming.md) for full details.
+Built-in presets: `arcticTheme`, `midnightTheme`, `emberTheme`, `mistTheme`, `voltageTheme`, `duskTheme`, `horizonTheme`, `neonTheme`, `calmTheme`, `highContrastTheme`, `monochromeTheme`. See the [Theming Guide](./theming.md) for full details.
 
 ## Style Props
 
@@ -532,9 +532,9 @@ The returned `TuiApp` object provides:
 
 ## Next Steps
 
-- [Components](./components.md) -- all 92 components with props and examples
-- [AI Widgets](./widgets.md) -- 19 purpose-built AI agent components
-- [Hook Guide](./hook-guide.md) -- which hook for what, 74 hooks documented
+- [Components](./components.md) -- all 97 components with props and examples
+- [AI Widgets](./widgets.md) -- 15 purpose-built AI widgets
+- [Hook Guide](./hook-guide.md) -- which hook for what, 83 hooks available
 - [Theming & Styling](./theming.md) -- color palettes, custom themes, runtime switching
 - [Animations](./animations.md) -- Transition, AnimatePresence, useTransition, easing
 - [DevTools](./devtools.md) -- heatmap, a11y audit, time-travel, inspector

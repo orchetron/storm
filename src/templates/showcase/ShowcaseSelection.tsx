@@ -1,38 +1,21 @@
-/**
- * ShowcaseSelection -- "Selection & Navigation" showcase template.
- *
- * Demos 9 selection/navigation components with headings and live examples.
- */
-
 import React, { useState } from "react";
 import { useColors } from "../../hooks/useColors.js";
 import { useTui } from "../../context/TuiContext.js";
 import { useInput } from "../../hooks/useInput.js";
-import { ScrollView } from "../../components/ScrollView.js";
-import { Select } from "../../components/Select.js";
-import { SelectInput } from "../../components/SelectInput.js";
-import { SelectionList } from "../../components/SelectionList.js";
-import { Menu } from "../../components/Menu.js";
-import { Tabs } from "../../components/Tabs.js";
-import { Calendar } from "../../components/Calendar.js";
-import { Paginator } from "../../components/Paginator.js";
-import { Stepper } from "../../components/Stepper.js";
-import { KeyboardHelp } from "../../components/KeyboardHelp.js";
+import { ScrollView } from "../../components/core/ScrollView.js";
+import { Select } from "../../components/core/Select.js";
+import { SelectInput } from "../../components/core/SelectInput.js";
+import { SelectionList } from "../../components/extras/SelectionList.js";
+import { Menu } from "../../components/extras/Menu.js";
+import { Tabs } from "../../components/core/Tabs.js";
+import { Calendar } from "../../components/extras/Calendar.js";
+import { Paginator } from "../../components/extras/Paginator.js";
+import { Stepper } from "../../components/extras/Stepper.js";
+import { KeyboardHelp } from "../../components/extras/KeyboardHelp.js";
+import { heading, blank } from "./helpers.js";
 
 export interface ShowcaseSelectionProps {
   title?: string;
-}
-
-function heading(label: string, key: string): React.ReactElement {
-  const colors = useColors();
-  return React.createElement("tui-text", {
-    key, bold: true, color: colors.brand.primary,
-  }, `  ${label}`);
-}
-
-function blank(key: string): React.ReactElement {
-  const colors = useColors();
-  return React.createElement("tui-text", { key }, "");
 }
 
 const SELECT_OPTIONS = [

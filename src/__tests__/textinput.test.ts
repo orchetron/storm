@@ -8,7 +8,7 @@
 import { describe, it, expect, vi } from "vitest";
 import React from "react";
 import { renderForTest } from "../testing/index.js";
-import { TextInput } from "../components/TextInput.js";
+import { TextInput } from "../components/index.js";
 
 describe("TextInput", () => {
   it("renders with initial value", () => {

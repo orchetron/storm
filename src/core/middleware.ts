@@ -1,59 +1,25 @@
-/**
- * Render middleware — intercept and transform the rendering pipeline.
- *
- * Middleware runs after painting, before diff output. This allows:
- * - Post-processing effects (CRT scanlines, blur, vignette)
- * - Buffer inspection/debugging
- * - Custom overlay rendering
- * - Performance monitoring
- * - Screenshot capture
- */
-
 import type { ScreenBuffer } from "./buffer.js";
 
 export interface RenderMiddleware {
-  /** Unique name for this middleware */
   readonly name: string;
 
-  /**
-   * Execution priority. Lower values run first. Default: 100.
-   * When two middlewares have equal priority, registration order is preserved.
-   */
+  /** Lower values run first. Default: 100. Equal priority preserves registration order. */
   readonly priority?: number;
 
-  /**
-   * Called after painting, before diff. Receives the buffer and can modify it.
-   * Return the buffer (same or new) to pass to the next middleware.
-   * `shared` is a key-value store for inter-middleware communication.
-   */
   onPaint?: (buffer: ScreenBuffer, width: number, height: number, shared: Map<string, unknown>) => ScreenBuffer;
-
-  /**
-   * Called after diff output is computed, before writing to terminal.
-   * Can inspect or modify the ANSI output string.
-   * `shared` is a key-value store for inter-middleware communication.
-   */
   onOutput?: (output: string, shared: Map<string, unknown>) => string;
-
-  /**
-   * Called on each layout computation. Can inspect the layout tree.
-   */
   onLayout?: (rootWidth: number, rootHeight: number) => void;
 }
 
-/** Default priority for middlewares that don't specify one. */
 const DEFAULT_MW_PRIORITY = 100;
 
 export class MiddlewarePipeline {
   private middlewares: RenderMiddleware[] = [];
-  /** Tracks registration order for stable sorting when priorities are equal. */
   private registrationOrder = new Map<string, number>();
   private registrationCounter = 0;
 
-  /** Shared key-value store for inter-middleware communication. */
   readonly shared = new Map<string, unknown>();
 
-  /** Sort middlewares by priority (lower first), then registration order for ties. */
   private sortMiddlewares(): void {
     this.middlewares.sort((a, b) => {
       const priDiff = (a.priority ?? DEFAULT_MW_PRIORITY) - (b.priority ?? DEFAULT_MW_PRIORITY);
@@ -62,33 +28,28 @@ export class MiddlewarePipeline {
     });
   }
 
-  /** Register a middleware. Sorted by priority (lower runs first); equal priority preserves registration order. */
   use(mw: RenderMiddleware): void {
     this.registrationOrder.set(mw.name, this.registrationCounter++);
     this.middlewares.push(mw);
     this.sortMiddlewares();
   }
 
-  /** Remove a middleware by name. */
   remove(name: string): void {
     this.middlewares = this.middlewares.filter(m => m.name !== name);
     this.registrationOrder.delete(name);
   }
 
-  /** Check if a middleware with the given name is registered. */
   has(name: string): boolean {
     return this.middlewares.some(m => m.name === name);
   }
 
-  /** Return the number of registered middlewares. */
   get size(): number {
     return this.middlewares.length;
   }
 
-  /** Middlewares that have thrown — skipped on subsequent frames. */
+  /** Middlewares that have thrown are skipped on subsequent frames. */
   private failed = new Set<string>();
 
-  /** Run all onPaint hooks, threading the buffer through each. Errors are isolated. */
   runPaint(buffer: ScreenBuffer, width: number, height: number): ScreenBuffer {
     let buf = buffer;
     for (const mw of this.middlewares) {
@@ -105,7 +66,6 @@ export class MiddlewarePipeline {
     return buf;
   }
 
-  /** Run all onOutput hooks, threading the ANSI string through each. Errors are isolated. */
   runOutput(output: string): string {
     let out = output;
     for (const mw of this.middlewares) {
@@ -122,7 +82,6 @@ export class MiddlewarePipeline {
     return out;
   }
 
-  /** Run all onLayout hooks (notification only, no return value). Errors are isolated. */
   runLayout(rootWidth: number, rootHeight: number): void {
     for (const mw of this.middlewares) {
       if (this.failed.has(mw.name)) continue;
@@ -138,14 +97,10 @@ export class MiddlewarePipeline {
   }
 }
 
-// ── Helper utilities ────────────────────────────────────────────────
-
-/** Extract R/G/B channels from a 24-bit 0xRRGGBB integer. */
 function extractRgb(color: number): [number, number, number] {
   return [(color >> 16) & 0xff, (color >> 8) & 0xff, color & 0xff];
 }
 
-/** Pack R/G/B channels into a 24-bit 0xRRGGBB integer. */
 function packRgb(r: number, g: number, b: number): number {
   return ((r & 0xff) << 16) | ((g & 0xff) << 8) | (b & 0xff);
 }
@@ -160,12 +115,7 @@ export function darkenColor(color: number, factor: number): number {
   return packRgb(Math.round(r * f), Math.round(g * f), Math.round(b * f));
 }
 
-// ── Built-in middlewares ────────────────────────────────────────────
-
-/**
- * Scanline effect — dims every other row for a CRT feel.
- * @param opacity Dimming factor between 0 and 1. Default 0.15 (subtle).
- */
+/** Dims every other row for a CRT scanline effect. */
 export function scanlineMiddleware(opacity?: number): RenderMiddleware {
   return {
     name: "scanline",
@@ -190,10 +140,7 @@ export function scanlineMiddleware(opacity?: number): RenderMiddleware {
   };
 }
 
-/**
- * FPS counter — renders a small FPS indicator in the top-right corner.
- * Updates once per second. Useful for performance debugging.
- */
+/** FPS indicator in the top-right corner. Updates once per second. */
 export function fpsCounterMiddleware(): RenderMiddleware {
   let lastTime = performance.now();
   let frames = 0;
@@ -221,10 +168,7 @@ export function fpsCounterMiddleware(): RenderMiddleware {
   };
 }
 
-/**
- * Debug border — draws a 1-cell border around the entire screen.
- * Helps visualize the exact terminal boundaries during development.
- */
+/** 1-cell border around the screen to visualize terminal boundaries. */
 export function debugBorderMiddleware(color?: number): RenderMiddleware {
   const fg = color ?? 0xff0000;
   return {

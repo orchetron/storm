@@ -1,10 +1,3 @@
-/**
- * Accessibility — WCAG-compliant contrast checking, screen reader detection,
- * and reduced-motion support for terminal UIs.
- *
- * Accessibility support — contrast checking, reduced motion, screen reader detection.
- */
-
 export interface AccessibilityOptions {
   /** Enable high-contrast mode */
   highContrast: boolean;
@@ -16,14 +9,7 @@ export interface AccessibilityOptions {
   minContrastRatio: number;
 }
 
-/**
- * Detect accessibility preferences from environment variables.
- *
- * Checks:
- * - `STORM_HIGH_CONTRAST` / `HIGH_CONTRAST` for high-contrast mode
- * - `STORM_REDUCED_MOTION` / `REDUCE_MOTION` for reduced-motion preference
- * - `STORM_SCREEN_READER` / `ACCESSIBILITY_ENABLED` / known screen reader vars
- */
+/** Detect accessibility preferences from environment variables. */
 export function detectAccessibility(): AccessibilityOptions {
   const env = process.env;
 
@@ -54,9 +40,6 @@ export function detectAccessibility(): AccessibilityOptions {
   };
 }
 
-/**
- * Parse a hex color string (#RGB or #RRGGBB) into [r, g, b] in 0-255 range.
- */
 function parseHex(hex: string): [number, number, number] {
   let h = hex.startsWith("#") ? hex.slice(1) : hex;
   if (h.length === 3) {
@@ -66,9 +49,6 @@ function parseHex(hex: string): [number, number, number] {
   return [(num >> 16) & 0xff, (num >> 8) & 0xff, num & 0xff];
 }
 
-/**
- * Convert an sRGB channel value (0-255) to its linear-light value.
- */
 function sRGBtoLinear(channel: number): number {
   const s = channel / 255;
   return s <= 0.04045 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
@@ -99,27 +79,13 @@ export function contrastRatio(hex1: string, hex2: string): number {
   return (lighter + 0.05) / (darker + 0.05);
 }
 
-/**
- * Check if a foreground/background color pair meets a minimum contrast ratio.
- *
- * @param fg - Foreground hex color
- * @param bg - Background hex color
- * @param ratio - Minimum contrast ratio (default 4.5 for WCAG AA normal text)
- * @returns true if the color pair meets the threshold
- */
 export function meetsContrast(fg: string, bg: string, ratio = 4.5): boolean {
   return contrastRatio(fg, bg) >= ratio;
 }
 
 /**
- * Produce an escape sequence to announce text to screen readers.
- *
- * Uses OSC 99 (kitty notification protocol) for terminals that support it,
- * falling back to a simple BEL character for assertive announcements.
- *
- * @param text - The text to announce
- * @param priority - "polite" (default) or "assertive"
- * @returns An escape sequence string that can be written to stdout
+ * Announce text to screen readers via OSC 99 (kitty notification protocol),
+ * with BEL fallback for assertive announcements.
  */
 export function announce(text: string, priority: "polite" | "assertive" = "polite"): string {
   // Sanitize text: strip all control characters to prevent escape sequence injection

@@ -1,12 +1,3 @@
-/**
- * Component default styles — centralized visual defaults.
- *
- * Every component reads its defaults from here. Users override
- * via style props. Changing a default here changes every instance.
- *
- * This is Storm's centralized default stylesheet.
- */
-
 export const DEFAULTS = {
   card: {
     borderStyle: "round" as const,

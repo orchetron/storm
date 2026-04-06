@@ -1,12 +1,3 @@
-/**
- * useGhostText — provides translucent suggestion text for inputs.
- *
- * When `suggest` is a function, debounces calls. When it's an array,
- * filters by prefix match. Ghost text is the completion AFTER the current value.
- *
- * Uses useRef + debounce timer + useCleanup.
- */
-
 import { useRef } from "react";
 import { useCleanup } from "./useCleanup.js";
 import { useForceUpdate } from "./useForceUpdate.js";
@@ -33,7 +24,6 @@ export function useGhostText(options: UseGhostTextOptions): UseGhostTextResult {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prevValueRef = useRef(value);
 
-  // Resolve suggestion from array
   const resolveFromArray = (arr: string[], val: string): string => {
     if (val.length === 0) return "";
     for (const item of arr) {
@@ -44,7 +34,6 @@ export function useGhostText(options: UseGhostTextOptions): UseGhostTextResult {
     return "";
   };
 
-  // Resolve suggestion from function
   const resolveFromFn = (fn: (value: string) => string | null, val: string): string => {
     const result = fn(val);
     if (result === null) return "";
@@ -59,7 +48,6 @@ export function useGhostText(options: UseGhostTextOptions): UseGhostTextResult {
   if (value !== prevValueRef.current) {
     prevValueRef.current = value;
 
-    // Clear any pending debounce
     if (timerRef.current !== null) {
       clearTimeout(timerRef.current);
       timerRef.current = null;

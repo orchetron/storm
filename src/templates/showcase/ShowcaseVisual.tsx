@@ -1,24 +1,17 @@
-/**
- * ShowcaseVisual — "Visual Effects" showcase template.
- *
- * Demos: Gradient, GradientBorder, GlowText, Digits, Placeholder,
- * RevealTransition, GradientProgress, Separator, Image.
- */
-
 import React from "react";
 import { useColors } from "../../hooks/useColors.js";
 import { useTui } from "../../context/TuiContext.js";
 import { useInput } from "../../hooks/useInput.js";
-import { Gradient } from "../../components/Gradient.js";
-import { GradientBorder } from "../../components/GradientBorder.js";
-import { GlowText } from "../../components/GlowText.js";
-import { Digits } from "../../components/Digits.js";
-import { Placeholder } from "../../components/Placeholder.js";
-import { RevealTransition } from "../../components/RevealTransition.js";
-import { GradientProgress } from "../../components/GradientProgress.js";
-import { Separator } from "../../components/Separator.js";
-import { Image } from "../../components/Image.js";
-import { ScrollView } from "../../components/ScrollView.js";
+import { Gradient } from "../../components/effects/Gradient.js";
+import { GradientBorder } from "../../components/effects/GradientBorder.js";
+import { GlowText } from "../../components/effects/GlowText.js";
+import { Digits } from "../../components/effects/Digits.js";
+import { Placeholder } from "../../components/extras/Placeholder.js";
+import { RevealTransition } from "../../components/effects/RevealTransition.js";
+import { GradientProgress } from "../../components/effects/GradientProgress.js";
+import { Divider as Separator } from "../../components/core/Divider.js";
+import { Image } from "../../components/effects/Image.js";
+import { ScrollView } from "../../components/core/ScrollView.js";
 import { useTerminal } from "../../hooks/useTerminal.js";
 
 export interface ShowcaseVisualProps {

@@ -5,7 +5,7 @@
 import { describe, it, expect } from "vitest";
 import React from "react";
 import { renderForTest } from "../testing/index.js";
-import { StreamingText } from "../widgets/StreamingText.js";
+import { StreamingText } from "../widgets/index.js";
 
 describe("StreamingText", () => {
   it("renders text content", () => {

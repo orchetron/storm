@@ -1,13 +1,3 @@
-/**
- * useAnnounce — hook for live region announcements to screen readers.
- *
- * Provides two methods: `announce` for polite announcements (waits for idle)
- * and `announceUrgent` for assertive announcements (interrupts current speech).
- *
- * Uses the OSC 99 escape sequence from core/accessibility.ts internally,
- * writing directly to the screen's stdout for immediate delivery.
- */
-
 import { useRef } from "react";
 import { announce as makeAnnouncement } from "../core/accessibility.js";
 import { useTui } from "../context/TuiContext.js";

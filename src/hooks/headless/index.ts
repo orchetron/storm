@@ -1,12 +1,3 @@
-/**
- * Headless behavior hooks — extract component behavior without rendering.
- *
- * Each hook replicates the exact keyboard handling, state management,
- * and focus behavior of its corresponding component, returning state +
- * props objects that can be used to build custom UIs.
- */
-
-// Input behaviors
 export {
   useSelectBehavior,
   type UseSelectBehaviorOptions,
@@ -68,6 +59,14 @@ export {
 
 // Data behaviors
 export {
+  useDataGridBehavior,
+  type UseDataGridBehaviorOptions,
+  type UseDataGridBehaviorResult,
+  type DataGridBehaviorColumn,
+  type DataGridBehaviorEditState,
+} from "./useDataGridBehavior.js";
+
+export {
   useTableBehavior,
   type UseTableBehaviorOptions,
   type UseTableBehaviorResult,
@@ -103,6 +102,7 @@ export {
   type UseFormBehaviorResult,
   type FormBehaviorField,
   type FormBehaviorFieldOption,
+  type FormFieldState,
 } from "./useFormBehavior.js";
 
 export {
@@ -117,3 +117,26 @@ export {
   type UseCollapsibleBehaviorOptions,
   type UseCollapsibleBehaviorResult,
 } from "./useCollapsibleBehavior.js";
+
+// Text input behavior
+export {
+  useTextInputBehavior,
+  type UseTextInputBehaviorOptions,
+  type UseTextInputBehaviorResult,
+} from "./useTextInputBehavior.js";
+
+// Chat input behavior
+export {
+  useChatInputBehavior,
+  type UseChatInputBehaviorOptions,
+  type UseChatInputBehaviorResult,
+} from "./useChatInputBehavior.js";
+
+// Text area behavior
+export {
+  useTextAreaBehavior,
+  type UseTextAreaBehaviorOptions,
+  type UseTextAreaBehaviorResult,
+  type TextAreaPos,
+  type TextAreaSelectionRange,
+} from "./useTextAreaBehavior.js";

@@ -1,6 +1,6 @@
 # Components
 
-Storm ships 92+ built-in components organized by category.
+Storm ships 97 built-in components organized by category.
 
 ## Quick Decision Guide
 
@@ -25,14 +25,14 @@ Storm ships 92+ built-in components organized by category.
 | Category | Components | Description |
 |---|---|---|
 | [Core](core.md) | Box, Text, ScrollView, Overlay, Spacer | Fundamental building blocks |
-| [Input](input.md) | TextInput, ChatInput, Button, Checkbox, Switch, RadioGroup, Select, SearchInput, Form, MaskedInput, FilePicker, SelectInput, SelectionList | User input and forms |
+| [Input](input.md) | TextInput, TextArea, ChatInput, Button, Checkbox, Switch, RadioGroup, Select, OptionList, SearchInput, Form, MaskedInput, FilePicker, SelectInput, SelectionList, DatePicker | User input and forms |
 | [Data](data.md) | Table, DataGrid, Tree, DirectoryTree, ListView, VirtualList, DiffView, InlineDiff, Calendar, Pretty | Data display |
-| [Layout](layout.md) | Modal, Tabs, TabbedContent, Accordion, Collapsible, ContentSwitcher, ConfirmDialog, Header, Footer, FocusGroup, ErrorBoundary, Static, AnimatePresence, Transition | Structure and containers |
-| [Feedback](feedback.md) | Spinner, ProgressBar, Badge, Toast, ToastContainer, Alert, StatusMessage, Tooltip, LightningPulse | User feedback |
+| [Layout](layout.md) | Modal, Tabs, TabbedContent, Accordion, Collapsible, ContentSwitcher, ConfirmDialog, Header, Footer, FocusGroup, ErrorBoundary, Static, AnimatePresence, Transition, Welcome | Structure and containers |
+| [Feedback](feedback.md) | Spinner, ProgressBar, LoadingIndicator, Badge, Toast, ToastContainer, Alert, StatusMessage, Tooltip | User feedback |
 | [Visualization](visualization.md) | LineChart, AreaChart, BarChart, ScatterPlot, Heatmap, Histogram, Sparkline, Gauge, Diagram, Canvas, GradientProgress | Charts and graphs |
-| [Navigation](navigation.md) | Breadcrumb, Menu, Stepper, Paginator, KeyboardHelp | Navigation patterns |
-| [Content](content.md) | Card, Heading, Paragraph, Image, Gradient, GradientBorder, GlowText, Shadow, RichLog, Placeholder, UnorderedList, OrderedList, DefinitionList, Separator, Divider, Timer, Stopwatch, RevealTransition, Avatar, Digits, Kbd, Link, Newline, Tag | Content display |
-| [Typography](typography.md) | MarkdownText | Text rendering and markdown |
+| [Navigation](navigation.md) | Breadcrumb, Menu, Stepper, Paginator, KeyboardHelp, HelpPanel, CommandPalette | Navigation patterns |
+| [Content](content.md) | Card, Heading, Paragraph, Markdown, MarkdownViewer, Image, Gradient, GradientBorder, GlowText, Shadow, RichLog, Placeholder, UnorderedList, OrderedList, DefinitionList, Divider, Timer, Stopwatch, RevealTransition, Avatar, Digits, Kbd, Link, Newline, Tag | Content display |
+| [Typography](typography.md) | -- | Text rendering |
 | [Nesting Guide](nesting.md) | - | Which components work inside which |
 
 For AI/agent widgets (OperationTree, MessageBubble, StreamingText...), see [Widgets](../widgets.md).

@@ -23,8 +23,6 @@
  * ```
  */
 
-// ── StyleRule ────────────────────────────────────────────────────────
-
 /** Declarative style properties for terminal components. */
 export interface StyleRule {
   // Visual
@@ -53,8 +51,6 @@ export interface StyleRule {
   alignItems?: string;
   justifyContent?: string;
 }
-
-// ── Selector parsing ─────────────────────────────────────────────────
 
 /**
  * A parsed segment of a compound selector.
@@ -86,12 +82,10 @@ interface ParsedSelector {
  * Returns undefined if the segment is malformed.
  */
 function parseSegment(raw: string): SelectorSegment | undefined {
-  // Split pseudo-classes first (they use ":")
   const pseudoParts = raw.split(":");
   const mainPart = pseudoParts[0]!;
   const pseudos = pseudoParts.slice(1).filter(Boolean);
 
-  // Extract ID selector (e.g., "#submit" or "Button#submit")
   let id: string | undefined;
   let remaining = mainPart;
   const hashIdx = remaining.indexOf("#");
@@ -108,7 +102,6 @@ function parseSegment(raw: string): SelectorSegment | undefined {
     }
   }
 
-  // Split classes (they use ".")
   const classParts = remaining.split(".");
   const typePart = classParts[0]; // may be empty if selector starts with "."
   const classes = classParts.slice(1).filter(Boolean);
@@ -169,8 +162,6 @@ function parseSelector(selector: string): ParsedSelector | undefined {
     specificity: computeSpecificity(segments),
   };
 }
-
-// ── Matching ─────────────────────────────────────────────────────────
 
 /**
  * Check if a single segment matches a component's properties.
@@ -243,8 +234,6 @@ function selectorMatches(
   return segIdx < 0;
 }
 
-// ── Ancestor info ────────────────────────────────────────────────────
-
 interface AncestorInfo {
   type: string;
   classNames: Set<string>;
@@ -263,7 +252,6 @@ const EMPTY_SET: Set<string> = new Set();
  */
 function parseAncestors(raw: string[]): AncestorInfo[] {
   return raw.map((s) => {
-    // Extract ID if present
     let id: string | undefined;
     let remaining = s;
     const hashIdx = remaining.indexOf("#");
@@ -289,8 +277,6 @@ function parseAncestors(raw: string[]): AncestorInfo[] {
   });
 }
 
-// ── Merge ────────────────────────────────────────────────────────────
-
 /** Merge two style rules. Later values override earlier ones. */
 function mergeRules(base: StyleRule, override: StyleRule): StyleRule {
   const result: StyleRule = { ...base };
@@ -302,8 +288,6 @@ function mergeRules(base: StyleRule, override: StyleRule): StyleRule {
   }
   return result;
 }
-
-// ── StyleSheet ───────────────────────────────────────────────────────
 
 interface CompiledRule {
   parsed: ParsedSelector;
@@ -429,8 +413,6 @@ export class StyleSheet {
   }
 }
 
-// ── Factory ──────────────────────────────────────────────────────────
-
 /**
  * Create a StyleSheet from a record of CSS-like selectors to style rules.
  *
@@ -462,14 +444,12 @@ export function createStyleSheet(rules: Record<string, StyleRule>): StyleSheet {
   for (const [selector, style] of Object.entries(rules)) {
     const parsed = parseSelector(selector);
     if (!parsed) {
-      // Skip invalid selectors silently in production.
       // In development you'd want a warning here.
       continue;
     }
     compiled.push({ parsed, style });
   }
 
-  // Sort by specificity ascending so lower-specificity rules are applied first,
   // then overridden by higher-specificity rules during merge.
   compiled.sort((a, b) => a.parsed.specificity - b.parsed.specificity);
 

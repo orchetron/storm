@@ -1,12 +1,3 @@
-/**
- * useDialogBehavior — headless behavior hook for modal dialogs.
- *
- * Extracts visible state, focus trap, escape handling, and size
- * from the Modal and ConfirmDialog components.
- *
- * Returns state + props objects with no JSX.
- */
-
 import { useRef, useCallback } from "react";
 import { useTui } from "../../context/TuiContext.js";
 import { useInput } from "../useInput.js";
@@ -112,7 +103,6 @@ export function useDialogBehavior(options: UseDialogBehaviorOptions): UseDialogB
 
   useInput(handleInput, { isActive: effectiveVisible, priority: trapPriority });
 
-  // Resolve width from size
   const resolvedWidth = size === "full"
     ? Math.max(1, screen.width - 4)
     : (SIZE_WIDTHS[size] ?? 50);

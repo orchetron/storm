@@ -5,7 +5,7 @@
  * Maintains a rolling FPS average over a 1-second window.
  */
 
-export interface RenderMetrics {
+export interface PerformanceMetrics {
   /** Total frames recorded. */
   frameCount: number;
   /** Duration of the last paint stage in ms. */
@@ -29,14 +29,14 @@ export function createPerformanceMonitor(): {
   onDiffEnd: () => void;
   onFlushStart: () => void;
   onFlushEnd: (cellsChanged?: number, totalCells?: number) => void;
-  getMetrics: () => RenderMetrics;
+  getMetrics: () => PerformanceMetrics;
   reset: () => void;
 } {
   let paintStart = 0;
   let diffStart = 0;
   let flushStart = 0;
 
-  const metrics: RenderMetrics = {
+  const metrics: PerformanceMetrics = {
     frameCount: 0,
     lastPaintMs: 0,
     lastDiffMs: 0,

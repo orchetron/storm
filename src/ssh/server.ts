@@ -12,8 +12,6 @@ import React from "react";
 import type { Duplex } from "node:stream";
 import { render, type TuiApp } from "../reconciler/render.js";
 
-// ── Lazy ssh2 import ───────────────────────────────────────────────────
-
 type SSH2Module = typeof import("ssh2");
 let ssh2Module: SSH2Module | null = null;
 
@@ -32,8 +30,6 @@ async function loadSSH2(): Promise<SSH2Module> {
   return ssh2Module;
 }
 
-// ── Constants ──────────────────────────────────────────────────────────
-
 const DEFAULT_PORT = 2222;
 const DEFAULT_HOST = "0.0.0.0";
 const DEFAULT_MAX_CONNECTIONS = 100;
@@ -43,8 +39,6 @@ const AUTH_TIMEOUT_MS = 30_000;
 const IDLE_TIMEOUT_MS = 0; // 0 = disabled
 const MAX_AUTH_FAILURES_PER_IP = 10;
 const AUTH_FAILURE_WINDOW_MS = 60_000;
-
-// ── Public types ───────────────────────────────────────────────────────
 
 export interface StormSSHOptions {
   /** Port to listen on. Default: 2222 */
@@ -101,12 +95,25 @@ export type SSHEvent =
   | { type: "error"; message: string; remoteAddress: string }
   | { type: "rate-limited"; remoteAddress: string };
 
-// ── TTY-adapted stream ─────────────────────────────────────────────────
-
 function clampDim(value: number): number {
   if (!Number.isFinite(value) || value < MIN_TERMINAL_DIM) return MIN_TERMINAL_DIM;
   if (value > MAX_TERMINAL_DIM) return MAX_TERMINAL_DIM;
   return Math.floor(value);
+}
+
+/** TTY properties that SSH channels need to emulate for Storm's Screen. */
+interface TTYWriteProps {
+  isTTY: true;
+  columns: number;
+  rows: number;
+  getColorDepth: () => number;
+}
+
+/** TTY properties that SSH channels need to emulate for Storm's InputManager. */
+interface TTYReadProps {
+  isTTY: true;
+  isRaw: true;
+  setRawMode: (mode: boolean) => NodeJS.ReadStream;
 }
 
 function adaptChannelAsWriteStream(
@@ -114,27 +121,23 @@ function adaptChannelAsWriteStream(
   cols: number,
   rows: number,
 ): NodeJS.WriteStream {
-  const stream = channel as unknown as NodeJS.WriteStream;
-  (stream as any).isTTY = true;
-  (stream as any).columns = clampDim(cols);
-  (stream as any).rows = clampDim(rows);
-  if (!(stream as any).getColorDepth) {
-    (stream as any).getColorDepth = () => 24;
-  }
-  return stream;
+  const ttyProps: TTYWriteProps = {
+    isTTY: true,
+    columns: clampDim(cols),
+    rows: clampDim(rows),
+    getColorDepth: () => 24,
+  };
+  return Object.assign(channel, ttyProps) as unknown as NodeJS.WriteStream;
 }
 
 function adaptChannelAsReadStream(channel: Duplex): NodeJS.ReadStream {
-  const stream = channel as unknown as NodeJS.ReadStream;
-  (stream as any).isTTY = true;
-  (stream as any).isRaw = true;
-  (stream as any).setRawMode = function (_mode: boolean) {
-    return this;
+  const ttyProps: TTYReadProps = {
+    isTTY: true,
+    isRaw: true,
+    setRawMode(_mode: boolean) { return channel as unknown as NodeJS.ReadStream; },
   };
-  return stream;
+  return Object.assign(channel, ttyProps) as unknown as NodeJS.ReadStream;
 }
-
-// ── Rate limiter ───────────────────────────────────────────────────────
 
 class AuthRateLimiter {
   private failures = new Map<string, number[]>();
@@ -168,16 +171,12 @@ class AuthRateLimiter {
   }
 }
 
-// ── Session tracker ────────────────────────────────────────────────────
-
 interface ActiveSession {
   app: TuiApp;
   sshSession: SSHSession;
   client: unknown;
   idleTimer: ReturnType<typeof setTimeout> | null;
 }
-
-// ── Server ─────────────────────────────────────────────────────────────
 
 export class StormSSHServer {
   private readonly options: StormSSHOptions;
@@ -215,7 +214,7 @@ export class StormSSHServer {
 
         let remoteAddress = "unknown";
         try {
-          const sock = (client as any)._sock;
+          const sock = (client as unknown as { _sock?: { remoteAddress?: string } })._sock; // SSH library private API
           if (sock?.remoteAddress) remoteAddress = sock.remoteAddress;
         } catch { /* ignore */ }
 
@@ -329,7 +328,7 @@ export class StormSSHServer {
               ptyInfo = {
                 cols: clampDim(info.cols),
                 rows: clampDim(info.rows),
-                term: (info as any).term || "xterm-256color",
+                term: (info as unknown as { term?: string }).term || "xterm-256color", // SSH library untyped field
               };
               accept();
             });
@@ -347,7 +346,6 @@ export class StormSSHServer {
               const channel = accept();
               const { cols, rows, term } = ptyInfo;
 
-              // Attach error handler immediately
               channel.on("error", () => { /* handled in cleanup below */ });
 
               const ttyOut = adaptChannelAsWriteStream(channel, cols, rows);
@@ -396,16 +394,15 @@ export class StormSSHServer {
 
                 this.emit({ type: "session-start", username, remoteAddress });
 
-                // Wire resize
                 onResize = (newCols: number, newRows: number) => {
-                  (ttyOut as any).columns = newCols;
-                  (ttyOut as any).rows = newRows;
+                  const writable = ttyOut as NodeJS.WriteStream & TTYWriteProps;
+                  writable.columns = newCols;
+                  writable.rows = newRows;
                   sessionInfo.width = newCols;
                   sessionInfo.height = newRows;
                   ttyOut.emit("resize");
                 };
 
-                // Cleanup on channel close
                 const cleanup = () => {
                   onResize = null;
                   if (activeSession) {

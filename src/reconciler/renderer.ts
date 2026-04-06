@@ -1,14 +1,3 @@
-/**
- * Renderer — paints the TUI element tree into a ScreenBuffer.
- *
- * After React commits and layout is computed, this walks the tree
- * and writes characters + styles into the cell buffer.
- * Handles text wrapping, borders, scroll viewport clipping.
- *
- * All mutable state lives in a RenderContext instance — no module-level
- * singletons. This enables multi-instance use and testing.
- */
-
 import { ScreenBuffer } from "../core/buffer.js";
 import type { RenderContext } from "../core/render-context.js";
 import { charWidth, stringWidth, iterGraphemes } from "../core/unicode.js";
@@ -38,12 +27,8 @@ import {
 } from "./types.js";
 import { notifyResizeObservers, setResizeObserverMeasureMap } from "../core/resize-observer.js";
 
-// ── Animation baseline ─────────────────────────────────────────────
-
 /** Module-level start time for background animations — no timers needed. */
 const bgAnimStartTime = Date.now();
-
-// ── Clip rect ───────────────────────────────────────────────────────
 
 interface ClipRect {
   x1: number;
@@ -65,14 +50,11 @@ function isClipEmpty(c: ClipRect): boolean {
   return c.x1 >= c.x2 || c.y1 >= c.y2;
 }
 
-// ── ANSI stripping ──────────────────────────────────────────────────
-
 /** Strip ANSI escape sequences from text to prevent injection into cell buffer. */
 function stripAnsi(text: string): string {
+  if (text.indexOf('\x1b') < 0) return text;
   return text.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, "").replace(/\x1b\][^\x07]*\x07/g, "");
 }
-
-// ── Text wrapping ───────────────────────────────────────────────────
 
 function wrapText(text: string, width: number): string[] {
   if (width <= 0) return [];
@@ -84,7 +66,6 @@ function wrapText(text: string, width: number): string[] {
       continue;
     }
 
-    // Build grapheme list with string offsets for correct slicing
     const graphemes: { offset: number; len: number; width: number; text: string }[] = [];
     let pos = 0;
     for (const g of iterGraphemes(rawLine)) {
@@ -130,16 +111,12 @@ export function invalidateStyledRunsCache(ctx: RenderContext): void {
   ctx.runsVersion++;
 }
 
-// ── Main paint function ─────────────────────────────────────────────
-
 export interface PaintResult {
   buffer: ScreenBuffer;
   /** Cursor position for focused TextInput (-1 if none) */
   cursorX: number;
   cursorY: number;
 }
-
-// ── Measure layout map ──────────────────────────────────────────────
 
 export interface MeasuredLayout {
   width: number;
@@ -185,7 +162,13 @@ export function paint(
     ctx.lastLayoutHeight = height;
   }
 
-  return repaint(root, width, height, ctx);
+  if (ctx.buffer) {
+    ctx.buffer.clear();
+    ctx._bufferCleared = true;
+  }
+  const result = repaint(root, width, height, ctx);
+  ctx._bufferCleared = false;
+  return result;
 }
 
 /**
@@ -200,8 +183,11 @@ export function repaint(
 ): PaintResult {
   if (!ctx.buffer || ctx.buffer.width !== width || ctx.buffer.height !== height) {
     ctx.buffer = new ScreenBuffer(width, height);
+  } else if (ctx._bufferCleared) {
+    // paint() already called clear() — nothing to do here
   } else {
-    ctx.buffer.clear();
+    ctx.buffer.clearPaintedRows();
+    ctx._renderRequested = false;
   }
   const clip: ClipRect = { x1: 0, y1: 0, x2: width, y2: height };
   ctx.cursorX = -1;
@@ -211,7 +197,7 @@ export function repaint(
   // Per-element _runsDirty flag replaces global runsVersion++.
   // commitUpdate and commitTextUpdate set _runsDirty on changed elements,
   // so only affected text elements rebuild their styled runs.
-  ctx.links = [];
+  if (ctx.links) ctx.links.length = 0; else ctx.links = [];
 
   // Paint root-level background pattern (from render options) BEFORE the component tree
   if (ctx.rootBackground) {
@@ -231,7 +217,6 @@ export function repaint(
     }
   }
 
-  // Sort overlays by zIndex so higher values paint on top (later = higher)
   overlays.sort((a, b) => {
     const zA = (a.props["zIndex"] as number | undefined) ?? 0;
     const zB = (b.props["zIndex"] as number | undefined) ?? 0;
@@ -242,8 +227,8 @@ export function repaint(
   for (const overlay of overlays) {
     paintOverlay(ctx.buffer, overlay, clip, width, height, ctx);
   }
+  ctx._incrementalPaint = false;
 
-  // Notify resize observers of any layout changes
   setResizeObserverMeasureMap(ctx.measureMap, ctx.resizeObservers);
   notifyResizeObservers();
 
@@ -260,12 +245,11 @@ export function repaint(
  * Marks nodes as dirty when their props or children change,
  * enabling incremental layout caching in computeLayout.
  */
-function buildLayoutTree(element: TuiElement): void {
+export function buildLayoutTree(element: TuiElement): void {
   const node = element.layoutNode;
   const oldChildCount = node._prevChildCount ?? -1;
   node.children = [];
 
-  // Set up text measurement if this is a text element
   if (element.type === TUI_TEXT) {
     const text = collectText(element);
     const wrapMode = (element.props["wrap"] as string | undefined) ?? "wrap";
@@ -316,11 +300,19 @@ function buildLayoutTree(element: TuiElement): void {
     }
   }
 
-  // Mark dirty if child count changed
+  // Mark dirty if child count or order changed
   if (node.children.length !== oldChildCount) {
     node.dirty = true;
+  } else if (node._prevChildren) {
+    for (let i = 0; i < node.children.length; i++) {
+      if (node.children[i] !== node._prevChildren[i]) {
+        node.dirty = true;
+        break;
+      }
+    }
   }
   node._prevChildCount = node.children.length;
+  node._prevChildren = node.children.slice();
 }
 
 /** Collect all text content from a text element and its children. */
@@ -333,7 +325,20 @@ function collectText(element: TuiElement | TuiTextNode): string {
   return text;
 }
 
-// ── Element painting ────────────────────────────────────────────────
+function hasAnyDirty(root: TuiRoot): boolean {
+  for (const child of root.children) {
+    if (isTuiElement(child) && hasAnyDirtyElement(child)) return true;
+  }
+  return false;
+}
+
+function hasAnyDirtyElement(el: TuiElement): boolean {
+  if (el._runsDirty) return true;
+  for (const child of el.children) {
+    if (isTuiElement(child) && hasAnyDirtyElement(child)) return true;
+  }
+  return false;
+}
 
 function paintElement(
   buffer: ScreenBuffer,
@@ -359,7 +364,6 @@ function paintElement(
   const x = layout.x - scrollOffsetX;
 
   // ── Viewport culling: skip entire subtree if element is fully outside clip ──
-  // Skip culling for scroll views (they compute their own viewport clip) and
   // overlays (positioned independently, painted in second pass anyway).
   if (element.type !== TUI_SCROLL_VIEW && element.type !== TUI_OVERLAY) {
     const elemBottom = y + layout.height;
@@ -369,7 +373,11 @@ function paintElement(
     }
   }
 
-  // Store layout for measureElement API
+  // Incremental paint: skip clean subtrees (cells from last frame are valid)
+  if (ctx._incrementalPaint && !hasAnyDirtyElement(element)) {
+    return;
+  }
+
   storeMeasureLayout(element, ctx);
 
   switch (element.type) {
@@ -431,7 +439,6 @@ function paintOverlay(
   const props = element.props;
   const position = (props["position"] as "center" | "bottom" | "top" | undefined) ?? "center";
 
-  // Resolve overlay dimensions
   const rawWidth = props["width"] as number | `${number}%` | undefined;
   let overlayWidth: number;
   if (rawWidth === undefined) {
@@ -507,8 +514,6 @@ function extractBorderFlags(props: Record<string, unknown>): { sides: BorderSide
   };
 }
 
-// ── Background patterns ────────────────────────────────────────────
-
 function paintBackgroundPattern(
   buffer: ScreenBuffer,
   x: number,
@@ -518,7 +523,6 @@ function paintBackgroundPattern(
   background: BackgroundProp,
   bgColor: number,
 ): void {
-  // Normalize shorthand preset to full pattern object
   const pattern: BackgroundPattern = typeof background === "string"
     ? { type: background }
     : background;
@@ -593,7 +597,7 @@ function paintBackgroundPattern(
             const by = y + py;
             if (bx < buffer.width && by < buffer.height) {
               const fg = blendFg(bx, by, cellColor(px, py));
-              buffer.setCell(bx, by, { char, fg, bg: bgColor, attrs, ulColor: DEFAULT_COLOR });
+              buffer.setCellDirect(bx, by, char, fg, bgColor, attrs, DEFAULT_COLOR);
             }
           }
         }
@@ -611,11 +615,11 @@ function paintBackgroundPattern(
           const onCol = (px + animOffset) % spacing === 0;
           const cc = blendFg(bx, by, cellColor(px, py));
           if (onRow && onCol) {
-            buffer.setCell(bx, by, { char: "\u253C", fg: cc, bg: bgColor, attrs, ulColor: DEFAULT_COLOR });
+            buffer.setCellDirect(bx, by, "\u253C", cc, bgColor, attrs, DEFAULT_COLOR);
           } else if (onRow) {
-            buffer.setCell(bx, by, { char: "\u2500", fg: cc, bg: bgColor, attrs, ulColor: DEFAULT_COLOR });
+            buffer.setCellDirect(bx, by, "\u2500", cc, bgColor, attrs, DEFAULT_COLOR);
           } else if (onCol) {
-            buffer.setCell(bx, by, { char: "\u2502", fg: cc, bg: bgColor, attrs, ulColor: DEFAULT_COLOR });
+            buffer.setCellDirect(bx, by, "\u2502", cc, bgColor, attrs, DEFAULT_COLOR);
           }
         }
       }
@@ -631,7 +635,7 @@ function paintBackgroundPattern(
             const by = y + py;
             if (bx < buffer.width && by < buffer.height) {
               const fg = blendFg(bx, by, cellColor(px, py));
-              buffer.setCell(bx, by, { char, fg, bg: bgColor, attrs, ulColor: DEFAULT_COLOR });
+              buffer.setCellDirect(bx, by, char, fg, bgColor, attrs, DEFAULT_COLOR);
             }
           }
         }
@@ -650,7 +654,7 @@ function paintBackgroundPattern(
             const t = pattern.animate ? ((baseT + animOffset * 0.02) % 1) : baseT;
             const gc = lerpColor(gradFrom, gradTo, t);
             const finalBg = blendBg(bx, by, gc);
-            buffer.setCell(bx, by, { char: " ", fg: DEFAULT_COLOR, bg: finalBg, attrs: Attr.NONE, ulColor: DEFAULT_COLOR });
+            buffer.setCellDirect(bx, by, " ", DEFAULT_COLOR, finalBg, Attr.NONE, DEFAULT_COLOR);
           }
         }
       }
@@ -662,7 +666,6 @@ function paintBackgroundPattern(
       const mode = pattern.mode ?? "tile";
 
       if (mode === "center") {
-        // Render text ONCE centered in the area
         const lines = text.split("\n");
         const startY = y + Math.floor((height - lines.length) / 2);
         for (let i = 0; i < lines.length; i++) {
@@ -673,7 +676,7 @@ function paintBackgroundPattern(
             const by = startY + i;
             if (bx >= 0 && bx < buffer.width && by >= 0 && by < buffer.height && line[c] !== " ") {
               const fg = blendFg(bx, by, color);
-              buffer.setCell(bx, by, { char: line[c]!, fg, bg: bgColor, attrs, ulColor: DEFAULT_COLOR });
+              buffer.setCellDirect(bx, by, line[c]!, fg, bgColor, attrs, DEFAULT_COLOR);
             }
           }
         }
@@ -698,7 +701,7 @@ function paintBackgroundPattern(
                 const by = y + ry;
                 if (bx < buffer.width && by < buffer.height && ch !== " ") {
                   const fg = blendFg(bx, by, color);
-                  buffer.setCell(bx, by, { char: ch, fg, bg: bgColor, attrs, ulColor: DEFAULT_COLOR });
+                  buffer.setCellDirect(bx, by, ch, fg, bgColor, attrs, DEFAULT_COLOR);
                 }
               }
             }
@@ -717,7 +720,7 @@ function paintBackgroundPattern(
             const by = y + py;
             if (bx < buffer.width && by < buffer.height && ch !== " ") {
               const fg = blendFg(bx, by, color);
-              buffer.setCell(bx, by, { char: ch, fg, bg: bgColor, attrs, ulColor: DEFAULT_COLOR });
+              buffer.setCellDirect(bx, by, ch, fg, bgColor, attrs, DEFAULT_COLOR);
             }
           }
         }
@@ -733,7 +736,7 @@ function paintBackgroundPattern(
           const by = y + py;
           if (bx < buffer.width && by < buffer.height) {
             const fg = blendFg(bx, by, color);
-            buffer.setCell(bx, by, { char, fg, bg: bgColor, attrs, ulColor: DEFAULT_COLOR });
+            buffer.setCellDirect(bx, by, char, fg, bgColor, attrs, DEFAULT_COLOR);
           }
         }
       }
@@ -816,7 +819,6 @@ function paintBox(
   if (imageSeq) {
     const imageKey = `${y},${x}`;
     ctx.trackImageForFrame(imageKey);
-    // Register the region so the diff renderer skips these cells entirely
     ctx.addImageRegion(x, y, layout.width, layout.height);
     const prev = ctx.emittedImages.get(imageKey);
     if (prev !== imageSeq) {
@@ -825,9 +827,7 @@ function paintBox(
     }
   }
 
-  // Compute child clip rect: narrow to the box's inner area when the box has
-  // a border (to prevent children from overwriting border characters) or when
-  // overflow is "hidden" (explicit clip request from the component).
+  // Narrow to the box's inner area when bordered or overflow is "hidden".
   const hasBorderClip = borderStyle !== undefined && borderStyle !== "none";
   const overflow = props["overflow"] as Overflow | undefined;
   const overflowX = props["overflowX"] as Overflow | undefined;
@@ -845,8 +845,6 @@ function paintBox(
     });
   }
 
-  // Compute inherited background for children: this box's backgroundColor wins,
-  // otherwise cascade whatever was inherited from ancestors.
   const childBg = effectiveBg;
 
   // Paint children — propagate stickyChildren flag via parameter (no prop mutation)
@@ -888,7 +886,6 @@ function paintText(
     element._runsDirty = false;
   }
 
-  // Track the x-range painted per row for link registry
   let linkMinX = Infinity;
   let linkMaxX = -Infinity;
 
@@ -900,7 +897,6 @@ function paintText(
     for (const run of runs) {
       for (const g of iterGraphemes(run.text)) {
         if (g.text === "\n") {
-          // Flush link range for the completed row
           if (linkUrl && linkMinX <= linkMaxX) {
             ctx.links.push({ url: linkUrl, y: cy, x1: linkMinX, x2: linkMaxX });
             linkMinX = Infinity;
@@ -913,7 +909,6 @@ function paintText(
         const cw = g.width;
         if (cw === 0) continue;
         if (cx + cw > x + width) {
-          // Flush link range for the completed row
           if (linkUrl && linkMinX <= linkMaxX) {
             ctx.links.push({ url: linkUrl, y: cy, x1: linkMinX, x2: linkMaxX });
             linkMinX = Infinity;
@@ -928,9 +923,9 @@ function paintText(
           const effectiveBg = run.bg !== DEFAULT_COLOR ? run.bg
             : inheritedBg !== DEFAULT_COLOR ? inheritedBg
             : buffer.getBg(cx, cy);
-          buffer.setCell(cx, cy, { char: g.text, fg: run.fg, bg: effectiveBg, attrs: run.attrs, ulColor: run.ulColor });
+          buffer.setCellDirect(cx, cy, g.text, run.fg, effectiveBg, run.attrs, run.ulColor);
           if (cw === 2 && cx + 1 < clip.x2) {
-            buffer.setCell(cx + 1, cy, { char: "", fg: run.fg, bg: effectiveBg, attrs: run.attrs, ulColor: run.ulColor });
+            buffer.setCellDirect(cx + 1, cy, "", run.fg, effectiveBg, run.attrs, run.ulColor);
           }
           if (linkUrl) {
             if (cx < linkMinX) linkMinX = cx;
@@ -940,70 +935,85 @@ function paintText(
         cx += cw;
       }
     }
-    // Flush link range for the last row
     if (linkUrl && linkMinX <= linkMaxX) {
       ctx.links.push({ url: linkUrl, y: cy, x1: linkMinX, x2: linkMaxX });
     }
   } else {
-    // Truncate modes — flatten all runs to a single string, then truncate
+    // Truncate modes — flatten all runs, measure display width, truncate by columns
     const fullText = runs.map(r => r.text).join("").replace(/\n/g, " ");
-    let displayLen = fullText.length;
-    let truncated = false;
-    if (displayLen > width) {
-      displayLen = width;
-      truncated = true;
-    }
+    const fullDisplayWidth = stringWidth(fullText);
+    const truncated = fullDisplayWidth > width;
 
     if (y >= clip.y1 && y < clip.y2) {
-      // Build truncated run sequence
-      let remaining: string;
-      if (!truncated) {
-        remaining = fullText;
-      } else if (wrapMode === "truncate-start" && width > 1) {
-        remaining = "\u2026" + fullText.slice(-(width - 1));
-      } else if (wrapMode === "truncate-middle" && width > 3) {
-        const half = Math.floor((width - 1) / 2);
-        remaining = fullText.slice(0, half) + "\u2026" + fullText.slice(-(width - half - 1));
-      } else {
-        remaining = fullText.slice(0, width - 1) + "\u2026";
+      // Build grapheme list with display widths for column-aware truncation
+      const graphemes: { text: string; width: number }[] = [];
+      for (const g of iterGraphemes(fullText)) {
+        graphemes.push({ text: g.text, width: g.width });
       }
 
-      // For truncation, we need to map styled runs onto the truncated text.
-      // Build a style map from original runs, then apply to truncated text.
+      // Build style map per grapheme (not per JS char)
       const styleMap: Array<{ fg: number; bg: number; attrs: number; ulColor: number }> = [];
+      let runCharIdx = 0;
       for (const run of runs) {
         const cleaned = run.text.replace(/\n/g, " ");
-        for (let i = 0; i < cleaned.length; i++) {
+        for (const _g of iterGraphemes(cleaned)) {
           styleMap.push({ fg: run.fg, bg: run.bg, attrs: run.attrs, ulColor: run.ulColor });
         }
       }
 
-      for (let j = 0; j < remaining.length; j++) {
-        const colX = x + j;
-        if (colX < clip.x1 || colX >= clip.x2) continue;
-        // For truncate-start, the ellipsis is at j=0, then chars from the end of fullText.
-        // Map j>0 to the corresponding position from the end of the style map.
-        let styleIdx: number;
-        if (truncated && wrapMode === "truncate-start" && j > 0) {
-          styleIdx = styleMap.length - (remaining.length - j);
-        } else if (truncated && wrapMode === "truncate-middle") {
-          const half = Math.floor((width - 1) / 2);
-          if (j < half) {
-            styleIdx = j;
-          } else if (j === half) {
-            // ellipsis character — use style of surrounding text
-            styleIdx = j < styleMap.length ? j : 0;
-          } else {
-            styleIdx = styleMap.length - (remaining.length - j);
-          }
-        } else {
-          styleIdx = j;
+      // Select visible graphemes based on truncation mode
+      let visibleGraphemes: { text: string; width: number; styleIdx: number }[];
+      if (!truncated) {
+        visibleGraphemes = graphemes.map((g, i) => ({ ...g, styleIdx: i }));
+      } else if (wrapMode === "truncate-start" && width > 1) {
+        // Ellipsis at start, take from end
+        let cols = 1; // ellipsis
+        const fromEnd: typeof visibleGraphemes = [];
+        for (let i = graphemes.length - 1; i >= 0 && cols + graphemes[i]!.width <= width; i--) {
+          fromEnd.unshift({ ...graphemes[i]!, styleIdx: i });
+          cols += graphemes[i]!.width;
         }
+        visibleGraphemes = [{ text: "\u2026", width: 1, styleIdx: 0 }, ...fromEnd];
+      } else if (wrapMode === "truncate-middle" && width > 3) {
+        // Take from start, ellipsis, take from end
+        const half = Math.floor((width - 1) / 2);
+        let cols = 0;
+        const fromStart: typeof visibleGraphemes = [];
+        for (let i = 0; i < graphemes.length && cols + graphemes[i]!.width <= half; i++) {
+          fromStart.push({ ...graphemes[i]!, styleIdx: i });
+          cols += graphemes[i]!.width;
+        }
+        cols = 0;
+        const fromEnd: typeof visibleGraphemes = [];
+        const endCols = width - half - 1;
+        for (let i = graphemes.length - 1; i >= 0 && cols + graphemes[i]!.width <= endCols; i--) {
+          fromEnd.unshift({ ...graphemes[i]!, styleIdx: i });
+          cols += graphemes[i]!.width;
+        }
+        visibleGraphemes = [...fromStart, { text: "\u2026", width: 1, styleIdx: fromStart.length > 0 ? fromStart[fromStart.length - 1]!.styleIdx : 0 }, ...fromEnd];
+      } else {
+        // Default: take from start, ellipsis at end
+        let cols = 0;
+        visibleGraphemes = [];
+        for (let i = 0; i < graphemes.length && cols + graphemes[i]!.width <= width - 1; i++) {
+          visibleGraphemes.push({ ...graphemes[i]!, styleIdx: i });
+          cols += graphemes[i]!.width;
+        }
+        visibleGraphemes.push({ text: "\u2026", width: 1, styleIdx: visibleGraphemes.length > 0 ? visibleGraphemes[visibleGraphemes.length - 1]!.styleIdx : 0 });
+      }
+
+      // Paint visible graphemes at correct column positions
+      let colX = x;
+      for (const vg of visibleGraphemes) {
+        if (colX >= clip.x2) break;
+        if (colX + vg.width <= clip.x1) { colX += vg.width; continue; }
+        const styleIdx = vg.styleIdx;
         const style = styleIdx >= 0 && styleIdx < styleMap.length ? styleMap[styleIdx]! : (runs[0] ?? { fg: DEFAULT_COLOR, bg: DEFAULT_COLOR, attrs: Attr.NONE, ulColor: DEFAULT_COLOR });
         const effectiveBg = style.bg !== DEFAULT_COLOR ? style.bg
           : inheritedBg !== DEFAULT_COLOR ? inheritedBg
           : buffer.getBg(colX, y);
-        buffer.setCell(colX, y, { char: remaining[j]!, fg: style.fg, bg: effectiveBg, attrs: style.attrs, ulColor: style.ulColor });
+        buffer.setCellDirect(colX, y, vg.text, style.fg, effectiveBg, style.attrs, style.ulColor);
+        colX += vg.width;
       }
     }
   }
@@ -1090,30 +1100,28 @@ function paintScrollView(
     );
   }
 
-  // Determine overflow modes — overflowY/overflowX override the general overflow
   const overflowY = (props["overflowY"] as string | undefined) ?? "scroll";
   const overflowX = (props["overflowX"] as string | undefined) ?? "hidden";
 
   // Viewport clip — children are clipped to the scroll view's inner area.
   // layout.innerX/innerY already include the border offset (border is baked into
   // padding by extractLayoutProps), so we must NOT add borderOffset again here.
+  const contentHeight = layout.contentHeight;
+  const willHaveVBar = contentHeight > layout.innerHeight && layout.innerHeight > 0;
+  const scrollbarReserve = willHaveVBar ? 1 : 0;
+
   const viewportClip = intersectClip(clip, {
     x1: overflowX === "visible" ? clip.x1 : x + layout.innerX - layout.x,
     y1: overflowY === "visible" ? clip.y1 : y + layout.innerY - layout.y,
-    x2: overflowX === "visible" ? clip.x2 : x + layout.innerX - layout.x + layout.innerWidth,
+    x2: overflowX === "visible" ? clip.x2 : x + layout.innerX - layout.x + layout.innerWidth - scrollbarReserve,
     y2: overflowY === "visible" ? clip.y2 : y + layout.innerY - layout.y + layout.innerHeight,
   });
 
   if (isClipEmpty(viewportClip)) return;
-
-  // Compute real content height and clamp scrollTop.
-  // layout.innerHeight already excludes border (border is baked into padding),
-  // so no need to subtract borderOffset again.
-  const contentHeight = layout.contentHeight;
   const viewportHeight = layout.innerHeight;
   const maxScroll = Math.max(0, contentHeight - viewportHeight);
   const rawScrollTop = (props["scrollTop"] as number | undefined) ?? 0;
-  const scrollState = props["_scrollState"] as { clampedTop: number; maxScroll: number; clampedLeft?: number; maxHScroll?: number } | undefined;
+  const scrollState = props["_scrollState"] as { clampedTop: number; maxScroll: number; clampedLeft?: number; maxHScroll?: number; _screenY1?: number; _screenY2?: number } | undefined;
 
   // Stick-to-bottom: if user was at bottom, keep them there as content grows.
   // If user scrolled up, stay there. Parent controls jump-to-bottom via scrollTop.
@@ -1121,39 +1129,33 @@ function paintScrollView(
   const wasAtBottom = rawScrollTop >= prevMaxScroll;
   const scrollTop = wasAtBottom ? maxScroll : Math.max(0, Math.min(maxScroll, rawScrollTop));
 
-  // Compute horizontal scroll
   const contentWidth = layout.contentWidth;
   const viewportWidth = layout.innerWidth;
   const maxHScroll = Math.max(0, contentWidth - viewportWidth);
   const rawScrollLeft = (props["scrollLeft"] as number | undefined) ?? 0;
   const scrollLeft = Math.max(0, Math.min(maxHScroll, rawScrollLeft));
 
-  // Write clamped values + screen bounds back for the scroll handler
   if (scrollState) {
     scrollState.clampedTop = scrollTop;
     scrollState.maxScroll = maxScroll;
     scrollState.clampedLeft = scrollLeft;
     scrollState.maxHScroll = maxHScroll;
-    // Store screen bounds so terminal-native scroll can use them
-    (scrollState as any)._screenY1 = viewportClip.y1;
-    (scrollState as any)._screenY2 = viewportClip.y2 - 1;
+    scrollState._screenY1 = viewportClip.y1;
+    scrollState._screenY2 = viewportClip.y2 - 1;
   }
   // Also write back to host props so the component's next scroll delta uses correct base
   props["scrollTop"] = scrollTop;
   props["scrollLeft"] = scrollLeft;
 
-  // Store viewport dimensions for scrollToElement API
   const hostPropsRef = props["_hostPropsRef"] as { current: Record<string, unknown> | null } | undefined;
   if (hostPropsRef?.current) {
     hostPropsRef.current._viewportHeight = viewportHeight;
     hostPropsRef.current._viewportWidth = viewportWidth;
-    // Build element position map from children for scrollToElement
     const posMap = new Map<string, { x: number; y: number; width: number; height: number }>();
     collectElementPositions(element, posMap);
     hostPropsRef.current._elementPositions = posMap;
   }
 
-  // Update focusManager bounds for hit-testing
   const focusId = props["_focusId"] as string | undefined;
   if (focusId) {
     ctx.focus.updateBounds(focusId, x, y, layout.width, layout.height);
@@ -1167,8 +1169,6 @@ function paintScrollView(
     });
   }
 
-  // Compute inherited background for children: this scroll view's backgroundColor wins,
-  // otherwise cascade whatever was inherited from ancestors.
   const childBg = svBgRaw !== undefined ? parseColor(svBgRaw) : inheritedBg;
 
   // Paint children with scroll offset — propagate stickyChildren via parameter (no prop mutation)
@@ -1234,13 +1234,7 @@ function paintTextInput(
       const char = j < display.length ? display[j]! : " ";
       // Preserve parent's backgroundColor when text input has no explicit bg
       const effectiveBg = inheritedBg !== DEFAULT_COLOR ? inheritedBg : buffer.getBg(cx, y);
-      buffer.setCell(cx, y, {
-        char,
-        fg: displayFg,
-        bg: effectiveBg,
-        attrs: j === cursorOffset && hasFocus ? Attr.INVERSE : displayAttrs,
-        ulColor: DEFAULT_COLOR,
-      });
+      buffer.setCellDirect(cx, y, char, displayFg, effectiveBg, j === cursorOffset && hasFocus ? Attr.INVERSE : displayAttrs, DEFAULT_COLOR);
     }
 
     // Set real cursor position for the focused input
@@ -1250,8 +1244,6 @@ function paintTextInput(
     }
   }
 }
-
-// ── Border painting ─────────────────────────────────────────────────
 
 export interface BorderSideFlags {
   top: boolean;
@@ -1295,7 +1287,7 @@ function paintBorder(
       const effectiveBg = bg !== DEFAULT_COLOR ? bg
         : inheritedBg !== DEFAULT_COLOR ? inheritedBg
         : buffer.getBg(cx, cy);
-      buffer.setCell(cx, cy, { char, fg, bg: effectiveBg, attrs, ulColor: DEFAULT_COLOR });
+      buffer.setCellDirect(cx, cy, char, fg, effectiveBg, attrs, DEFAULT_COLOR);
     }
   };
 
@@ -1352,8 +1344,6 @@ function paintBorder(
   }
 }
 
-// ── Scrollbar ───────────────────────────────────────────────────────
-
 function paintScrollbar(
   buffer: ScreenBuffer,
   x: number,
@@ -1394,17 +1384,9 @@ function paintScrollbar(
     const isThumb = i >= thumbOffset && i < thumbOffset + thumbHeight;
     // Preserve parent's backgroundColor for scrollbar track
     const effectiveBg = inheritedBg !== DEFAULT_COLOR ? inheritedBg : buffer.getBg(x, cy);
-    buffer.setCell(x, cy, {
-      char: isThumb ? resolvedThumbChar : resolvedTrackChar,
-      fg: isThumb ? resolvedThumbColor : resolvedTrackColor,
-      bg: effectiveBg,
-      attrs: Attr.NONE,
-      ulColor: DEFAULT_COLOR,
-    });
+    buffer.setCellDirect(x, cy, isThumb ? resolvedThumbChar : resolvedTrackChar, isThumb ? resolvedThumbColor : resolvedTrackColor, effectiveBg, Attr.NONE, DEFAULT_COLOR);
   }
 }
-
-// ── Element position collection for scrollToElement ──────────────
 
 function collectElementPositions(
   element: TuiElement,
@@ -1420,8 +1402,6 @@ function collectElementPositions(
     collectElementPositions(child, posMap);
   }
 }
-
-// ── Horizontal scrollbar ─────────────────────────────────────────
 
 function paintHScrollbar(
   buffer: ScreenBuffer,
@@ -1458,12 +1438,6 @@ function paintHScrollbar(
     const isThumb = i >= thumbOffset && i < thumbOffset + thumbWidth;
     // Preserve parent's backgroundColor for horizontal scrollbar track
     const effectiveBg = inheritedBg !== DEFAULT_COLOR ? inheritedBg : buffer.getBg(cx, y);
-    buffer.setCell(cx, y, {
-      char: isThumb ? "\u2501" : "\u2500",
-      fg: isThumb ? resolvedThumbColor : resolvedTrackColor,
-      bg: effectiveBg,
-      attrs: Attr.NONE,
-      ulColor: DEFAULT_COLOR,
-    });
+    buffer.setCellDirect(cx, y, isThumb ? "\u2501" : "\u2500", isThumb ? resolvedThumbColor : resolvedTrackColor, effectiveBg, Attr.NONE, DEFAULT_COLOR);
   }
 }

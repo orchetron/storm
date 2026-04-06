@@ -6,7 +6,7 @@
  */
 
 import React, { useRef } from "react";
-import { Box, useTui, useCleanup } from "../../../src/index.js";
+import { Box, useTick } from "../../../src/index.js";
 import { S } from "../data/theme.js";
 
 const MINI_FRAMES: string[] = [
@@ -34,27 +34,14 @@ interface StormLogoProps {
 }
 
 export function StormLogo({ color = S.arc, interval = 150 }: StormLogoProps): React.ReactElement {
-  const { requestRender } = useTui();
   const textNodeRef = useRef<any>(null);
-  const frameRef = useRef(0);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  if (timerRef.current === null) {
-    timerRef.current = setInterval(() => {
-      frameRef.current = (frameRef.current + 1) % MINI_FRAMES.length;
-      if (textNodeRef.current) {
-        textNodeRef.current.text = MINI_FRAMES[frameRef.current]!;
-        requestRender();
-      }
-    }, interval);
-  }
-
-  useCleanup(() => {
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
+  // Logo rotation (imperative — no React re-render needed)
+  useTick(interval, (tick) => {
+    if (textNodeRef.current) {
+      textNodeRef.current.text = MINI_FRAMES[tick % MINI_FRAMES.length]!;
     }
-  });
+  }, { reactive: false });
 
   return (
     <Box width={6} height={3}>

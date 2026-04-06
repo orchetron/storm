@@ -40,7 +40,7 @@ export const SLASH_COMMANDS: SlashCommand[] = [
     handler: (args) =>
       args
         ? `Switched model to: ${args}`
-        : "Current model: qwen-2.5-72b\nAvailable: qwen-2.5-72b, codestral-latest, qwen-2.5-coder-32b, phi-4",
+        : "Current model: demo-model\nAvailable: demo-model, demo-code, demo-coder, demo-small, demo-chat",
   },
   {
     name: "/agents",
@@ -48,10 +48,10 @@ export const SLASH_COMMANDS: SlashCommand[] = [
     category: "agent",
     handler: () =>
       "Available agents:\n" +
-      "  Atlas    — General assistant (qwen-2.5-72b)\n" +
-      "  CodeBot  — Coding specialist (codestral-latest)\n" +
-      "  Memex    — Research agent (qwen-2.5-coder-32b)\n" +
-      "  Nova     — Creative assistant (phi-4)",
+      "  Nova     — General assistant (demo-model)\n" +
+      "  CodeBot  — Coding specialist (demo-code)\n" +
+      "  Scout    — Research agent (demo-coder)\n" +
+      "  Relay    — Creative assistant (demo-small)",
   },
   {
     name: "/new",
@@ -118,7 +118,7 @@ export const SLASH_COMMANDS: SlashCommand[] = [
     handler: () =>
       "Agent Diagnostics:\n" +
       "  Memory: OK (core: 2 sections, archival: 4 entries)\n" +
-      "  Model: OK (qwen-2.5-72b, connected)\n" +
+      "  Model: OK (demo-model, connected)\n" +
       "  Tools: OK (5 tools registered)\n" +
       "  Latency: 142ms avg\n" +
       "  Status: Healthy",

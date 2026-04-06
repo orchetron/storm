@@ -26,7 +26,7 @@
 
 export { createInspectorMiddleware, type InspectorState } from "./inspector.js";
 export { serializeTree } from "./tree-view.js";
-export { createPerformanceMonitor, type RenderMetrics } from "./performance-monitor.js";
+export { createPerformanceMonitor, type PerformanceMetrics } from "./performance-monitor.js";
 export { createEventLogger, type LoggedEvent } from "./event-logger.js";
 export {
   createDevToolsOverlay,

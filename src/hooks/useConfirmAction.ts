@@ -1,13 +1,3 @@
-/**
- * useConfirmAction — wrap any action in a confirmation step.
- *
- * Behavior only. Call requestConfirm() to begin a confirmation flow,
- * then confirm() or cancel() to resolve it. Supports auto-cancel
- * after a configurable timeout.
- *
- * Uses useRef + forceUpdate() + useCleanup.
- */
-
 import { useRef } from "react";
 import { useCleanup } from "./useCleanup.js";
 import { useForceUpdate } from "./useForceUpdate.js";

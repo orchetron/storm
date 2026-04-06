@@ -1,32 +1,25 @@
-/**
- * SystemDashboard -- Grafana/Datadog-style monitoring terminal.
- *
- * Cyan/Blue theme with live CPU, memory, RPS, error rate, sparklines,
- * service health grid, and alert log. 15+ components.
- */
-
 import React, { useState, useRef } from "react";
 import { useTui } from "../../context/TuiContext.js";
 import { useInput } from "../../hooks/useInput.js";
 import { useCleanup } from "../../hooks/useCleanup.js";
 import { useTerminal } from "../../hooks/useTerminal.js";
-import { Gradient } from "../../components/Gradient.js";
+import { Gradient } from "../../components/effects/Gradient.js";
 import { useColors } from "../../hooks/useColors.js";
 
-import { Card } from "../../components/Card.js";
-import { DataGrid } from "../../components/DataGrid.js";
-import type { DataGridColumn } from "../../components/DataGrid.js";
-import { Sparkline } from "../../components/Sparkline.js";
-import { GradientProgress } from "../../components/GradientProgress.js";
-import { RichLog } from "../../components/RichLog.js";
-import type { LogEntry } from "../../components/RichLog.js";
-import { KeyboardHelp } from "../../components/KeyboardHelp.js";
-import { Badge } from "../../components/Badge.js";
-import { Gauge } from "../../components/Gauge.js";
-import { Separator } from "../../components/Separator.js";
-import { Spinner } from "../../components/Spinner.js";
-import { Divider } from "../../components/Divider.js";
-import { ScrollView } from "../../components/ScrollView.js";
+import { Card } from "../../components/extras/Card.js";
+import { DataGrid } from "../../components/data/DataGrid.js";
+import type { DataGridColumn } from "../../components/data/DataGrid.js";
+import { Sparkline } from "../../components/data/Sparkline.js";
+import { GradientProgress } from "../../components/effects/GradientProgress.js";
+import { RichLog } from "../../components/data/RichLog.js";
+import type { LogEntry } from "../../components/data/RichLog.js";
+import { KeyboardHelp } from "../../components/extras/KeyboardHelp.js";
+import { Badge } from "../../components/extras/Badge.js";
+import { Gauge } from "../../components/data/Gauge.js";
+import { Divider as Separator } from "../../components/core/Divider.js";
+import { Spinner } from "../../components/core/Spinner.js";
+import { Divider } from "../../components/core/Divider.js";
+import { ScrollView } from "../../components/core/ScrollView.js";
 
 export interface SystemDashboardProps {
   title?: string;

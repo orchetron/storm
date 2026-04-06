@@ -8,7 +8,7 @@
 import { describe, it, expect, vi } from "vitest";
 import React from "react";
 import { renderForTest } from "../testing/index.js";
-import { Select, type SelectOption } from "../components/Select.js";
+import { Select, type SelectOption } from "../components/index.js";
 
 const options: SelectOption[] = [
   { label: "Apple", value: "apple" },

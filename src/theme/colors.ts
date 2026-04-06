@@ -1,11 +1,3 @@
-/**
- * Storm color palette.
- *
- * Near-monochrome base. One accent: Electric Arc Blue (#82AAFF).
- * Used sparingly — borders, prompts, active states.
- * Everything else is neutral gray.
- */
-
 export type StormColors = {
   brand: { primary: string; light: string; glow: string };
   text: { primary: string; secondary: string; dim: string; disabled: string };
@@ -28,9 +20,9 @@ export type StormColors = {
 
 export const colors: StormColors = {
   brand: {
-    primary: "#82AAFF",   // Electric Arc Blue — the one accent
-    light:   "#A8C8FF",   // Lighter Arc — active states
-    glow:    "#5A8AE0",   // Deeper Arc — subtle emphasis
+    primary: "#82AAFF",   // primary accent
+    light:   "#A8C8FF",   // active states
+    glow:    "#5A8AE0",   // subtle emphasis
   },
 
   text: {
@@ -52,7 +44,7 @@ export const colors: StormColors = {
   success: "#34D399",     // Emerald
   warning: "#FBBF24",     // Amber
   error:   "#F87171",     // Soft red
-  info:    "#7AA2F7",     // Complementary blue — informational, harmonizes with arc blue
+  info:    "#7AA2F7",     // informational
 
   system: { text: "#505050" },
   user:   { symbol: "#D4D4D4" },

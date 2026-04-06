@@ -1,11 +1,6 @@
-/**
- * Theme validation — correctness checks and WCAG contrast auditing.
- */
-
 import type { StormColors } from "./colors.js";
 import { contrastRatio } from "../core/accessibility.js";
-
-// ── Result types ──────────────────────────────────────────────────────
+import { isPlainObject } from "./utils.js";
 
 export interface ThemeValidationResult {
   valid: boolean;
@@ -23,8 +18,6 @@ export interface ThemeValidationWarning {
   path: string;
   message: string;
 }
-
-// ── Helpers ───────────────────────────────────────────────────────────
 
 /** Matches #RGB or #RRGGBB (case-insensitive). */
 const HEX_RE = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
@@ -67,10 +60,6 @@ function isValidColor(value: string): boolean {
   return HEX_RE.test(value) || NAMED_COLORS.has(value.toLowerCase());
 }
 
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
 /**
  * Collect every leaf string value from a StormColors object together with
  * its dotted path (e.g. "brand.primary", "success").
@@ -87,8 +76,6 @@ function collectColorPaths(obj: Record<string, unknown>, prefix: string = ""): A
   }
   return entries;
 }
-
-// ── Public API ────────────────────────────────────────────────────────
 
 /**
  * Validate a theme for correctness.
@@ -139,7 +126,6 @@ export function validateTheme(theme: StormColors): ThemeValidationResult {
     }
   }
 
-  // Check for missing required paths.
   for (const expected of expectedPaths) {
     if (!foundPaths.has(expected)) {
       errors.push({ path: expected, message: "Required color field is missing" });

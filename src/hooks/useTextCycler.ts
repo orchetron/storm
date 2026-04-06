@@ -1,10 +1,3 @@
-/**
- * useTextCycler — cycles through an array of texts at an interval.
- *
- * Supports sequential, random, and shuffle ordering.
- * Uses useRef + forceUpdate() + setInterval + useCleanup.
- */
-
 import { useRef } from "react";
 import { useCleanup } from "./useCleanup.js";
 import { useForceUpdate } from "./useForceUpdate.js";
@@ -40,7 +33,6 @@ export function useTextCycler(options: UseTextCyclerOptions): UseTextCyclerResul
   const activeRef = useRef(active);
   activeRef.current = active;
 
-  // Track texts identity for reset on change
   const prevTextsRef = useRef(texts);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -48,13 +40,11 @@ export function useTextCycler(options: UseTextCyclerOptions): UseTextCyclerResul
   const shuffleOrderRef = useRef<number[]>([]);
   const shufflePosRef = useRef(0);
 
-  // Reset when texts array changes (by reference)
   if (prevTextsRef.current !== texts) {
     prevTextsRef.current = texts;
     indexRef.current = 0;
     shuffleOrderRef.current = [];
     shufflePosRef.current = 0;
-    // Clear existing interval so it restarts
     if (intervalRef.current !== null) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;

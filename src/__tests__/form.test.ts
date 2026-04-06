@@ -8,7 +8,7 @@
 import { describe, it, expect, vi } from "vitest";
 import React from "react";
 import { renderForTest } from "../testing/index.js";
-import { Form, type FormField } from "../components/Form.js";
+import { Form, type FormField } from "../components/index.js";
 
 const basicFields: FormField[] = [
   { key: "name", label: "Name" },

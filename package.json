@@ -115,8 +115,9 @@
     "@types/ssh2": "^1.15.5",
     "chafa-wasm": "^0.3.3",
     "react": "^19.0.0",
-    "typescript": "^5.7.0",
-    "vitest": "^4.1.0"
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.2"
   },
   "publishConfig": {
     "access": "public"

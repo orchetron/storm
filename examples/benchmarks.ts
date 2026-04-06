@@ -1,11 +1,5 @@
 #!/usr/bin/env npx tsx
-/**
- * Storm TUI Performance Benchmark Suite
- *
- * Tests every layer: buffer, diff, layout, paint, components, memory
- * Usage: npx tsx examples/benchmarks.ts
- */
-
+/** Performance benchmarks across all layers. Usage: npx tsx examples/benchmarks.ts */
 import React from "react";
 import { performance } from "perf_hooks";
 import { ScreenBuffer } from "../src/core/buffer.js";
@@ -13,11 +7,8 @@ import { charWidth } from "../src/core/unicode.js";
 import { DiffRenderer } from "../src/core/diff.js";
 import { computeLayout, type LayoutNode, type LayoutResult } from "../src/layout/engine.js";
 import { renderToString } from "../src/reconciler/render-to-string.js";
-import { Box } from "../src/components/Box.js";
-import { Text } from "../src/components/Text.js";
-import { ScrollView } from "../src/components/ScrollView.js";
-import { SyntaxHighlight } from "../src/widgets/SyntaxHighlight.js";
-import { MarkdownText } from "../src/widgets/MarkdownText.js";
+import { Box, Text, ScrollView, Markdown } from "../src/components/index.js";
+import { SyntaxHighlight } from "../src/widgets/index.js";
 
 // ── Helpers ────────────────────────────────────────────────────────────
 
@@ -239,8 +230,8 @@ section("SyntaxHighlight (renderToString)");
   }
 }
 
-// 6. MarkdownText via renderToString
-section("MarkdownText (renderToString)");
+// 6. Markdown via renderToString
+section("Markdown (renderToString)");
 {
   const mdLine = "## Heading\n\nSome **bold** and *italic* text with `inline code`.\n\n- List item one\n- List item two\n\n";
   for (const lines of [10, 100, 1000]) {
@@ -248,7 +239,7 @@ section("MarkdownText (renderToString)");
     const iters = lines >= 1000 ? 5 : 20;
     const r = bench(`~${lines} lines md`, iters, () => {
       const result = renderToString(
-        React.createElement(MarkdownText, { width: 80, children: md }),
+        React.createElement(Markdown, { content: md, width: 80 }),
         { width: 80, height: Math.min(lines + 2, 200) },
       );
       result.unmount();
@@ -394,5 +385,5 @@ section("Full Frame (complex UI)");
 // ── Summary ────────────────────────────────────────────────────────────
 
 console.log(`\n${"=".repeat(50)}`);
-console.log("  All benchmarks complete. Storm is ready.");
+console.log("  All benchmarks complete.");
 console.log("");

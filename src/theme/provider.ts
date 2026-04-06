@@ -1,10 +1,3 @@
-/**
- * ThemeProvider -- runtime theme context for Storm TUI.
- *
- * Wraps the app in a theme context. Components use useTheme()
- * to read the active theme with pre-computed shades.
- * Supports live switching.
- */
 import React, { createContext, useContext, useRef } from "react";
 import type { StormColors } from "./colors.js";
 import { colors as defaultColors } from "./colors.js";

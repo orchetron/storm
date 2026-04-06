@@ -1,9 +1,3 @@
-/**
- * useTimer — countdown/stopwatch with formatted display.
- *
- * Uses useRef + forceUpdate() + setInterval + useCleanup.
- */
-
 import { useRef } from "react";
 import { useCleanup } from "./useCleanup.js";
 import { useForceUpdate } from "./useForceUpdate.js";
@@ -64,7 +58,6 @@ export function useTimer(options: UseTimerOptions): UseTimerResult {
     const now = Date.now();
     elapsedRef.current = accumulatedRef.current + (now - startTimeRef.current);
 
-    // Check countdown completion
     if (mode === "countdown" && durationMs > 0 && !completedRef.current) {
       if (elapsedRef.current >= durationMs) {
         elapsedRef.current = durationMs;

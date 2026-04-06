@@ -1,24 +1,11 @@
-/**
- * ansi-commit — Render conversation items to styled ANSI strings for stdout commit.
- *
- * When a turn completes, it is "committed" to terminal scrollback as styled ANSI text.
- * This text is no longer managed by the React reconciler — it lives in the terminal's
- * native scrollback buffer, fully scrollable, selectable, and copyable.
- *
- * @module
- */
-
 import { colors } from "../theme/colors.js";
-
-// ── ANSI helpers ──────────────────────────────────────────────────────────────
 
 const RST = "\x1b[0m";
 const BOLD = "\x1b[1m";
 const DIM = "\x1b[2m";
 const ITALIC = "\x1b[3m";
 const INVERSE = "\x1b[7m";
-const BOLD_OFF = "\x1b[22m";
-const DIM_OFF = "\x1b[22m";
+const INTENSITY_OFF = "\x1b[22m";
 const ITALIC_OFF = "\x1b[23m";
 const INVERSE_OFF = "\x1b[27m";
 
@@ -37,9 +24,7 @@ function bgAnsi(hex: string): string {
   return hexToAnsi(hex, true);
 }
 
-// ── Format helpers ────────────────────────────────────────────────────────────
-
-export function formatNumber(n: number): string {
+export function abbreviateNumber(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
   return String(n);
@@ -53,8 +38,6 @@ export function formatDuration(ms: number): string {
   return `${m}m${s}s`;
 }
 
-// ── Op tree types (mirrors ChatApp internal types) ────────────────────────────
-
 interface OpNodeLike {
   readonly id: string;
   readonly label: string;
@@ -63,8 +46,6 @@ interface OpNodeLike {
   readonly detail?: string;
   readonly durationMs?: number;
 }
-
-// ── Op tree ANSI rendering ────────────────────────────────────────────────────
 
 const STATUS_ICONS: Record<string, string> = {
   pending: "\u25CB",      // ○
@@ -107,7 +88,7 @@ function renderOpNodeToAnsi(
 
   // Detail
   if (node.detail) {
-    out += ` ${DIM}${node.detail}${DIM_OFF}`;
+    out += ` ${DIM}${node.detail}${INTENSITY_OFF}`;
   }
 
   // Duration
@@ -143,13 +124,11 @@ export function renderOpTreeToAnsi(
   return renderOpNodeToAnsi(nodes, lastRootId, 0, " ", true, true);
 }
 
-// ── Inline markdown → ANSI ───────────────────────────────────────────────────
-
 function markdownToAnsi(text: string): string {
   // Code blocks: ```...```
   let out = text.replace(/```\w*\n([\s\S]*?)```/g, (_match, code: string) => {
     const lines = (code as string).split("\n");
-    return lines.map((l) => `  ${DIM}${l}${DIM_OFF}`).join("\n");
+    return lines.map((l) => `  ${DIM}${l}${INTENSITY_OFF}`).join("\n");
   });
 
   // Headings: # text
@@ -162,8 +141,8 @@ function markdownToAnsi(text: string): string {
   out = out.replace(/\*\*\*(.+?)\*\*\*/g, `${BOLD}${ITALIC}$1${RST}`);
 
   // Bold: **text** or __text__
-  out = out.replace(/\*\*(.+?)\*\*/g, `${BOLD}$1${BOLD_OFF}`);
-  out = out.replace(/__(.+?)__/g, `${BOLD}$1${BOLD_OFF}`);
+  out = out.replace(/\*\*(.+?)\*\*/g, `${BOLD}$1${INTENSITY_OFF}`);
+  out = out.replace(/__(.+?)__/g, `${BOLD}$1${INTENSITY_OFF}`);
 
   // Italic: *text* or _text_ (careful not to match mid-word underscores)
   out = out.replace(/(?<!\w)\*(.+?)\*(?!\w)/g, `${ITALIC}$1${ITALIC_OFF}`);
@@ -179,15 +158,13 @@ function markdownToAnsi(text: string): string {
   out = out.replace(/^(\d+)\.\s+(.+)$/gm, `  $1. $2`);
 
   // Blockquotes
-  out = out.replace(/^>\s?(.*)$/gm, `  ${DIM}\u2502 $1${DIM_OFF}`);
+  out = out.replace(/^>\s?(.*)$/gm, `  ${DIM}\u2502 $1${INTENSITY_OFF}`);
 
   // Horizontal rules
-  out = out.replace(/^(?:---+|\*\*\*+|___+)\s*$/gm, `${DIM}${"─".repeat(40)}${DIM_OFF}`);
+  out = out.replace(/^(?:---+|\*\*\*+|___+)\s*$/gm, `${DIM}${"─".repeat(40)}${INTENSITY_OFF}`);
 
   return out;
 }
-
-// ── Diff rendering ────────────────────────────────────────────────────────────
 
 interface DiffLike {
   readonly path: string;
@@ -207,8 +184,6 @@ function renderDiffToAnsi(diff: DiffLike): string {
   }
   return out;
 }
-
-// ── Turn rendering ────────────────────────────────────────────────────────────
 
 export interface CommittableTurn {
   readonly userText: string;
@@ -241,7 +216,7 @@ export function renderTurnToAnsi(turn: CommittableTurn): string {
   // Assistant response
   if (turn.assistantText) {
     const isError = turn.status === "failed" || turn.assistantText.startsWith("[Error]");
-    const timingParts: string[] = [formatDuration(turn.durationMs), `${formatNumber(turn.tokens)} tokens`];
+    const timingParts: string[] = [formatDuration(turn.durationMs), `${abbreviateNumber(turn.tokens)} tokens`];
     if (turn.toolCount > 0) timingParts.push(`${turn.toolCount} tool${turn.toolCount === 1 ? "" : "s"}`);
 
     const symbolColor = isError ? colors.error : colors.assistant.symbol;
@@ -256,8 +231,6 @@ export function renderTurnToAnsi(turn: CommittableTurn): string {
 
   return out;
 }
-
-// ── Notice rendering ──────────────────────────────────────────────────────────
 
 export interface CommittableNotice {
   readonly text: string;
@@ -283,8 +256,6 @@ export function renderNoticeToAnsi(notice: CommittableNotice): string {
   }
   return ` ${DIM}${ITALIC}\u2500\u2500 ${notice.text} \u2500\u2500${RST}\n`;
 }
-
-// ── Welcome banner ────────────────────────────────────────────────────────────
 
 export function renderWelcomeBannerToAnsi(appName: string, modelStr: string, autonomy: string, cwd: string): string {
   let out = "";

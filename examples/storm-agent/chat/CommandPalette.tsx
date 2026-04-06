@@ -1,18 +1,17 @@
 /**
  * Storm Agent CLI -- Command palette (slash command dropdown).
  *
- * Styled with accent purple (#8C8CF9).
  */
 
 import React, { useState, useCallback } from "react";
-import { CommandDropdown, useTui } from "../../../src/index.js";
+import { CommandDropdown } from "../../../src/index.js";
 import type { CommandItem } from "../../../src/index.js";
 import { filterCommands } from "../data/slash-commands.js";
 
 // -- Theme Colors -------------------------------------------------------------
 
 const THEME = {
-  accent: "#8C8CF9",
+  accent: "#82AAFF",
 };
 
 export interface CommandPaletteProps {
@@ -26,7 +25,6 @@ export function CommandPalette({
   onSelect,
   onClose,
 }: CommandPaletteProps): React.ReactElement {
-  const { flushSync } = useTui();
   const [selectedIndex, setSelectedIndex] = useState(0);
 
   const partial = inputText.startsWith("/") ? inputText.slice(1) : inputText;
@@ -46,9 +44,9 @@ export function CommandPalette({
 
   const handleSelectionChange = useCallback(
     (index: number) => {
-      flushSync(() => setSelectedIndex(index));
+      setSelectedIndex(index);
     },
-    [flushSync],
+    [],
   );
 
   return (

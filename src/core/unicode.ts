@@ -79,7 +79,9 @@ function initBmpWidthTable(): void {
 initBmpWidthTable();
 
 export function charWidth(code: number): number {
-  if (code < 0x10000) return BMP_WIDTH[code]!; // O(1) lookup
+  if (code >= 0x20 && code <= 0x7e) return 1; // ASCII fast path
+  if (code < 0) return 0; // guard negative input
+  if (code < 0x10000) return BMP_WIDTH[code] ?? 0; // O(1) lookup, safe for undefined
 
   // Supplementary planes: range checks for rare chars
   // Emoji Skin Tone Modifiers (Fitzpatrick) — zero width
@@ -110,7 +112,6 @@ export function isAscii(str: string): boolean {
   return true;
 }
 
-// ── Grapheme cluster support ───────────────────────────────────────
 // Intl.Segmenter (Node 16+, all modern browsers) correctly splits text
 // into grapheme clusters per Unicode UAX #29. This handles ZWJ emoji
 // sequences, skin tone modifiers, flag emoji, variation selectors, and
@@ -148,7 +149,6 @@ function isMultiCodepointEmoji(segment: string): boolean {
   // Regional indicator pairs — flags
   if (cp >= 0x1f1e6 && cp <= 0x1f1ff) return true;
 
-  // Check if second codepoint is a skin tone modifier or variation selector
   const offset = cp > 0xffff ? 2 : 1;
   if (offset < segment.length) {
     const cp2 = segment.codePointAt(offset)!;

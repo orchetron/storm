@@ -1,12 +1,3 @@
-/**
- * useAccordionBehavior — headless behavior hook for accordion sections.
- *
- * Extracts open sections, exclusive mode, keyboard navigation
- * (up/down/enter/space), and focus tracking from the Accordion component.
- *
- * Returns state + props objects with no JSX.
- */
-
 import { useRef, useCallback } from "react";
 import { useInput } from "../useInput.js";
 import { useForceUpdate } from "../useForceUpdate.js";

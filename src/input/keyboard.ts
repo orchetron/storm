@@ -7,8 +7,6 @@
 
 import type { KeyEvent, KeyName } from "./types.js";
 
-// ── Escape sequence table ───────────────────────────────────────────
-
 interface SeqEntry {
   key: KeyName;
   shift?: boolean;
@@ -74,8 +72,6 @@ const SS3_MAP = new Map<string, SeqEntry>([
   ["S", { key: "f4" }],
 ]);
 
-// ── Ctrl key mapping ────────────────────────────────────────────────
-
 const CTRL_MAP: Record<number, string> = {
   0: "space", // Ctrl+Space = NUL
   1: "a",
@@ -106,8 +102,6 @@ const CTRL_MAP: Record<number, string> = {
   26: "z",
   27: "escape", // ESC
 };
-
-// ── Parser ──────────────────────────────────────────────────────────
 
 /**
  * Parse key events from a raw stdin data chunk.
@@ -222,12 +216,10 @@ function parseCSI(data: string): { event: KeyEvent; consumed: number } | null {
       const entry = CSI_MAP.get(seq);
 
       if (entry) {
-        // Check for modifier encoding in CSI params
         let ctrl = false;
         let shift = entry.shift ?? false;
         let meta = false;
 
-        // Parse modifier parameter (1;N format)
         const modMatch = seq.match(/;(\d+)/);
         if (modMatch) {
           const mod = Number(modMatch[1]) - 1;

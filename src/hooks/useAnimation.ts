@@ -1,4 +1,5 @@
 import { useRef } from "react";
+import type { HostTextNode } from "../reconciler/types.js";
 import { useTui } from "../context/TuiContext.js";
 import { useCleanup } from "./useCleanup.js";
 
@@ -16,7 +17,7 @@ export interface UseAnimationResult {
   /** Current frame index (0-based, wraps automatically) */
   frame: number;
   /** Ref to a text node — set its .text for imperative updates */
-  textRef: React.RefObject<any>;
+  textRef: React.RefObject<HostTextNode | null>;
   /** Manually advance one frame */
   tick: () => void;
 }
@@ -40,7 +41,7 @@ export function useAnimation(options: UseAnimationOptions = {}): UseAnimationRes
   const { renderContext, requestRender } = useTui();
 
   const frameRef = useRef(initialFrame);
-  const textRef = useRef<any>(null);
+  const textRef = useRef<HostTextNode | null>(null);
   const unsubRef = useRef<(() => void) | null>(null);
   const activeRef = useRef(active);
   activeRef.current = active;
@@ -59,7 +60,6 @@ export function useAnimation(options: UseAnimationOptions = {}): UseAnimationRes
     unsubRef.current = null;
   }
 
-  // Cleanup on unmount
   useCleanup(() => {
     if (unsubRef.current) {
       unsubRef.current();

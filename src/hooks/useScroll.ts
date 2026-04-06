@@ -1,9 +1,3 @@
-/**
- * useScroll — imperative scroll state management hook.
- *
- * Uses requestRender() instead of React state for instant response.
- */
-
 import { useRef, useCallback } from "react";
 import { useTui } from "../context/TuiContext.js";
 import { useCleanup } from "./useCleanup.js";

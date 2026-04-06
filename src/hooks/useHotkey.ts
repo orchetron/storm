@@ -1,12 +1,3 @@
-/**
- * useHotkey — declarative hotkey registration with display labels.
- *
- * Registers all hotkeys via useInput. Returns the binding list for
- * rendering a help bar.
- *
- * Uses useRef + useInput.
- */
-
 import { useRef } from "react";
 import { useInput } from "./useInput.js";
 

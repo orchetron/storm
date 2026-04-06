@@ -1,11 +1,3 @@
-/**
- * useCommandPalette — detects trigger prefix, filters commands, executes selection.
- *
- * Keyboard navigation handled internally: up/down/enter/escape.
- *
- * Uses useRef + forceUpdate() + useInput.
- */
-
 import { useRef } from "react";
 import { useInput } from "./useInput.js";
 import { useForceUpdate } from "./useForceUpdate.js";
@@ -71,7 +63,6 @@ export function useCommandPalette(options: UseCommandPaletteOptions): UseCommand
 
   useInput(
     (event) => {
-      // Trigger key opens the palette
       if (!isOpenRef.current) {
         if (event.char === trigger && !event.ctrl && !event.meta) {
           open();

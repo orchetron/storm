@@ -7,8 +7,6 @@
  *   ≥ 0x1000000 = True color RGB (0x1_RR_GG_BB)
  */
 
-// ── Color encoding ──────────────────────────────────────────────────
-
 export const DEFAULT_COLOR = -1;
 
 export function rgb(r: number, g: number, b: number): number {
@@ -69,33 +67,38 @@ const NAMED_COLORS: Record<string, number> = {
   silver: 0x1000000 | (0xC0 << 16) | (0xC0 << 8) | 0xC0,
 };
 
-/** Tracks unknown color names already warned about (dev-mode only). */
 const _warnedColors = new Set<string>();
 
+const _parseColorCache = new Map<string, number>();
+function _cacheColor(key: string, val: number): number {
+  _parseColorCache.set(key, val);
+  if (_parseColorCache.size > 512) { const first = _parseColorCache.keys().next().value; if (first !== undefined) _parseColorCache.delete(first); }
+  return val;
+}
+
 export function parseColor(input: string | number | undefined): number {
-  if (input === undefined || input === null) return DEFAULT_COLOR;
+  if (input === undefined) return DEFAULT_COLOR;
   if (typeof input === "number") return input;
+  const cached = _parseColorCache.get(input);
+  if (cached !== undefined) return cached;
   const named = NAMED_COLORS[input];
-  if (named !== undefined) return named;
+  if (named !== undefined) return _cacheColor(input, named);
   if (input.startsWith("#")) {
     const hex = input.slice(1);
     if (hex.length === 3) {
-      const r = parseInt(hex[0]! + hex[0]!, 16);
-      const g = parseInt(hex[1]! + hex[1]!, 16);
-      const b = parseInt(hex[2]! + hex[2]!, 16);
-      return rgb(r, g, b);
+      return _cacheColor(input, rgb(parseInt(hex[0]! + hex[0]!, 16), parseInt(hex[1]! + hex[1]!, 16), parseInt(hex[2]! + hex[2]!, 16)));
     }
     if (hex.length === 6) {
-      return rgb(
-        parseInt(hex.slice(0, 2), 16),
-        parseInt(hex.slice(2, 4), 16),
-        parseInt(hex.slice(4, 6), 16),
-      );
+      return _cacheColor(input, rgb(parseInt(hex.slice(0, 2), 16), parseInt(hex.slice(2, 4), 16), parseInt(hex.slice(4, 6), 16)));
+    }
+    if (hex.length === 8) {
+      // #RRGGBBAA — strip alpha, terminals don't support it
+      return _cacheColor(input, rgb(parseInt(hex.slice(0, 2), 16), parseInt(hex.slice(2, 4), 16), parseInt(hex.slice(4, 6), 16)));
     }
   }
   if (input.startsWith("rgb(")) {
     const m = input.match(/rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/);
-    if (m) return rgb(Number(m[1]), Number(m[2]), Number(m[3]));
+    if (m) return _cacheColor(input, rgb(Number(m[1]), Number(m[2]), Number(m[3])));
   }
   // Dev-mode warning for truly unknown color strings
   if (process.env.NODE_ENV !== "production" && input.length > 0) {
@@ -110,8 +113,6 @@ export function parseColor(input: string | number | undefined): number {
   return DEFAULT_COLOR;
 }
 
-// ── Attribute bitmask ───────────────────────────────────────────────
-
 export const Attr = {
   NONE: 0,
   BOLD: 1 << 0,
@@ -123,8 +124,6 @@ export const Attr = {
   HIDDEN: 1 << 6,
   STRIKETHROUGH: 1 << 7,
 } as const;
-
-// ── Cell ────────────────────────────────────────────────────────────
 
 export interface Cell {
   char: string; // single character (or " " for empty)
@@ -155,8 +154,6 @@ export function makeCell(
 ): Cell {
   return { char, fg, bg, attrs, ulColor };
 }
-
-// ── Style (user-facing) ────────────────────────────────────────────
 
 export interface Style {
   color?: string | number;
@@ -190,16 +187,12 @@ export function styleToCellProps(s: Style): { fg: number; bg: number; attrs: num
   };
 }
 
-// ── Rect ────────────────────────────────────────────────────────────
-
 export interface Rect {
   x: number;
   y: number;
   width: number;
   height: number;
 }
-
-// ── Border styles ───────────────────────────────────────────────────
 
 export type BorderStyle = "none" | "single" | "double" | "heavy" | "round" | "ascii" | "storm";
 

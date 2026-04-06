@@ -9,8 +9,6 @@
 import type { StormPlugin } from "../core/plugin.js";
 import type { RenderContext } from "../core/render-context.js";
 
-// ── Segment types ─────────────────────────────────────────────────
-
 export type StatusBarSegment =
   | { type: "time"; format?: "12h" | "24h" }
   | { type: "memory" }

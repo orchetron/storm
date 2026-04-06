@@ -8,7 +8,7 @@
 import { describe, it, expect } from "vitest";
 import React from "react";
 import { renderForTest } from "../testing/index.js";
-import { DiffView, type DiffLine } from "../components/DiffView.js";
+import { DiffView, type DiffLine } from "../components/index.js";
 
 const sampleDiff = `diff --git a/file.ts b/file.ts
 --- a/file.ts

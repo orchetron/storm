@@ -1,9 +1,3 @@
-/**
- * useStdout — access stdout and write to it.
- *
- * Access the stdout stream and write to it.
- */
-
 import { useTui } from "../context/TuiContext.js";
 
 export interface UseStdoutResult {

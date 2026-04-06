@@ -75,12 +75,12 @@ await app.waitUntilExit();
 
 ## 2. Dashboard with Tabs
 
-Tabs switches between panels. StatusLine anchors to the bottom. `useKeyboardShortcuts` wires number keys to tab navigation.
+Tabs switches between panels. StatusLine anchors to the bottom. `useHotkey` wires number keys to tab navigation.
 
 ```tsx
 import { useState } from "react";
 import {
-  render, Box, Text, Tabs, StatusLine, useKeyboardShortcuts, useApp,
+  render, Box, Text, Tabs, StatusLine, useHotkey, useApp,
   type Tab,
 } from "@orchetron/storm";
 
@@ -94,12 +94,12 @@ function Dashboard() {
   const [active, setActive] = useState("overview");
   const { exit } = useApp();
 
-  useKeyboardShortcuts([
-    { key: "1", handler: () => setActive("overview") },
-    { key: "2", handler: () => setActive("logs") },
-    { key: "3", handler: () => setActive("settings") },
-    { key: "q", handler: () => exit() },
-  ]);
+  useHotkey({ hotkeys: [
+    { key: "1", label: "Overview", action: () => setActive("overview") },
+    { key: "2", label: "Logs", action: () => setActive("logs") },
+    { key: "3", label: "Settings", action: () => setActive("settings") },
+    { key: "q", label: "Quit", action: () => exit() },
+  ] });
 
   return (
     <Box flexDirection="column" height="100%">
@@ -345,7 +345,7 @@ function AgentUI() {
       {/* Header */}
       <Box paddingX={1} gap={2}>
         <BlinkDot state={status} />
-        <ModelBadge model="qwen-2.5-72b" provider="cloud" />
+        <ModelBadge model="demo-model" provider="cloud" />
       </Box>
 
       {/* Conversation */}
@@ -376,7 +376,7 @@ function AgentUI() {
         )}
       </ScrollView>
 
-      <StatusLine brand="orchetron" model="qwen-2.5-72b" tokens={12400} />
+      <StatusLine brand="orchetron" model="demo-model" tokens={12400} />
     </Box>
   );
 }
@@ -548,12 +548,12 @@ await app.waitUntilExit();
 
 ## 10. Scrollable Table with Sort
 
-DataGrid handles rendering, row selection, and sort indicators. `useSortable` manages sort state. `useKeyboardShortcuts` adds quick navigation keys.
+DataGrid handles rendering, row selection, and sort indicators. `useSortable` manages sort state. `useHotkey` adds quick navigation keys.
 
 ```tsx
 import { useState, useMemo } from "react";
 import {
-  render, Box, Text, DataGrid, useSortable, useKeyboardShortcuts, useApp,
+  render, Box, Text, DataGrid, useSortable, useHotkey, useApp,
   type DataGridColumn,
 } from "@orchetron/storm";
 
@@ -582,9 +582,9 @@ function TableDemo() {
     defaultSort: { key: "name", direction: "asc" },
   });
 
-  useKeyboardShortcuts([
-    { key: "q", handler: () => exit() },
-  ]);
+  useHotkey({ hotkeys: [
+    { key: "q", label: "Quit", action: () => exit() },
+  ] });
 
   // Sort rows based on current sort state
   const rows = useMemo(() => {

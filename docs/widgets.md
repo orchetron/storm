@@ -1,77 +1,30 @@
 # Storm AI Widgets
 
-19 purpose-built widgets for AI agent terminal interfaces. These are Storm's key differentiators -- components designed specifically for LLM-powered applications, covering everything from token streaming to approval workflows, cost tracking, and live performance profiling.
-
-All widgets use Storm's imperative rendering pattern (`requestRender()` + ref mutation) for animations, avoiding React state updates that don't flush in Storm's custom reconciler. Every widget accepts a `usePluginProps` hook for plugin-level prop overrides.
+15 components for AI agent terminal UIs: token streaming, approval workflows, cost tracking, and performance profiling.
 
 ---
 
 ## Table of Contents
 
-1. [AnimatedLogo](#1-animatedlogo)
-2. [ApprovalPrompt](#2-approvalprompt)
-3. [BlinkDot](#3-blinkdot)
-4. [CommandBlock](#4-commandblock)
-5. [CommandDropdown](#5-commanddropdown)
-6. [ComponentGallery](#6-componentgallery)
-7. [ContextWindow](#7-contextwindow)
-8. [CostTracker](#8-costtracker)
-9. [MarkdownText](#9-markdowntext)
-10. [MessageBubble](#10-messagebubble)
-11. [ModelBadge](#11-modelbadge)
-12. [OperationTree](#12-operationtree)
-13. [PerformanceHUD](#13-performancehud)
-14. [ShimmerText](#14-shimmertext)
-15. [StatusLine](#15-statusline)
-16. [StreamingText](#16-streamingtext)
-17. [SyntaxHighlight](#17-syntaxhighlight)
-18. [TokenStream](#18-tokenstream)
-19. [WelcomeBanner](#19-welcomebanner)
+1. [ApprovalPrompt](#1-approvalprompt)
+2. [BlinkDot](#2-blinkdot)
+3. [CommandBlock](#3-commandblock)
+4. [CommandDropdown](#4-commanddropdown)
+5. [ContextWindow](#5-contextwindow)
+6. [CostTracker](#6-costtracker)
+7. [MessageBubble](#7-messagebubble)
+8. [ModelBadge](#8-modelbadge)
+9. [OperationTree](#9-operationtree)
+10. [PerformanceHUD](#10-performancehud)
+11. [ShimmerText](#11-shimmertext)
+12. [StatusLine](#12-statusline)
+13. [StreamingText](#13-streamingtext)
+14. [SyntaxHighlight](#14-syntaxhighlight)
+15. [TokenStream](#15-tokenstream)
 
 ---
 
-## 1. AnimatedLogo
-
-3D rotating shield logo animation using block-density character shading.
-
-Renders an 8-frame rotation of Storm's angular shield with a lightning bolt, simulating 3D depth using Unicode block characters (`██ ▓▓ ▒▒ ░░`). Uses imperative mutation + `requestRender()` for zero-overhead animation.
-
-### Props
-
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `animate` | `boolean` | `true` | Whether the rotation animation is active. |
-| `interval` | `number` | `personality.animation.durationFast` | Milliseconds between animation frames. |
-| `color` | `string` | `colors.brand.primary` | Color applied to the logo text. |
-| `renderFrame` | `(frame: string, index: number) => ReactNode` | -- | Custom render function for each animation frame. Receives the frame string and its 0-based index. |
-
-### Usage
-
-```tsx
-import { AnimatedLogo } from "@orchetron/storm";
-
-// Basic animated logo
-<AnimatedLogo />
-
-// Static logo (no animation)
-<AnimatedLogo animate={false} />
-
-// Custom speed and color
-<AnimatedLogo interval={200} color="#FFD700" />
-
-// Custom frame renderer
-<AnimatedLogo renderFrame={(frame, idx) => (
-  <Text color={idx % 2 === 0 ? "cyan" : "yellow"}>{frame}</Text>
-)} />
-```
-
-### When to use
-
-Display during app startup, loading screens, or as a branding element. The 3D rotation effect catches the eye without being distracting. Set `animate={false}` for a static shield icon in headers or about screens.
-
----
-
-## 2. ApprovalPrompt
+## 1. ApprovalPrompt
 
 Tool execution approval dialog with risk levels, keyboard selection, and auto-deny timeout.
 
@@ -144,7 +97,7 @@ Any time an AI agent needs human confirmation before executing a tool -- file wr
 
 ---
 
-## 3. BlinkDot
+## 2. BlinkDot
 
 Status indicator dot that blinks based on operation state.
 
@@ -192,7 +145,7 @@ Compact status indicator for individual operations, tool calls, or list items. P
 
 ---
 
-## 4. CommandBlock
+## 3. CommandBlock
 
 Collapsible command output display with exit code badge and duration.
 
@@ -252,7 +205,7 @@ Displaying tool execution results in an AI chat interface. Each tool call that r
 
 ---
 
-## 5. CommandDropdown
+## 4. CommandDropdown
 
 Fuzzy-searchable command palette dropdown with keyboard navigation.
 
@@ -308,53 +261,7 @@ Slash command palettes, autocomplete menus, or any searchable item picker in an 
 
 ---
 
-## 6. ComponentGallery
-
-Interactive split-pane component showcase browser.
-
-A full-screen widget that catalogs every Storm component organized by category (Core, Input, Display, Data, Feedback, Layout, Navigation, AI-Native). Left sidebar shows a scrollable categorized list with keyboard navigation; right panel shows a live description and ASCII preview of the selected component.
-
-### Props
-
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `categories` | `string[]` | -- | Filter to show only specific categories. When empty/undefined, shows all. |
-| `width` | `number` | `80` | Total width of the gallery. |
-| `height` | `number` | `30` | Total height of the gallery. |
-| `isFocused` | `boolean` | `true` | Whether the gallery captures keyboard input. |
-| `renderCategory` | `(name: string, isSelected: boolean) => ReactNode` | -- | Custom render for category headers. |
-| `renderItem` | `(name: string, isSelected: boolean) => ReactNode` | -- | Custom render for gallery items. |
-| `selectionIndicator` | `string` | `"▸ "` | Selection indicator character. |
-
-### Keyboard Controls
-
-| Key | Action |
-|-----|--------|
-| `Up/Down` | Navigate items in sidebar |
-| `Tab` | Switch focus between sidebar and preview pane |
-
-### Usage
-
-```tsx
-import { ComponentGallery } from "@orchetron/storm";
-
-// Full gallery
-<ComponentGallery width={100} height={40} />
-
-// Filtered to AI-Native widgets only
-<ComponentGallery categories={["AI-Native"]} width={80} height={30} />
-
-// Embedded with custom focus
-<ComponentGallery isFocused={isPanelActive} width={termWidth} height={termHeight - 2} />
-```
-
-### When to use
-
-Developer tooling, demo applications, or documentation browsers. Ideal for showcasing Storm's component library in an interactive terminal experience. Contains built-in ASCII previews for 70+ components across 7 categories.
-
----
-
-## 7. ContextWindow
+## 5. ContextWindow
 
 Token/context usage visualization with segmented bar and optional sparkline history.
 
@@ -414,7 +321,7 @@ Any AI chat interface where context window management matters. Shows users how m
 
 ---
 
-## 8. CostTracker
+## 6. CostTracker
 
 API cost tracking display with per-token pricing and color-coded spend levels.
 
@@ -457,7 +364,7 @@ import { CostTracker } from "@orchetron/storm";
 <CostTracker inputTokens={50000} outputTokens={12000} compact />
 // Renders: $0.33 (50K in x $3/M + 12K out x $15/M)
 
-// Custom pricing (e.g. Qwen-2.5)
+// Custom pricing (e.g. demo model)
 <CostTracker
   inputTokens={100000}
   outputTokens={25000}
@@ -473,77 +380,11 @@ Status bars, session summaries, or cost dashboards in AI agent interfaces. Helps
 
 ---
 
-## 9. MarkdownText
-
-Full markdown renderer for terminal UI -- headings, code blocks, tables, lists, links, and inline formatting.
-
-Pure regex-based parser with zero external dependencies. Renders markdown content as styled TUI elements with syntax-highlighted code blocks (via `SyntaxHighlight`), properly formatted tables with alignment, task lists, blockquotes, and full inline formatting (bold, italic, code, links, strikethrough).
-
-### Props
-
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `children` | `string` | **required** | Markdown source text to render. |
-| `width` | `number` | -- | Width constraint for code blocks and horizontal rules. |
-
-### Supported Markdown Features
-
-**Block-level:**
-- Headings (`# H1` through `###### H6`) -- H1 uses brand primary color, H2+ uses brand light
-- Fenced code blocks (` ```language `) with syntax highlighting
-- Blockquotes (`> text`) with dim pipe indicators
-- Unordered lists (`- item` or `* item`) with bullet characters
-- Ordered lists (`1. item`)
-- Task lists (`- [ ] unchecked` / `- [x] checked`) with checkbox characters
-- Tables with pipe syntax and column alignment (`:---`, `:---:`, `---:`)
-- Horizontal rules (`---`, `***`, `___`)
-
-**Inline:**
-- **Bold** (`**text**` or `__text__`)
-- *Italic* (`*text*` or `_text_`)
-- ***Bold italic*** (`***text***` or `___text___`)
-- `Inline code` (`` `code` ``)
-- [Links]() (`[text](url)`) -- rendered underlined in info color
-- ~~Strikethrough~~ (`~~text~~`) -- rendered dim
-
-### Usage
-
-```tsx
-import { MarkdownText } from "@orchetron/storm";
-
-<MarkdownText width={80}>{`
-# Welcome
-
-Here is some **bold** and *italic* text with \`inline code\`.
-
-## Code Example
-
-\`\`\`typescript
-const greeting = "Hello, Storm!";
-console.log(greeting);
-\`\`\`
-
-| Feature | Status |
-|---------|--------|
-| Tables  | Done   |
-| Lists   | Done   |
-
-- [x] Task lists work too
-- [ ] Still more to do
-`}</MarkdownText>
-```
-
-### When to use
-
-Rendering AI assistant responses that contain markdown. The `MessageBubble` widget integrates this via its `markdown` prop. Also useful for help text, documentation viewers, or any content that originates as markdown.
-
----
-
-## 10. MessageBubble
+## 7. MessageBubble
 
 Chat message display with role-based icons, markdown rendering, timestamps, and action buttons.
 
-Renders a message with a role-appropriate symbol on the left (auto-resolved from role or manually overridden), content area, optional metadata line, optional timestamp, and action hints with keyboard shortcuts. When `markdown` is `true` and children is a string, content is rendered through `MarkdownText`.
+Renders a message with a role-appropriate symbol on the left (auto-resolved from role or manually overridden), content area, optional metadata line, optional timestamp, and action hints with keyboard shortcuts. When `markdown` is `true` and children is a string, content is rendered through `Markdown`.
 
 ### Props
 
@@ -555,7 +396,7 @@ Renders a message with a role-appropriate symbol on the left (auto-resolved from
 | `children` | `ReactNode` | **required** | Message content. Strings are wrapped in `<Text>`. |
 | `meta` | `string` | -- | Metadata line rendered dim and italic below the message (e.g. timing, token counts). |
 | `timestamp` | `string` | -- | Timestamp rendered dim on the right side of the message. |
-| `markdown` | `boolean` | -- | When `true` and children is a string, renders through `MarkdownText`. |
+| `markdown` | `boolean` | -- | When `true` and children is a string, renders through `Markdown`. |
 | `actions` | `MessageAction[]` | -- | Action hints displayed below the message with keyboard shortcuts. |
 | `isFocused` | `boolean` | `true` | Whether the bubble captures keyboard input for actions. |
 | `renderSymbol` | `(symbol: string, color: string) => ReactNode` | -- | Custom renderer for the role symbol. |
@@ -615,7 +456,7 @@ The primary building block for AI chat interfaces. Every message in a conversati
 
 ---
 
-## 11. ModelBadge
+## 8. ModelBadge
 
 AI model name and provider badge with capability indicators and context size.
 
@@ -651,20 +492,20 @@ Renders a diamond icon colored by provider, the model name in bold, optional cap
 import { ModelBadge } from "@orchetron/storm";
 
 // Basic badge
-<ModelBadge model="qwen-2.5-72b" />
-// Renders: ◆ qwen-2.5-72b
+<ModelBadge model="demo-model" />
+// Renders: ◆ demo-model
 
 // Full badge with all features
 <ModelBadge
-  model="qwen-2.5-72b"
+  model="demo-model"
   provider="cloud"
   capabilities={["vision", "tools", "code"]}
   maxTokens={200000}
 />
-// Renders: ◆ qwen-2.5-72b [vision] [tools] [code] 200K
+// Renders: ◆ demo-model [vision] [tools] [code] 200K
 
 // Local model
-<ModelBadge model="llama-3.1-70b" provider="local" maxTokens={128000} />
+<ModelBadge model="demo-local" provider="local" maxTokens={128000} />
 
 // Custom provider colors
 <ModelBadge
@@ -680,7 +521,7 @@ Status bars, message headers, model selectors, or anywhere the current model ide
 
 ---
 
-## 12. OperationTree
+## 9. OperationTree
 
 Hierarchical operation progress display with animated spinners and tree connectors.
 
@@ -755,7 +596,7 @@ Displaying multi-step AI agent workflows -- plan-and-execute patterns, tool chai
 
 ---
 
-## 13. PerformanceHUD
+## 10. PerformanceHUD
 
 Live FPS, render time, cell diff, and memory overlay for development profiling.
 
@@ -809,7 +650,7 @@ Development and debugging only. Add to your app's root layout to monitor renderi
 
 ---
 
-## 14. ShimmerText
+## 11. ShimmerText
 
 Loading shimmer animation -- a bright highlight window sweeps across text.
 
@@ -858,7 +699,7 @@ import { ShimmerText } from "@orchetron/storm";
 
 ---
 
-## 15. StatusLine
+## 12. StatusLine
 
 Bottom status bar with three layout modes: custom, built-in, and powerline segments.
 
@@ -896,12 +737,12 @@ import { StatusLine } from "@orchetron/storm";
 // Built-in layout
 <StatusLine
   brand="Storm"
-  model="qwen-2.5-72b"
+  model="demo-model"
   tokens={4200}
   turns={12}
   extra={{ cost: "$0.42" }}
 />
-// Renders: ⚡ Storm qwen-2.5-72b          tokens:4.2K  turns:12  cost:$0.42
+// Renders: ⚡ Storm demo-model          tokens:4.2K  turns:12  cost:$0.42
 
 // Custom layout
 <StatusLine
@@ -923,7 +764,7 @@ The persistent bottom bar in any AI agent TUI. The built-in layout mode provides
 
 ---
 
-## 16. StreamingText
+## 13. StreamingText
 
 Typewriter-style streaming text display with blinking cursor.
 
@@ -978,7 +819,7 @@ Displaying AI model output as it streams in. The blinking cursor provides visual
 
 ---
 
-## 17. SyntaxHighlight
+## 14. SyntaxHighlight
 
 Code syntax highlighting supporting 100 languages with multiline state tracking.
 
@@ -1060,11 +901,11 @@ registerLanguage("mylang", {
 
 ### When to use
 
-Inside code blocks, `CommandBlock` output, `MarkdownText` fenced code blocks (which use this internally), or anywhere source code needs to be displayed. The `MarkdownText` widget automatically delegates to `SyntaxHighlight` for fenced code blocks.
+Inside code blocks, `CommandBlock` output, `Markdown` fenced code blocks (which use this internally), or anywhere source code needs to be displayed. The `Markdown` widget automatically delegates to `SyntaxHighlight` for fenced code blocks.
 
 ---
 
-## 18. TokenStream
+## 15. TokenStream
 
 Live token count, speed, and context progress display.
 
@@ -1110,19 +951,19 @@ import { TokenStream } from "@orchetron/storm";
   inputTokens={1200}
   outputTokens={450}
   tokensPerSecond={42}
-  model="qwen-2.5-72b"
+  model="demo-model"
   streaming={true}
 />
-// Renders: qwen-2.5-72b . 1.7K tokens (1.2K in / 450 out) . 42 tok/s
+// Renders: demo-model . 1.7K tokens (1.2K in / 450 out) . 42 tok/s
 
 // With context progress bar
 <TokenStream
   tokens={6500}
   maxTokens={8192}
-  model="llama-3.1"
+  model="demo-local"
   streaming={false}
 />
-// Renders: llama-3.1 . 6.5K tokens . ██████░░ 79%
+// Renders: demo-local . 6.5K tokens . ██████░░ 79%
 
 // Minimal (just total)
 <TokenStream tokens={500} />
@@ -1134,71 +975,6 @@ Real-time streaming status displays during LLM inference. Place in a status bar 
 
 ---
 
-## 19. WelcomeBanner
-
-Welcome screen with gradient title, subtitle, version, tips, and dismiss handler.
-
-Renders a branded welcome screen with Storm's signature heavy-dash separator and diamond icon. Supports two modes: compact (single line) and full (multi-line with separator, subtitle, version, tip of the day, and dismiss hint). Title can optionally render with a gradient from brand primary to brand light.
-
-### Props
-
-| Name | Type | Default | Description |
-|------|------|---------|-------------|
-| `title` | `string` | `"STORM"` | Banner title text. |
-| `subtitle` | `string` | `"Terminal UI at the speed of lightning."` | Subtitle text. |
-| `version` | `string` | -- | Version string (displayed as `vX.Y.Z`). |
-| `showGradient` | `boolean` | `false` | Apply color gradient to the title text. |
-| `compact` | `boolean` | `true` | Single-line mode (`true`) vs full multi-line banner (`false`). |
-| `tips` | `string[]` | -- | Array of tips. One is randomly selected and displayed (stable across re-renders). |
-| `onDismiss` | `() => void` | -- | Callback fired when the user presses any key. Shows "Press any key to continue" hint when set. |
-| `renderTitle` | `(title: string) => ReactNode` | -- | Custom render for the banner title (full mode only). |
-| `separatorChar` | `string` | `"━"` | Separator character for the banner rule line. |
-| `diamondIcon` | `string` | `"◆"` | Diamond icon character before the title. |
-
-### Usage
-
-```tsx
-import { WelcomeBanner } from "@orchetron/storm";
-
-// Compact single-line (default)
-<WelcomeBanner />
-// Renders: ◆ storm . Terminal UI at the speed of lightning.
-
-// Full banner with gradient and version
-<WelcomeBanner
-  compact={false}
-  showGradient={true}
-  version="1.2.0"
-/>
-// Renders:
-//   ━━━ ◆ STORM ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-//   Terminal UI at the speed of lightning.  v1.2.0
-
-// With tips and dismiss
-<WelcomeBanner
-  compact={false}
-  tips={[
-    "Use /help to see available commands",
-    "Press Tab to switch between panes",
-    "Ctrl+C to cancel a running operation",
-  ]}
-  onDismiss={() => setShowBanner(false)}
-/>
-
-// Custom branding
-<WelcomeBanner
-  title="MY AGENT"
-  subtitle="AI-powered code assistant"
-  version="0.1.0"
-  compact={false}
-  showGradient
-/>
-```
-
-### When to use
-
-The first thing users see when launching your AI agent TUI. The compact mode works well as a persistent header, while the full banner mode is ideal for a splash screen that dismisses on keypress. Tips rotate randomly to surface discoverable features.
-
 ---
 
 ## Import Summary
@@ -1207,15 +983,12 @@ All widgets are exported from the main entry point `@orchetron/storm`:
 
 ```typescript
 import {
-  AnimatedLogo,
   ApprovalPrompt,
   BlinkDot,
   CommandBlock,
   CommandDropdown,
-  ComponentGallery,
   ContextWindow,
   CostTracker,
-  MarkdownText,
   MessageBubble,
   ModelBadge,
   OperationTree,
@@ -1225,13 +998,12 @@ import {
   StreamingText,
   SyntaxHighlight,
   TokenStream,
-  WelcomeBanner,
 } from "@orchetron/storm";
 ```
 
 ## Architecture Notes
 
-- **Imperative animation pattern**: All animated widgets (AnimatedLogo, BlinkDot, ShimmerText, StreamingText, OperationTree) use ref mutation + `requestRender()` instead of React state. This is because Storm's custom React reconciler does not flush state updates the way React DOM does. See the [pitfalls guide](./pitfalls.md) for details.
+- **Imperative animation pattern**: All animated widgets (BlinkDot, ShimmerText, StreamingText, OperationTree) use ref mutation + `requestRender()` instead of React state. This is because Storm's custom React reconciler does not flush state updates the way React DOM does. See the [pitfalls guide](./pitfalls.md) for details.
 
 - **Plugin props**: Every widget wraps its raw props through `usePluginProps("WidgetName", rawProps)`, allowing plugins to intercept and modify any widget's props globally.
 

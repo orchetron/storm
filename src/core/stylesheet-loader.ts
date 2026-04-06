@@ -42,8 +42,6 @@
 import fs from "node:fs";
 import path from "node:path";
 
-// ── Types ──────────────────────────────────────────────────────────────
-
 export interface StyleSheetLoaderOptions {
   /** Path to .storm.css or .storm.json stylesheet file. */
   path: string;
@@ -65,8 +63,6 @@ export interface StyleRule {
   selector: string;
   properties: Record<string, unknown>;
 }
-
-// ── Value parsing ──────────────────────────────────────────────────────
 
 /**
  * Auto-parse a property value string into its typed representation.
@@ -102,8 +98,6 @@ function parseValue(raw: string): unknown {
   return trimmed;
 }
 
-// ── CSS Variable resolution ───────────────────────────────────────────
-
 /**
  * Resolve `var(--name)` and `var(--name, fallback)` references in a value string.
  * Supports nested var() in fallbacks.
@@ -123,8 +117,6 @@ function resolveVar(value: string, variables: Map<string, string>): string {
   }
   return result;
 }
-
-// ── Parser ─────────────────────────────────────────────────────────────
 
 /**
  * Parse raw block declarations from CSS source (shared between rule and :root parsing).
@@ -184,11 +176,9 @@ export function parseStormCSS(source: string): ParsedStyleSheet {
   const len = cleaned.length;
 
   while (i < len) {
-    // Skip whitespace
     while (i < len && /\s/.test(cleaned[i]!)) i++;
     if (i >= len) break;
 
-    // Read selector (everything up to '{')
     const braceIdx = cleaned.indexOf("{", i);
     if (braceIdx === -1) break; // No more blocks
 
@@ -275,8 +265,6 @@ function parseFile(filePath: string, source: string): ParsedStyleSheet {
   // Default: treat as .storm.css
   return parseStormCSS(source);
 }
-
-// ── Loader ─────────────────────────────────────────────────────────────
 
 /** Determine whether watch mode should be enabled by default. */
 function defaultWatch(): boolean {

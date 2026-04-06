@@ -4,7 +4,7 @@
  * Splash screen (1.5s) then Dashboard.
  */
 
-import React, { useState, useCallback, useRef } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import {
   Box,
   Text,
@@ -23,7 +23,7 @@ const S = {
   dim: "#565F89",
 };
 
-const MODEL = "qwen-2.5-coder-32b";
+const MODEL = "demo-coder";
 
 // -- Splash Screen ---------------------------------------------------------------
 
@@ -70,8 +70,8 @@ export function App(): React.ReactElement {
   const [screen, setScreen] = useState<"splash" | "dashboard">("splash");
 
   const handleSplashDismiss = useCallback(() => {
-    flushSync(() => setScreen("dashboard"));
-  }, [flushSync]);
+    setScreen("dashboard");
+  }, []);
 
   const handleExit = useCallback(() => {
     exit();

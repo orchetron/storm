@@ -5,7 +5,7 @@
 import { describe, it, expect } from "vitest";
 import React from "react";
 import { renderForTest } from "../testing/index.js";
-import { LineChart } from "../components/LineChart.js";
+import { LineChart } from "../components/index.js";
 
 describe("LineChart", () => {
   it("renders with data", () => {

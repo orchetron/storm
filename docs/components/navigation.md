@@ -127,4 +127,37 @@ Horizontal keybinding help bar. Displays key-label pairs with configurable separ
 
 
 ---
+
+### HelpPanel
+
+Full-screen or overlay help panel showing categorized keybindings and descriptions. Toggled with `?` by default.
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `sections` | `Array<{ title: string; bindings: Array<{ key: string; label: string }> }>` | -- | Help sections |
+| `visible` | `boolean` | -- | Show/hide the panel |
+| `onClose` | `() => void` | -- | Called on Escape |
+
+```tsx
+<HelpPanel visible={showHelp} onClose={() => setShowHelp(false)} sections={helpSections} />
+```
+
+---
+
+### CommandPalette
+
+Fuzzy-search command palette overlay with keyboard navigation. Built on `useCommandPalette`.
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `commands` | `Array<{ name: string; description?: string; category?: string }>` | -- | Available commands |
+| `visible` | `boolean` | -- | Show/hide the palette |
+| `onExecute` | `(command: Command) => void` | -- | Called when a command is selected |
+| `onClose` | `() => void` | -- | Called on Escape |
+
+```tsx
+<CommandPalette visible={open} commands={commands} onExecute={run} onClose={() => setOpen(false)} />
+```
+
+---
 [Back to Components](README.md)

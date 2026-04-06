@@ -1,19 +1,5 @@
-/**
- * Adaptive rendering layer.
- *
- * Detects terminal capabilities and selects the best rendering protocol
- * for each category (images, keyboard, color, clipboard, etc.).
- * Components query the resulting {@link AdaptiveConfig} to render optimally
- * without manual per-terminal branching.
- *
- * @module
- */
-
 import { detectTerminal, type TerminalCapabilities } from "./terminal-detect.js";
 
-// ── Types ────────────────────────────────────────────────────────────
-
-/** Resolved rendering strategy for the current terminal. */
 export interface AdaptiveConfig {
   /** Detected terminal capabilities */
   capabilities: TerminalCapabilities;
@@ -43,9 +29,6 @@ export interface AdaptiveConfig {
   mouse: boolean;
 }
 
-// ── Best-of helpers ──────────────────────────────────────────────────
-
-/** Get the best image protocol for the current terminal. */
 export function bestImageProtocol(
   caps: TerminalCapabilities,
 ): AdaptiveConfig["imageProtocol"] {
@@ -55,14 +38,12 @@ export function bestImageProtocol(
   return "block";
 }
 
-/** Get the best keyboard protocol. */
 export function bestKeyboardProtocol(
   caps: TerminalCapabilities,
 ): AdaptiveConfig["keyboardProtocol"] {
   return caps.kittyKeyboard ? "kitty" : "legacy";
 }
 
-/** Get the color depth. */
 export function bestColorDepth(
   caps: TerminalCapabilities,
 ): AdaptiveConfig["colorDepth"] {
@@ -71,21 +52,12 @@ export function bestColorDepth(
   return "16";
 }
 
-// ── Factory ──────────────────────────────────────────────────────────
-
-/**
- * Detect and configure the best rendering strategy.
- *
- * Calls {@link detectTerminal} once and derives the optimal option for
- * every rendering category. Individual fields may be overridden via
- * the `overrides` parameter (useful for testing or user preferences).
- */
 export function createAdaptiveConfig(
   overrides?: Partial<AdaptiveConfig>,
 ): AdaptiveConfig {
   const caps = overrides?.capabilities ?? detectTerminal();
 
-  const config: AdaptiveConfig = {
+  const defaults: AdaptiveConfig = {
     capabilities: caps,
     clipboard: caps.clipboard ? "osc52" : "none",
     imageProtocol: bestImageProtocol(caps),
@@ -96,32 +68,10 @@ export function createAdaptiveConfig(
     unicode: caps.unicode,
     mouse: caps.mouse,
   };
-
-  // Apply overrides (skip capabilities — already handled above)
-  if (overrides) {
-    if (overrides.clipboard !== undefined) config.clipboard = overrides.clipboard;
-    if (overrides.imageProtocol !== undefined) config.imageProtocol = overrides.imageProtocol;
-    if (overrides.keyboardProtocol !== undefined) config.keyboardProtocol = overrides.keyboardProtocol;
-    if (overrides.syncOutput !== undefined) config.syncOutput = overrides.syncOutput;
-    if (overrides.hyperlinks !== undefined) config.hyperlinks = overrides.hyperlinks;
-    if (overrides.colorDepth !== undefined) config.colorDepth = overrides.colorDepth;
-    if (overrides.unicode !== undefined) config.unicode = overrides.unicode;
-    if (overrides.mouse !== undefined) config.mouse = overrides.mouse;
-  }
-
-  return config;
+  return { ...defaults, ...overrides, capabilities: caps };
 }
 
-// ── Protocol enable/disable ──────────────────────────────────────────
-
-/**
- * Enable Kitty keyboard protocol if available, returns cleanup function.
- *
- * Writes `\x1b[>1u` (push mode 1 — disambiguate escape codes).
- * The returned function writes `\x1b[<u` to pop the mode.
- *
- * Returns `null` when the stream is not a TTY.
- */
+/** Push kitty keyboard mode 1; returned function pops it. Null if not a TTY. */
 export function enableKittyKeyboard(
   stdout: NodeJS.WriteStream,
 ): (() => void) | null {
@@ -132,14 +82,7 @@ export function enableKittyKeyboard(
   };
 }
 
-/**
- * Enable synchronized output mode, returns disable function.
- *
- * Writes `\x1b[?2026h` to begin a sync frame. The returned function
- * writes `\x1b[?2026l` to end it.
- *
- * Returns `null` when the stream is not a TTY.
- */
+/** Begin sync output frame; returned function ends it. Null if not a TTY. */
 export function enableSyncOutput(
   stdout: NodeJS.WriteStream,
 ): (() => void) | null {
@@ -150,12 +93,7 @@ export function enableSyncOutput(
   };
 }
 
-// ── Adaptive fallback helpers ────────────────────────────────────────
-
-/**
- * Return the unicode character when the terminal supports it,
- * otherwise return the ascii fallback.
- */
+/** Return unicode char if supported, otherwise ascii fallback. */
 export function adaptiveChar(
   unicode: string,
   ascii: string,
@@ -174,13 +112,8 @@ const UNICODE_BORDERS: Record<string, string> = {
 const ASCII_BORDER = "++++-|";
 
 /**
- * Return a border character set for the given style.
- *
- * Unicode-capable terminals get the requested style; non-unicode
- * terminals fall back to ASCII `+-|` characters.
- *
- * The returned string is 6 characters:
- * `topLeft topRight bottomLeft bottomRight vertical horizontal`
+ * Returns 6-char border set: topLeft topRight bottomLeft bottomRight vertical horizontal.
+ * Falls back to ASCII +-| on non-unicode terminals.
  */
 export function adaptiveBorder(
   style: "round" | "heavy" | "storm",

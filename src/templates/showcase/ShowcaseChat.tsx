@@ -1,26 +1,18 @@
-/**
- * ShowcaseChat — "Chat & Content Widgets" showcase template.
- *
- * Demos: MarkdownText, SyntaxHighlight, ShimmerText, BlinkDot,
- * MessageBubble, StatusLine, CommandDropdown, AnimatedLogo,
- * ComponentGallery (text description only).
- */
-
 import React from "react";
 import { useColors } from "../../hooks/useColors.js";
 import { useTui } from "../../context/TuiContext.js";
 import { useInput } from "../../hooks/useInput.js";
-import { MarkdownText } from "../../widgets/MarkdownText.js";
-import { SyntaxHighlight } from "../../widgets/SyntaxHighlight.js";
-import { ShimmerText } from "../../widgets/ShimmerText.js";
-import { BlinkDot } from "../../widgets/BlinkDot.js";
-import { MessageBubble } from "../../widgets/MessageBubble.js";
-import { StatusLine } from "../../widgets/StatusLine.js";
-import { CommandDropdown } from "../../widgets/CommandDropdown.js";
-import { AnimatedLogo } from "../../widgets/AnimatedLogo.js";
-import { ScrollView } from "../../components/ScrollView.js";
+import { Markdown as MarkdownText } from "../../components/extras/Markdown.js";
+import { SyntaxHighlight } from "../../widgets/dev/SyntaxHighlight.js";
+import { ShimmerText } from "../../widgets/ai/ShimmerText.js";
+import { BlinkDot } from "../../widgets/ai/BlinkDot.js";
+import { MessageBubble } from "../../widgets/ai/MessageBubble.js";
+import { StatusLine } from "../../widgets/ai/StatusLine.js";
+import { CommandDropdown } from "../../widgets/ai/CommandDropdown.js";
+// AnimatedLogo removed — branding component
+import { ScrollView } from "../../components/core/ScrollView.js";
 import { useTerminal } from "../../hooks/useTerminal.js";
-import type { CommandItem } from "../../widgets/CommandDropdown.js";
+import type { CommandItem } from "../../widgets/ai/CommandDropdown.js";
 
 export interface ShowcaseChatProps {
   title?: string;
@@ -86,7 +78,7 @@ export function ShowcaseChat(props: ShowcaseChatProps): React.ReactElement {
 
   // 6. StatusLine
   const statusLine = React.createElement(StatusLine, {
-    model: "command-r-plus", tokens: 1234,
+    model: "demo-model", tokens: 1234,
   });
 
   // 7. CommandDropdown
@@ -94,8 +86,10 @@ export function ShowcaseChat(props: ShowcaseChatProps): React.ReactElement {
     items: COMMANDS, selectedIndex: 1,
   });
 
-  // 8. AnimatedLogo
-  const logo = React.createElement(AnimatedLogo, { animate: false });
+  // 8. AnimatedLogo (removed — placeholder)
+  const logo = React.createElement("tui-text", {
+    color: colors.text.secondary, italic: true,
+  }, "Storm");
 
   // 9. ComponentGallery — text description only
   const galleryNote = React.createElement("tui-text", {

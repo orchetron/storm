@@ -1,16 +1,10 @@
-/**
- * useTableBehavior — headless behavior hook for data tables.
- *
- * Extracts cursor position, sort state, selection set, horizontal scroll,
- * column widths, and editing state from Table and DataGrid components.
- *
- * Returns state + props objects with no JSX.
- */
-
 import { useRef, useCallback } from "react";
 import { useInput } from "../useInput.js";
 import { useForceUpdate } from "../useForceUpdate.js";
 import type { KeyEvent } from "../../input/types.js";
+import { COL_WIDTH_SAMPLE_SIZE } from "../../utils/format.js";
+import { handleCellEdit } from "./cell-edit.js";
+import { computeVirtualWindow } from "../../utils/table-render.js";
 
 export interface TableBehaviorColumn {
   key: string;
@@ -83,9 +77,6 @@ export interface UseTableBehaviorResult {
   };
 }
 
-/** Max rows to sample when auto-sizing column widths. */
-const COL_WIDTH_SAMPLE_SIZE = 100;
-
 export function useTableBehavior(options: UseTableBehaviorOptions): UseTableBehaviorResult {
   const {
     columns,
@@ -126,7 +117,7 @@ export function useTableBehavior(options: UseTableBehaviorOptions): UseTableBeha
     cursorColRef.current = Math.max(0, columns.length - 1);
   }
 
-  // Virtualization
+  // Virtualization — keep cursor visible within scroll window
   const totalRows = data.length;
   const needsVirtualization = totalRows > maxVisibleRows;
 
@@ -136,15 +127,13 @@ export function useTableBehavior(options: UseTableBehaviorOptions): UseTableBeha
     } else if (cursorRowRef.current >= scrollRef.current + maxVisibleRows) {
       scrollRef.current = cursorRowRef.current - maxVisibleRows + 1;
     }
-    scrollRef.current = Math.max(0, Math.min(scrollRef.current, totalRows - maxVisibleRows));
-  } else {
-    scrollRef.current = 0;
   }
 
-  const visibleStart = scrollRef.current;
-  const visibleEnd = needsVirtualization
-    ? Math.min(visibleStart + maxVisibleRows, totalRows)
-    : totalRows;
+  const vw = computeVirtualWindow(totalRows, maxVisibleRows, scrollRef.current);
+  scrollRef.current = vw.start;
+
+  const visibleStart = vw.start;
+  const visibleEnd = vw.end;
 
   function notifySelectionChange(): void {
     if (onSelectionChange) {
@@ -168,51 +157,18 @@ export function useTableBehavior(options: UseTableBehaviorOptions): UseTableBeha
 
       // --- Inline cell editing mode ---
       if (editingRef.current !== null) {
-        const edit = editingRef.current;
-        if (event.key === "escape") {
-          editingRef.current = null;
-          forceUpdate();
-          return;
-        }
-        if (event.key === "return") {
-          const colKey = columns[edit.col]?.key;
-          if (colKey && onCellEdit) {
-            onCellEdit(edit.row, colKey, edit.value);
-          }
-          editingRef.current = null;
-          forceUpdate();
-          return;
-        }
-        if (event.key === "backspace") {
-          if (edit.cursor > 0) {
-            edit.value = edit.value.slice(0, edit.cursor - 1) + edit.value.slice(edit.cursor);
-            edit.cursor -= 1;
+        handleCellEdit(
+          event,
+          editingRef.current,
+          (_row, col, value) => {
+            const colKey = columns[col]?.key;
+            if (colKey && onCellEdit) onCellEdit(_row, colKey, value);
+            editingRef.current = null;
             forceUpdate();
-          }
-          return;
-        }
-        if (event.key === "delete") {
-          if (edit.cursor < edit.value.length) {
-            edit.value = edit.value.slice(0, edit.cursor) + edit.value.slice(edit.cursor + 1);
-            forceUpdate();
-          }
-          return;
-        }
-        if (event.key === "left") {
-          if (edit.cursor > 0) { edit.cursor -= 1; forceUpdate(); }
-          return;
-        }
-        if (event.key === "right") {
-          if (edit.cursor < edit.value.length) { edit.cursor += 1; forceUpdate(); }
-          return;
-        }
-        if (event.key === "home") { edit.cursor = 0; forceUpdate(); return; }
-        if (event.key === "end") { edit.cursor = edit.value.length; forceUpdate(); return; }
-        if (event.char && event.char.length === 1 && !event.ctrl && !event.meta) {
-          edit.value = edit.value.slice(0, edit.cursor) + event.char + edit.value.slice(edit.cursor);
-          edit.cursor += 1;
-          forceUpdate();
-        }
+          },
+          () => { editingRef.current = null; forceUpdate(); },
+          forceUpdate,
+        );
         return;
       }
 

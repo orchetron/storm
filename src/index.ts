@@ -1,53 +1,4 @@
-/**
- * Storm — Compositor-based terminal UI framework.
- * Arc-lit. Precise. Terminal-native.
- *
- * @packageDocumentation
- * @module @orchetron/storm
- *
- * Architecture: React → Layout → Cell Buffer → Compositor → Diff → Terminal
- *
- * Voice: Terse. Precise. Warm but not chatty.
- * "Agent completed file analysis (14 files, 2.3s)" — not "Successfully completed!"
- * "Approval required: filesystem write" — not "ATTENTION: An approval is needed..."
- *
- * Design principles:
- * 1. COMPOSITOR MODEL — Everything renders to a 2D cell buffer. Layers,
- *    overlays, clipping, and hit-testing are native capabilities, not hacks.
- * 2. DUAL-SPEED RENDERING — React handles structure (components, state).
- *    Imperative requestRender() handles interaction (scroll, cursor, animation).
- *    Two paths, each optimized for its use case.
- * 3. UNIFIED INPUT — One InputManager owns stdin. Mouse sequences consumed
- *    before keyboard parsing. Events routed by focus and hit-testing.
- *    No broadcast, no garbage text, no fighting.
- * 4. PURE TYPESCRIPT — No WASM, no native deps. The layout engine, renderer,
- *    input parser, and diff engine are all readable, debuggable TypeScript.
- * 5. TERMINAL-NATIVE — Synchronized output, real cursor positioning, OSC 8
- *    hyperlinks, SGR mouse protocols. We speak the terminal's language.
- *
- * @example
- * ```tsx
- * import { render, Box, Text, ScrollView, TextInput } from "@orchetron/storm";
- *
- * function App() {
- *   const [input, setInput] = useState("");
- *   return (
- *     <Box flexDirection="column" height="100%">
- *       <ScrollView flex={1}>
- *         <Text>Hello world</Text>
- *       </ScrollView>
- *       <TextInput value={input} onChange={setInput} />
- *     </Box>
- *   );
- * }
- *
- * const app = render(<App />);
- * await app.waitUntilExit();
- * ```
- */
-
-// ── Core ────────────────────────────────────────────────────────────
-
+/** @packageDocumentation */
 export {
   type Cell,
   type Style,
@@ -92,23 +43,16 @@ export {
   adaptiveBorder,
   type AdaptiveConfig,
 } from "./core/adaptive.js";
-// ── Error Boundary ──────────────────────────────────────────────────
 
 export {
   RenderErrorBoundary,
   type RenderError,
   type ErrorBoundaryOptions,
 } from "./core/error-boundary.js";
-
-// ── Backpressure ────────────────────────────────────────────────────
-
 export {
   OutputBuffer,
   type BackpressureOptions,
 } from "./core/backpressure.js";
-
-// ── Guards ──────────────────────────────────────────────────────────
-
 export {
   MAX_LAYOUT_DEPTH,
   MAX_CHILDREN,
@@ -118,9 +62,6 @@ export {
   validateLayoutProps,
   isTerminalAlive,
 } from "./core/guards.js";
-
-// ── ANSI ────────────────────────────────────────────────────────────
-
 export {
   ESC,
   CSI,
@@ -148,9 +89,6 @@ export {
   rgbTo16,
   type ColorDepth,
 } from "./core/ansi.js";
-
-// ── Input ───────────────────────────────────────────────────────────
-
 export type {
   KeyEvent,
   KeyName,
@@ -166,9 +104,6 @@ export type {
 export { parseMouseEvent, isIncompleteMouseSequence } from "./input/mouse.js";
 export { parseKeys } from "./input/keyboard.js";
 export { InputManager } from "./input/manager.js";
-
-// ── Layout ──────────────────────────────────────────────────────────
-
 export {
   computeLayout,
   measureNaturalHeight,
@@ -186,126 +121,114 @@ export {
   type GridAutoFlow,
   type Position,
 } from "./layout/engine.js";
-
-// ── Reconciler / Render ─────────────────────────────────────────────
-
-export { render, type RenderOptions, type RenderMetrics, type TuiApp } from "./reconciler/render.js";
+export { render, type RenderOptions, type RenderMetrics, type FullRenderMetrics, type TuiApp } from "./reconciler/render.js";
 export {
   renderToString,
   type RenderToStringOptions,
   type RenderToStringResult,
 } from "./reconciler/render-to-string.js";
-export type { BackgroundPreset, BackgroundPattern, BackgroundProp } from "./reconciler/types.js";
-
-// ── Components ──────────────────────────────────────────────────────
-
-export { Box, type BoxProps } from "./components/Box.js";
-export { Text, type TextProps } from "./components/Text.js";
-export { ScrollView, type ScrollViewProps, type ScrollState } from "./components/ScrollView.js";
-export { TextInput, type TextInputProps } from "./components/TextInput.js";
-export { Spinner, type SpinnerProps, type SpinnerType } from "./components/Spinner.js";
-export { Spacer } from "./components/Spacer.js";
-export { Newline, type NewlineProps } from "./components/Newline.js";
-export { Link, type LinkProps } from "./components/Link.js";
-export { Static, type StaticProps } from "./components/Static.js";
-export { SelectInput, type SelectInputItem, type SelectInputProps } from "./components/SelectInput.js";
-export { Overlay, type OverlayProps } from "./components/Overlay.js";
-export { Divider, type DividerProps } from "./components/Divider.js";
-export { Table, type TableProps, type TableColumn } from "./components/Table.js";
-export { ProgressBar, type ProgressBarProps } from "./components/ProgressBar.js";
-export { Tabs, type TabsProps, type Tab } from "./components/Tabs.js";
-export { Tree, type TreeProps, type TreeNode } from "./components/Tree.js";
-export { Toast, ToastContainer, type ToastProps, type ToastContainerProps, type ToastItem } from "./components/Toast.js";
-export { Checkbox, type CheckboxProps } from "./components/Checkbox.js";
-export { RadioGroup, type RadioGroupProps, type RadioOption } from "./components/RadioGroup.js";
-export { Switch, type SwitchProps, type SwitchSize } from "./components/Switch.js";
-export { ChatInput, type ChatInputProps } from "./components/ChatInput.js";
-export { TextArea, type TextAreaProps, type HighlightSpan } from "./components/TextArea.js";
-export { Button, type ButtonProps, type ButtonVariant, type ButtonSize } from "./components/Button.js";
-export { ListView, type ListViewProps, type ListViewItem } from "./components/ListView.js";
-export { Collapsible, type CollapsibleProps } from "./components/Collapsible.js";
-export { Sparkline, type SparklineProps } from "./components/Sparkline.js";
-export { Header, type HeaderProps } from "./components/Header.js";
-export { Footer, type FooterProps, type FooterBinding } from "./components/Footer.js";
-export { RichLog, type RichLogProps, type LogEntry, type LogLevel } from "./components/RichLog.js";
-export { Paginator, type PaginatorProps } from "./components/Paginator.js";
-export { Timer, type TimerProps } from "./components/Timer.js";
-export { FilePicker, type FilePickerProps, type FileNode, type FilePickerChildEntry } from "./components/FilePicker.js";
-export { VirtualList, type VirtualListProps } from "./components/VirtualList.js";
-export { Gauge, type GaugeProps, type GaugeThreshold } from "./components/Gauge.js";
-export { GradientProgress, type GradientProgressProps } from "./components/GradientProgress.js";
-export { RevealTransition, type RevealTransitionProps } from "./components/RevealTransition.js";
-export { Image, type ImageProps, isColoredUnderlineSupported } from "./components/Image.js";
-export { Shadow, type ShadowProps } from "./components/Shadow.js";
-export { Card, type CardProps } from "./components/Card.js";
-export { GlowText, type GlowTextProps } from "./components/GlowText.js";
-export { GradientBorder, type GradientBorderProps } from "./components/GradientBorder.js";
-export { Kbd, type KbdProps } from "./components/Kbd.js";
-export { Separator, type SeparatorProps } from "./components/Separator.js";
-export { LineChart, type LineChartProps, type LineChartSeries } from "./components/LineChart.js";
-export { AreaChart, type AreaChartProps } from "./components/AreaChart.js";
-export { ScatterPlot, type ScatterPlotProps, type ScatterPlotSeries } from "./components/ScatterPlot.js";
-export { Heatmap, type HeatmapProps } from "./components/Heatmap.js";
-export { Histogram, type HistogramProps } from "./components/Histogram.js";
-export { BarChart, type BarChartProps } from "./components/BarChart.js";
-export type { DataPoint, ChartSeries, BarData, StackedBarData, AxisConfig, ChartBaseProps } from "./components/chart-types.js";
-export { Heading, type HeadingProps } from "./components/Heading.js";
-export { Paragraph, type ParagraphProps } from "./components/Paragraph.js";
-export { Diagram, type DiagramProps, type DiagramNode, type DiagramEdge } from "./components/Diagram.js";
-export { Canvas, type CanvasProps, type CanvasNode, type CanvasEdge } from "./components/canvas/index.js";
-export { SearchInput, type SearchInputProps } from "./components/SearchInput.js";
-export { MaskedInput, type MaskedInputProps } from "./components/MaskedInput.js";
-export { Form, type FormField, type FormFieldOption, type FormProps } from "./components/Form.js";
-export { DataGrid, type DataGridColumn, type DataGridProps } from "./components/DataGrid.js";
-export { OrderedList, type OrderedListProps, type NumberingStyle } from "./components/OrderedList.js";
-export { UnorderedList, type UnorderedListProps, type ItemStatus } from "./components/UnorderedList.js";
-export { DefinitionList, type DefinitionListItem, type DefinitionListProps } from "./components/DefinitionList.js";
-export { Pretty, type PrettyProps } from "./components/Pretty.js";
-export { Gradient, type GradientProps } from "./components/Gradient.js";
-export { Digits, type DigitsProps } from "./components/Digits.js";
-export { Placeholder, type PlaceholderProps, type PlaceholderShape } from "./components/Placeholder.js";
-export { Accordion, type AccordionProps, type AccordionSection } from "./components/Accordion.js";
-export { Alert, type AlertProps, type AlertAction } from "./components/Alert.js";
-export { Avatar, type AvatarProps } from "./components/Avatar.js";
-export { Badge, type BadgeProps } from "./components/Badge.js";
-export { Breadcrumb, type BreadcrumbProps } from "./components/Breadcrumb.js";
-export { Calendar, type CalendarProps } from "./components/Calendar.js";
-export { ConfirmDialog, type ConfirmDialogProps, type ConfirmDialogAction } from "./components/ConfirmDialog.js";
-export { ContentSwitcher, type ContentSwitcherProps } from "./components/ContentSwitcher.js";
-export { DirectoryTree, type DirectoryTreeProps, type DirNode, type DirChildEntry } from "./components/DirectoryTree.js";
-export { KeyboardHelp, type KeyboardHelpProps } from "./components/KeyboardHelp.js";
-export { HelpPanel, type HelpPanelProps, type HelpBinding } from "./components/HelpPanel.js";
-export { Menu, type MenuProps, type MenuItem } from "./components/Menu.js";
-export { OptionList, type OptionListProps, type OptionListItem } from "./components/OptionList.js";
-export { Modal, type ModalProps, type ModalSize } from "./components/Modal.js";
-export { Select, type SelectProps, type SelectOption } from "./components/Select.js";
-export { SelectionList, type SelectionListProps, type SelectionListItem } from "./components/SelectionList.js";
-export { StatusMessage, type StatusMessageProps } from "./components/StatusMessage.js";
-export { Stepper, type StepperProps, type StepDef } from "./components/Stepper.js";
-export { Stopwatch, type StopwatchProps } from "./components/Stopwatch.js";
-export { TabbedContent, type TabbedContentProps } from "./components/TabbedContent.js";
-export { Tag, type TagProps } from "./components/Tag.js";
-export { Tooltip, type TooltipProps } from "./components/Tooltip.js";
-export { FocusGroup, type FocusGroupProps } from "./components/FocusGroup.js";
-export { DiffView, type DiffViewProps, type DiffLine } from "./components/DiffView.js";
-export { InlineDiff, type InlineDiffProps } from "./components/InlineDiff.js";
-export { LightningPulse, type LightningPulseProps } from "./components/LightningPulse.js";
-export { ErrorBoundary, type ErrorBoundaryProps } from "./components/ErrorBoundary.js";
-export { Transition, type TransitionProps, type TransitionTimingConfig } from "./components/Transition.js";
-export { AnimatePresence, type AnimatePresenceProps } from "./components/AnimatePresence.js";
-export { Markdown, type MarkdownProps } from "./components/Markdown.js";
-export { MarkdownViewer, type MarkdownViewerProps } from "./components/MarkdownViewer.js";
-export { CommandPalette, type CommandPaletteProps, type PaletteCommand } from "./components/CommandPalette.js";
-export { DatePicker, type DatePickerProps } from "./components/DatePicker.js";
-export { LoadingIndicator, type LoadingIndicatorProps, type LoadingStyle, type LoadingSize } from "./components/LoadingIndicator.js";
-export { Welcome, type WelcomeProps, type WelcomeAction, type WelcomeShortcut } from "./components/Welcome.js";
-
-// ── Widgets (application-tier components for chat/agent UIs) ────────
-
+export type { BackgroundPreset, BackgroundPattern, BackgroundProp, HostTextNode } from "./reconciler/types.js";
+export { Box, type BoxProps } from "./components/core/Box.js";
+export { Text, type TextProps } from "./components/core/Text.js";
+export { ScrollView, type ScrollViewProps, type ScrollState } from "./components/core/ScrollView.js";
+export { TextInput, type TextInputProps } from "./components/core/TextInput.js";
+export { Spinner, type SpinnerProps, type SpinnerType } from "./components/core/Spinner.js";
+export { Spacer } from "./components/core/Spacer.js";
+export { Newline, type NewlineProps } from "./components/core/Newline.js";
+export { Link, type LinkProps } from "./components/extras/Link.js";
+export { Static, type StaticProps } from "./components/core/Static.js";
+export { SelectInput, type SelectInputItem, type SelectInputProps } from "./components/core/SelectInput.js";
+export { Overlay, type OverlayProps } from "./components/core/Overlay.js";
+export { Divider, type DividerProps } from "./components/core/Divider.js";
+export { Table, type TableProps, type TableColumn } from "./components/data/Table.js";
+export { ProgressBar, type ProgressBarProps } from "./components/core/ProgressBar.js";
+export { Tabs, type TabsProps, type Tab } from "./components/core/Tabs.js";
+export { Tree, type TreeProps, type TreeNode } from "./components/data/Tree.js";
+export { Toast, ToastContainer, type ToastProps, type ToastContainerProps, type ToastItem } from "./components/extras/Toast.js";
+export { Checkbox, type CheckboxProps } from "./components/core/Checkbox.js";
+export { RadioGroup, type RadioGroupProps, type RadioOption } from "./components/core/RadioGroup.js";
+export { Switch, type SwitchProps, type SwitchSize } from "./components/core/Switch.js";
+export { ChatInput, type ChatInputProps } from "./components/extras/ChatInput.js";
+export { TextArea, type TextAreaProps, type HighlightSpan } from "./components/core/TextArea.js";
+export { Button, type ButtonProps, type ButtonVariant, type ButtonSize } from "./components/core/Button.js";
+export { ListView, type ListViewProps, type ListViewItem } from "./components/core/ListView.js";
+export { Collapsible, type CollapsibleProps } from "./components/extras/Collapsible.js";
+export { Sparkline, type SparklineProps } from "./components/data/Sparkline.js";
+export { Header, type HeaderProps } from "./components/extras/Header.js";
+export { Footer, type FooterProps, type FooterBinding } from "./components/extras/Footer.js";
+export { RichLog, type RichLogProps, type LogEntry, type LogLevel } from "./components/data/RichLog.js";
+export { Paginator, type PaginatorProps } from "./components/extras/Paginator.js";
+export { Timer, type TimerProps } from "./components/extras/Timer.js";
+export { FilePicker, type FilePickerProps, type FileNode, type FilePickerChildEntry } from "./components/extras/FilePicker.js";
+export { VirtualList, type VirtualListProps } from "./components/core/VirtualList.js";
+export { Gauge, type GaugeProps, type GaugeThreshold } from "./components/data/Gauge.js";
+export { GradientProgress, type GradientProgressProps } from "./components/effects/GradientProgress.js";
+export { RevealTransition, type RevealTransitionProps } from "./components/effects/RevealTransition.js";
+export { Image, type ImageProps, isColoredUnderlineSupported } from "./components/effects/Image.js";
+export { Shadow, type ShadowProps } from "./components/effects/Shadow.js";
+export { Card, type CardProps } from "./components/extras/Card.js";
+export { GlowText, type GlowTextProps } from "./components/effects/GlowText.js";
+export { GradientBorder, type GradientBorderProps } from "./components/effects/GradientBorder.js";
+export { Kbd, type KbdProps } from "./components/extras/Kbd.js";
+export { LineChart, type LineChartProps, type LineChartSeries } from "./components/data/LineChart.js";
+export { AreaChart, type AreaChartProps } from "./components/data/AreaChart.js";
+export { ScatterPlot, type ScatterPlotProps, type ScatterPlotSeries } from "./components/data/ScatterPlot.js";
+export { Heatmap, type HeatmapProps } from "./components/data/Heatmap.js";
+export { Histogram, type HistogramProps } from "./components/data/Histogram.js";
+export { BarChart, type BarChartProps } from "./components/data/BarChart.js";
+export type { DataPoint, ChartSeries, BarData, StackedBarData, AxisConfig, ChartBaseProps } from "./components/data/chart-types.js";
+export { Heading, type HeadingProps } from "./components/extras/Heading.js";
+export { Paragraph, type ParagraphProps } from "./components/extras/Paragraph.js";
+export { Diagram, type DiagramProps, type DiagramNode, type DiagramEdge } from "./components/effects/Diagram.js";
+export { Canvas, type CanvasProps, type CanvasNode, type CanvasEdge } from "./components/effects/canvas/index.js";
+export { SearchInput, type SearchInputProps } from "./components/extras/SearchInput.js";
+export { MaskedInput, type MaskedInputProps } from "./components/extras/MaskedInput.js";
+export { Form, type FormField, type FormFieldOption, type FormProps } from "./components/extras/Form.js";
+export { DataGrid, type DataGridColumn, type DataGridProps } from "./components/data/DataGrid.js";
+export { OrderedList, type OrderedListProps, type NumberingStyle } from "./components/extras/OrderedList.js";
+export { UnorderedList, type UnorderedListProps, type ItemStatus } from "./components/extras/UnorderedList.js";
+export { DefinitionList, type DefinitionListItem, type DefinitionListProps } from "./components/data/DefinitionList.js";
+export { Pretty, type PrettyProps } from "./components/data/Pretty.js";
+export { Gradient, type GradientProps } from "./components/effects/Gradient.js";
+export { Digits, type DigitsProps } from "./components/effects/Digits.js";
+export { Placeholder, type PlaceholderProps, type PlaceholderShape } from "./components/extras/Placeholder.js";
+export { Accordion, type AccordionProps, type AccordionSection } from "./components/extras/Accordion.js";
+export { Alert, type AlertProps, type AlertAction } from "./components/extras/Alert.js";
+export { Avatar, type AvatarProps } from "./components/extras/Avatar.js";
+export { Badge, type BadgeProps } from "./components/extras/Badge.js";
+export { Breadcrumb, type BreadcrumbProps } from "./components/extras/Breadcrumb.js";
+export { Calendar, type CalendarProps } from "./components/extras/Calendar.js";
+export { ConfirmDialog, type ConfirmDialogProps, type ConfirmDialogAction } from "./components/extras/ConfirmDialog.js";
+export { ContentSwitcher, type ContentSwitcherProps } from "./components/extras/ContentSwitcher.js";
+export { DirectoryTree, type DirectoryTreeProps, type DirNode, type DirChildEntry } from "./components/extras/DirectoryTree.js";
+export { KeyboardHelp, type KeyboardHelpProps } from "./components/extras/KeyboardHelp.js";
+export { HelpPanel, type HelpPanelProps, type HelpBinding } from "./components/extras/HelpPanel.js";
+export { Menu, type MenuProps, type MenuItem } from "./components/extras/Menu.js";
+export { OptionList, type OptionListProps, type OptionListItem } from "./components/extras/OptionList.js";
+export { Modal, type ModalProps, type ModalSize } from "./components/core/Modal.js";
+export { Select, type SelectProps, type SelectOption } from "./components/core/Select.js";
+export { SelectionList, type SelectionListProps, type SelectionListItem } from "./components/extras/SelectionList.js";
+export { StatusMessage, type StatusMessageProps } from "./components/extras/StatusMessage.js";
+export { Stepper, type StepperProps, type StepDef } from "./components/extras/Stepper.js";
+export { Stopwatch, type StopwatchProps } from "./components/extras/Stopwatch.js";
+export { TabbedContent, type TabbedContentProps } from "./components/extras/TabbedContent.js";
+export { Tag, type TagProps } from "./components/extras/Tag.js";
+export { Tooltip, type TooltipProps } from "./components/extras/Tooltip.js";
+export { FocusGroup, type FocusGroupProps } from "./components/core/FocusGroup.js";
+export { DiffView, type DiffViewProps, type DiffLine } from "./components/extras/DiffView.js";
+export { InlineDiff, type InlineDiffProps } from "./components/extras/InlineDiff.js";
+export { ErrorBoundary, type ErrorBoundaryProps } from "./components/core/ErrorBoundary.js";
+export { Transition, type TransitionProps, type TransitionTimingConfig } from "./components/effects/Transition.js";
+export { AnimatePresence, type AnimatePresenceProps } from "./components/effects/AnimatePresence.js";
+export { Markdown, type MarkdownProps } from "./components/extras/Markdown.js";
+export { MarkdownViewer, type MarkdownViewerProps } from "./components/extras/MarkdownViewer.js";
+export { CommandPalette, type CommandPaletteProps, type PaletteCommand } from "./components/extras/CommandPalette.js";
+export { DatePicker, type DatePickerProps } from "./components/extras/DatePicker.js";
+export { LoadingIndicator, type LoadingIndicatorProps, type LoadingStyle, type LoadingSize } from "./components/extras/LoadingIndicator.js";
+export { Welcome, type WelcomeProps, type WelcomeAction, type WelcomeShortcut } from "./components/extras/Welcome.js";
 export {
   OperationTree, type OperationTreeProps, type OpNode,
   StreamingText, type StreamingTextProps,
-  MarkdownText, type MarkdownTextProps,
   SyntaxHighlight, type SyntaxHighlightProps, type LanguageDef,
   registerLanguage, getLanguage, getSupportedLanguages,
   ShimmerText, type ShimmerTextProps,
@@ -314,19 +237,13 @@ export {
   CommandDropdown, type CommandDropdownProps, type CommandItem,
   StatusLine, type StatusLineProps,
   MessageBubble, type MessageBubbleProps,
-  AnimatedLogo, type AnimatedLogoProps,
   PerformanceHUD, type PerformanceHUDProps,
   TokenStream, type TokenStreamProps,
   ContextWindow, type ContextWindowProps,
   CostTracker, type CostTrackerProps,
   ModelBadge, type ModelBadgeProps,
   CommandBlock, type CommandBlockProps,
-  ComponentGallery, type ComponentGalleryProps,
-  WelcomeBanner, type WelcomeBannerProps,
 } from "./widgets/index.js";
-
-// ── Hooks ───────────────────────────────────────────────────────────
-
 export { useColors } from "./hooks/useColors.js";
 export { useCleanup } from "./hooks/useCleanup.js";
 export { useAsyncCleanup } from "./hooks/useAsyncCleanup.js";
@@ -342,10 +259,8 @@ export { useStdin, type UseStdinResult } from "./hooks/useStdin.js";
 export { useStdout, type UseStdoutResult } from "./hooks/useStdout.js";
 export { useStderr, type UseStderrResult } from "./hooks/useStderr.js";
 export { useFocusManager, type UseFocusManagerResult } from "./hooks/useFocusManager.js";
-export { useIsScreenReaderEnabled } from "./hooks/useIsScreenReaderEnabled.js";
 export { useAnimation, type UseAnimationOptions, type UseAnimationResult } from "./hooks/useAnimation.js";
 export { usePaste } from "./hooks/usePaste.js";
-export { useKeyboardShortcuts, type Shortcut } from "./hooks/useKeyboardShortcuts.js";
 export { useInterval } from "./hooks/useInterval.js";
 export { useTimeout } from "./hooks/useTimeout.js";
 export { useVirtualList, type VirtualListOptions, type VirtualListResult } from "./hooks/useVirtualList.js";
@@ -357,7 +272,6 @@ export { usePluginManager } from "./hooks/usePlugin.js";
 export { usePluginProps } from "./hooks/usePluginProps.js";
 export { useBuffer, type BufferAccess } from "./hooks/useBuffer.js";
 export { useAnnounce, type UseAnnounceResult } from "./hooks/useAnnounce.js";
-export { useTween, type UseTweenResult } from "./hooks/useTween.js";
 export { useTransition, type TransitionConfig, type UseTransitionResult } from "./hooks/useTransition.js";
 export { useTextCycler, type UseTextCyclerOptions, type UseTextCyclerResult } from "./hooks/useTextCycler.js";
 export { useCollapsibleContent, type UseCollapsibleContentOptions, type UseCollapsibleContentResult } from "./hooks/useCollapsibleContent.js";
@@ -385,12 +299,10 @@ export { usePersistentState, memoryStorage, type UsePersistentStateOptions, type
 export { useContextMenu, type UseContextMenuOptions, type UseContextMenuResult, type ContextMenuItem } from "./hooks/useContextMenu.js";
 export { useDragReorder, type UseDragReorderOptions, type UseDragReorderResult } from "./hooks/useDragReorder.js";
 export { useInfiniteScroll, type UseInfiniteScrollOptions, type UseInfiniteScrollResult } from "./hooks/useInfiniteScroll.js";
-export { useClipboardAction, type UseClipboardActionOptions, type UseClipboardActionResult } from "./hooks/useClipboardAction.js";
+export { useCopyPasteBuffer, type UseCopyPasteBufferOptions, type UseCopyPasteBufferResult } from "./hooks/useCopyPasteBuffer.js";
 export { useLocale } from "./hooks/useLocale.js";
-export { useDirection } from "./hooks/useDirection.js";
 export { type MeasuredLayout, paintBackgroundToBuffer } from "./reconciler/renderer.js";
 
-// ── Headless Behavior Hooks ────────────────────────────────────────
 export {
   useSelectBehavior, type UseSelectBehaviorOptions, type UseSelectBehaviorResult, type SelectBehaviorOption,
   useListBehavior, type UseListBehaviorOptions, type UseListBehaviorResult, type ListBehaviorItem,
@@ -408,9 +320,6 @@ export {
   useCalendarBehavior, type UseCalendarBehaviorOptions, type UseCalendarBehaviorResult, type CalendarDayInfo,
   useCollapsibleBehavior, type UseCollapsibleBehaviorOptions, type UseCollapsibleBehaviorResult,
 } from "./hooks/headless/index.js";
-
-// ── Accessibility ───────────────────────────────────────────────────
-
 export {
   detectAccessibility,
   meetsContrast,
@@ -436,18 +345,12 @@ export {
   type AriaLive,
   type AriaProps,
 } from "./core/aria.js";
-
-// ── Measurement ─────────────────────────────────────────────────────
-
 export {
   getBoundingBox,
-  getInnerWidth,
-  getInnerHeight,
+  getWidth,
+  getHeight,
   hitTest,
 } from "./core/measurement.js";
-
-// ── i18n ───────────────────────────────────────────────────────────
-
 export {
   type Locale,
   type NumberFormat,
@@ -468,13 +371,7 @@ export {
   LocaleContext,
   LocaleProvider,
 } from "./core/i18n.js";
-
-// ── Context ─────────────────────────────────────────────────────────
-
 export { useTui, TuiContext, type TuiContextValue } from "./context/TuiContext.js";
-
-// ── Theme ──────────────────────────────────────────────────────────
-
 export {
   colors, type StormColors, useTheme, ThemeProvider, ThemeContext, type ThemeWithShades, extendTheme, createTheme, type DeepPartial,
   extractThemeOverrides,
@@ -487,9 +384,6 @@ export {
   type ThemeValidationResult, type ThemeValidationError, type ThemeValidationWarning,
   generateShades, generateThemeShades, type ColorShades, type ThemeShades,
 } from "./theme/index.js";
-
-// ── Personality ────────────────────────────────────────────────────
-
 export {
   type StormPersonality,
   type DeepPartialPersonality,
@@ -507,14 +401,8 @@ export {
   hackerPreset,
   playfulPreset,
 } from "./core/personality-presets.js";
-
-// ── Styles ──────────────────────────────────────────────────────────
-
 export type { StormTextStyleProps, StormLayoutStyleProps, StormContainerStyleProps } from "./styles/index.js";
-export { mergeBoxStyles, pickStyleProps, DEFAULTS, type ComponentDefaults } from "./styles/index.js";
-
-// ── StyleSheet ──────────────────────────────────────────────────────
-
+export { mergeBoxStyles, pickStyleProps, pickLayoutProps, DEFAULTS, type ComponentDefaults } from "./styles/index.js";
 export { createStyleSheet, StyleSheet, type StyleRule } from "./core/stylesheet.js";
 export { StyleProvider, StyleContext, useStyles } from "./core/style-provider.js";
 export {
@@ -525,21 +413,9 @@ export {
   type StyleRule as ParsedStyleRule,
 } from "./core/stylesheet-loader.js";
 export { useStyleSheet, type UseStyleSheetResult } from "./hooks/useStyleSheet.js";
-
-// ── Focus ───────────────────────────────────────────────────────────
-
 export { FocusManager, type FocusableEntry, type FocusChangeCallback, type FocusRingStyle, type FocusRingMode } from "./core/focus.js";
-
-// ── Render Context ──────────────────────────────────────────────
-
 export { RenderContext, type DirtyRegion, type RenderMetrics as RenderContextMetrics } from "./core/render-context.js";
-
-// ── Animation Scheduler ─────────────────────────────────────────────
-
 export { AnimationScheduler, type AnimationCallback } from "./core/animation-scheduler.js";
-
-// ── Plugin System ───────────────────────────────────────────────
-
 export {
   PluginManager,
   PluginBus,
@@ -547,17 +423,11 @@ export {
   type PluginContext,
   type CustomElementHandler,
 } from "./core/plugin.js";
-
-// ── Plugins ────────────────────────────────────────────────────────
-
 export { vimModePlugin } from "./plugins/vim-mode.js";
 export { compactModePlugin } from "./plugins/compact-mode.js";
 export { autoScrollPlugin } from "./plugins/auto-scroll.js";
 export { screenshotPlugin, type ScreenshotPluginOptions } from "./plugins/screenshot.js";
 export { statusBarPlugin, type StatusBarPluginOptions, type StatusBarSegment } from "./plugins/status-bar.js";
-
-// ── Middleware Pipeline ──────────────────────────────────────────────
-
 export {
   MiddlewarePipeline,
   type RenderMiddleware,
@@ -566,9 +436,6 @@ export {
   debugBorderMiddleware,
   darkenColor,
 } from "./core/middleware.js";
-
-// ── DevTools ───────────────────────────────────────────────────────
-
 export {
   createInspectorMiddleware,
   type InspectorState,
@@ -576,7 +443,7 @@ export {
 export { serializeTree } from "./devtools/tree-view.js";
 export {
   createPerformanceMonitor,
-  type RenderMetrics as DevToolsRenderMetrics,
+  type PerformanceMetrics,
 } from "./devtools/performance-monitor.js";
 export {
   createEventLogger,
@@ -623,9 +490,6 @@ export {
   type CrashLogOptions,
   type CrashLogData,
 } from "./devtools/crash-log.js";
-
-// ── Utils ───────────────────────────────────────────────────────────
-
 export { BrailleCanvas, BRAILLE_BASE } from "./utils/braille-canvas.js";
 export {
   createAnimation,
@@ -640,29 +504,14 @@ export {
   type TreeSitterToken,
   type TreeSitterTokenizer,
 } from "./utils/tree-sitter.js";
-
-// ── Unicode ─────────────────────────────────────────────────────────
-
 export { charWidth, stringWidth, iterGraphemes, type Grapheme } from "./core/unicode.js";
-
-// ── Web Renderer ────────────────────────────────────────────────────
-
 export { WebRenderer, type WebRendererOptions } from "./core/web-renderer.js";
-
-// ── Resize Observer ─────────────────────────────────────────────────
-
 export {
   ResizeObserver,
   notifyResizeObservers,
   type ResizeObserverEntry,
 } from "./core/resize-observer.js";
-
-// ── SSH ────────────────────────────────────────────────────────────
-
 export { StormSSHServer, type StormSSHOptions, type SSHSession, type SSHEvent } from "./ssh/index.js";
-
-// ── Testing ─────────────────────────────────────────────────────────
-
 export {
   TestInputManager,
   MockInputManager,
@@ -682,24 +531,6 @@ export {
   type LineAssertions,
   type SvgOptions,
 } from "./testing/index.js";
-
-// ── Templates ───────────────────────────────────────────────────────
-
-export {
-  ShowcasePrimitives, ShowcaseInput, ShowcaseSelection,
-  ShowcaseData, ShowcaseFeedback, ShowcaseLayout,
-  ShowcaseVisual, ShowcaseAdvanced, ShowcaseAI, ShowcaseChat,
-  ShowcaseRichContent,
-  AgentChat, FinancialDashboard, SystemDashboard, ProjectManager, CodeReview,
-  type ShowcasePrimitivesProps, type ShowcaseInputProps, type ShowcaseSelectionProps,
-  type ShowcaseDataProps, type ShowcaseFeedbackProps, type ShowcaseLayoutProps,
-  type ShowcaseVisualProps, type ShowcaseAdvancedProps,
-  type ShowcaseAIProps, type ShowcaseChatProps,
-  type ShowcaseRichContentProps,
-  type AgentChatProps, type FinancialDashboardProps, type SystemDashboardProps,
-  type ProjectManagerProps, type CodeReviewProps,
-} from "./templates/showcase/index.js";
-
 // Animation & timing hooks
 export { useTick, type UseTickOptions } from "./hooks/useTick.js";
 export { usePhaseTimer, type PhaseEntry, type UsePhaseTimerOptions, type UsePhaseTimerResult } from "./hooks/usePhaseTimer.js";

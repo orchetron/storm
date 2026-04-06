@@ -1,10 +1,3 @@
-/**
- * useCleanup — register a cleanup function that runs when the app unmounts.
- *
- * Since useEffect cleanup doesn't fire in our custom reconciler, this is
- * the only way to clean up timers, listeners, etc.
- */
-
 import { useRef } from "react";
 import { useTui } from "../context/TuiContext.js";
 
@@ -14,9 +7,8 @@ const MAX_CLEANUPS = 10000;
 let _cleanupLeakWarned = false;
 
 /**
- * Register a cleanup function that runs when the app unmounts.
- * Since useEffect cleanup doesn't fire in our reconciler, this is
- * the only way to clean up timers, listeners, etc.
+ * Register a cleanup that fires on unmount AND app exit (signals, crashes).
+ * useEffect cleanup does NOT fire reliably in Storm's reconciler. Use this instead.
  */
 export function useCleanup(fn: () => void): void {
   const { renderContext } = useTui();

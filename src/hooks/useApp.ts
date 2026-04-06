@@ -1,9 +1,3 @@
-/**
- * useApp — provides exit, rerender, and clear functions.
- *
- * App-level controls — exit and error handling.
- */
-
 import { useTui } from "../context/TuiContext.js";
 
 export interface UseAppResult {

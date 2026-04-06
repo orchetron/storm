@@ -1,10 +1,3 @@
-/**
- * useCollapsibleContent — auto-truncates text content to N lines
- * with an expand/collapse hint and toggle key.
- *
- * Uses useRef + forceUpdate() + useInput + useCleanup.
- */
-
 import { useRef } from "react";
 import { useInput } from "./useInput.js";
 import { useForceUpdate } from "./useForceUpdate.js";
@@ -48,7 +41,6 @@ export function useCollapsibleContent(
     forceUpdate();
   };
 
-  // Register keyboard handler
   useInput(
     (event) => {
       const matchKey = event.key === toggleKey.key;
@@ -72,7 +64,6 @@ export function useCollapsibleContent(
     displayText = lines.slice(0, maxLines).join("\n");
   }
 
-  // Build hint string
   let hint = "";
   if (needsTruncation) {
     const keyParts: string[] = [];

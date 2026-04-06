@@ -1,11 +1,3 @@
-/**
- * useInput — keyboard input hook.
- *
- * Subscribe to keyboard events. Uses eager registration (not useEffect)
- * because effects don't fire reliably in the custom reconciler for
- * complex component trees.
- */
-
 import { useRef } from "react";
 import { useTui } from "../context/TuiContext.js";
 import { useCleanup } from "./useCleanup.js";
@@ -18,6 +10,10 @@ export interface UseInputOptions {
   priority?: number;
 }
 
+/**
+ * Subscribe to keyboard events. Handler is skipped when `isActive` is false.
+ * Higher `priority` runs first and can shadow lower-priority handlers (useful for modal traps).
+ */
 export function useInput(
   handler: (event: KeyEvent) => void,
   options: UseInputOptions = {},
@@ -26,13 +22,11 @@ export function useInput(
   const isActive = options.isActive ?? true;
   const priority = options.priority;
 
-  // Store handler in ref to always access latest version
   const handlerRef = useRef(handler);
   handlerRef.current = handler;
   const activeRef = useRef(isActive);
   activeRef.current = isActive;
 
-  // Register ONCE eagerly — not in useEffect
   const registeredRef = useRef(false);
   const unsubRef = useRef<(() => void) | null>(null);
   const prevPriorityRef = useRef<number | undefined>(priority);
@@ -57,7 +51,6 @@ export function useInput(
     }
   }
 
-  // Unregister on app unmount
   useCleanup(() => {
     unsubRef.current?.();
   });

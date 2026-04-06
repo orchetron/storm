@@ -6,8 +6,6 @@
  * Pure TypeScript, fast and predictable.
  */
 
-// ── Types ───────────────────────────────────────────────────────────
-
 export type FlexDirection = "column" | "row";
 export type FlexWrap = "nowrap" | "wrap";
 export type Align = "start" | "center" | "end" | "stretch" | "baseline";
@@ -109,6 +107,7 @@ export interface LayoutNode {
   _prevHeight?: number;
   /** Cached child count from the last buildLayoutTree pass. */
   _prevChildCount?: number;
+  _prevChildren?: LayoutNode[];
 }
 
 /** Sentinel value for unconstrained space in scroll containers.
@@ -118,8 +117,6 @@ const UNCONSTRAINED = 100000;
 
 /** Dev-mode: warn once when percentage sizes are used inside a scroll container. */
 let _warnedPercentInScroll = false;
-
-// ── Padding resolution ──────────────────────────────────────────────
 
 interface Padding {
   top: number;
@@ -139,8 +136,6 @@ function resolvePadding(p: LayoutProps): Padding {
     right: p.paddingRight ?? px,
   };
 }
-
-// ── Margin resolution ──────────────────────────────────────────────
 
 interface Margin {
   top: number;
@@ -186,8 +181,6 @@ function resolveMarginAuto(p: LayoutProps): MarginAuto {
   };
 }
 
-// ── Size resolution ─────────────────────────────────────────────────
-
 function resolveSize(
   value: number | `${number}%` | "auto" | "min-content" | "max-content" | undefined,
   parentSize: number,
@@ -206,15 +199,14 @@ function resolveSize(
         return measured.width + pad.left + pad.right;
       }
       return measureNaturalWidth(node, parentSize);
-    } else {
-      // height min-content: measure with unlimited width
-      if (node.measureText) {
-        const measured = node.measureText(UNCONSTRAINED);
-        const pad = resolvePadding(node.props);
-        return measured.height + pad.top + pad.bottom;
-      }
-      return measureNaturalHeight(node, parentSize);
     }
+    // height min-content: measure with unlimited width
+    if (node.measureText) {
+      const measured = node.measureText(UNCONSTRAINED);
+      const pad = resolvePadding(node.props);
+      return measured.height + pad.top + pad.bottom;
+    }
+    return measureNaturalHeight(node, parentSize);
   }
   if (value === "max-content") {
     if (!node) return undefined;
@@ -226,15 +218,14 @@ function resolveSize(
         return measured.width + pad.left + pad.right;
       }
       return measureNaturalWidth(node, parentSize);
-    } else {
-      // height max-content: measure at the available width
-      if (node.measureText) {
-        const measured = node.measureText(parentSize);
-        const pad = resolvePadding(node.props);
-        return measured.height + pad.top + pad.bottom;
-      }
-      return measureNaturalHeight(node, parentSize);
     }
+    // height max-content: measure at the available width
+    if (node.measureText) {
+      const measured = node.measureText(parentSize);
+      const pad = resolvePadding(node.props);
+      return measured.height + pad.top + pad.bottom;
+    }
+    return measureNaturalHeight(node, parentSize);
   }
   // Percentage string: "50%" → 0.5 * parentSize
   // BUG FIX: If parentSize is unlimited (scroll container), percentage is meaningless.
@@ -261,8 +252,6 @@ function clampSize(
   if (max !== undefined && s > max) s = max;
   return Math.max(0, s);
 }
-
-// ── RTL x-flip helper ───────────────────────────────────────────────
 
 /**
  * Flip the x position of a child node (and its descendants) for RTL row layout.
@@ -309,8 +298,6 @@ function shiftSubtree(node: LayoutNode, dx: number, dy: number): void {
     shiftSubtree(child, dx, dy);
   }
 }
-
-// ── Grid track parsing & layout ─────────────────────────────────────
 
 interface GridTrack {
   type: "fixed" | "fr" | "auto";
@@ -427,7 +414,6 @@ function resolveGridTrackSizes(
     const placement = axis === "col" ? p.col : p.row;
     if (placement.span <= 1) continue;
 
-    // Collect auto track indices within the span
     const autoIndices: number[] = [];
     let currentSpanTotal = 0;
     for (let t = placement.start; t < placement.start + placement.span && t < tracks.length; t++) {
@@ -686,7 +672,6 @@ function computeGridLayout(
     }
   }
 
-  // Build the final placements array (all items now have placements)
   const finalPlacements: Placement[] = placements as Placement[];
 
   // ── Phase 2: Resolve track sizes ─────────────────────────────────
@@ -734,7 +719,6 @@ function computeGridLayout(
       if (r > placement.row.start) cellHeight += rowGap;
     }
 
-    // Resolve alignSelf for this child.
     // If alignSelf is "auto" or unset, inherit from parent's alignItems (CSS Grid spec).
     const childAlignSelf = child.props.alignSelf;
     const effectiveAlign: Align =
@@ -742,7 +726,6 @@ function computeGridLayout(
         ? childAlignSelf
         : parentAlignItems;
 
-    // Determine child's natural size for non-stretch alignments
     let childW = cellWidth;
     let childH = cellHeight;
     let childX = cellX;
@@ -770,9 +753,8 @@ function computeGridLayout(
       }
     }
 
-    // Apply aspectRatio if defined on the child (derived dimension enforcement).
-    // This is also done inside computeLayout, but we adjust the cell constraints
-    // here so the child receives correct available space.
+    // Also done inside computeLayout, but adjust cell constraints here
+    // so the child receives correct available space.
     const childAR = child.props.aspectRatio;
     if (childAR !== undefined && childAR > 0) {
       const hasExplicitW = child.props.width !== undefined;
@@ -797,11 +779,9 @@ function computeGridLayout(
   node.layout.contentWidth = Math.max(maxContentRight, innerWidth);
 }
 
-// ── Main layout computation ─────────────────────────────────────────
-
 /**
- * Compute layout for a tree of nodes starting from the root.
- * The root gets placed at (x, y) with the given available dimensions.
+ * Resolve flexbox constraints for the full tree, mutating each node's `.layout` in place.
+ * Incremental: skips clean subtrees when props and constraints haven't changed.
  */
 export function computeLayout(
   node: LayoutNode,
@@ -845,7 +825,6 @@ export function computeLayout(
 
   const pad = resolvePadding(props);
 
-  // Resolve own dimensions
   let width = resolveSize(props.width, availableWidth, node, "width") ?? availableWidth;
   let height = resolveSize(props.height, availableHeight, node, "height") ?? availableHeight;
 
@@ -902,7 +881,6 @@ export function computeLayout(
         node.layout.contentHeight = measured.height;
       }
     }
-    // Store cache for leaf nodes
     node.dirty = false;
     node._prevProps = props;
     node._prevWidth = availableWidth;
@@ -913,7 +891,6 @@ export function computeLayout(
   // Grid layout: dispatch to computeGridLayout instead of flex path
   if (props.display === "grid") {
     computeGridLayout(node, innerX, innerY, innerWidth, innerHeight);
-    // Store cache for grid nodes
     node.dirty = false;
     node._prevProps = props;
     node._prevWidth = availableWidth;
@@ -973,7 +950,7 @@ export function computeLayout(
   function measureChildEntry(child: LayoutNode): ChildEntry {
     const cp = child.props;
     const childFlexGrow = cp.flexGrow ?? cp.flex ?? 0;
-    const childFlexShrink = cp.flexShrink ?? 1;
+    const childFlexShrink = cp.flexShrink ?? (child.measureText ? 0 : 1);
     const childMargin = resolveMargin(cp);
     const childMarginAuto = resolveMarginAuto(cp);
     const mainMargin = isColumn
@@ -1035,7 +1012,6 @@ export function computeLayout(
       naturalCross = measureNaturalHeight(child, innerWidth);
     }
 
-    // Compute true content size for scroll containers (ignoring flex)
     let originalNatural = natural;
     if (childFlexGrow > 0 && basisVal === undefined) {
       // natural was set to 0 for flex distribution, but we need actual size
@@ -1079,7 +1055,6 @@ export function computeLayout(
   let wrapLines: WrapLine[];
 
   if (wrap === "wrap") {
-    // Split entries into lines that fit within mainSize
     wrapLines = [];
     let currentLine: ChildEntry[] = [];
     let currentMainTotal = 0;
@@ -1212,12 +1187,14 @@ export function computeLayout(
       }
       if (totalShrinkWeighted > 0) {
         const overflow = -remainingSpace;
+        let totalShrunk = 0;
         for (const entry of lineEntries) {
           if (entry.flexShrink > 0 && entry.natural > 0) {
             const shrinkAmount = Math.floor(
               (entry.flexShrink * entry.natural / totalShrinkWeighted) * overflow,
             );
             entry.natural = Math.max(0, entry.natural - shrinkAmount);
+            totalShrunk += shrinkAmount;
           }
           const cp = entry.node.props;
           const min = isColumn ? cp.minHeight : cp.minWidth;
@@ -1347,7 +1324,6 @@ export function computeLayout(
         childCrossSize = Math.min(childCrossSize, availableCross);
       }
 
-      // Resolve cross-axis offset with auto margins
       if (crossAutoStart && crossAutoEnd) {
         childCrossOffset = crossMarginBefore + Math.floor((availableCross - childCrossSize) / 2);
       } else if (crossAutoStart) {
@@ -1383,8 +1359,9 @@ export function computeLayout(
       const parentIsScroll = props.overflow === "scroll";
       const childAvailH = parentIsScroll && isColumn ? UNCONSTRAINED : childH;
       const childAvailW = parentIsScroll && !isColumn ? UNCONSTRAINED : childW;
+      const scrollbarReserve = parentIsScroll && isColumn ? 1 : 0;
       computeLayout(child, childX, childY,
-        isColumn ? childW : childAvailW,
+        isColumn ? Math.max(0, childW - scrollbarReserve) : childAvailW,
         isColumn ? childAvailH : childH);
 
       // RTL + row: flip x positions so children flow right-to-left
@@ -1407,8 +1384,15 @@ export function computeLayout(
   // Phase 5: Lay out absolute-positioned children
   for (const child of absoluteChildren) {
     const cp = child.props;
-    const childW = resolveSize(cp.width, innerWidth) ?? innerWidth;
-    const childH = resolveSize(cp.height, innerHeight) ?? innerHeight;
+    const explicitW = resolveSize(cp.width, innerWidth);
+    const explicitH = resolveSize(cp.height, innerHeight);
+
+    // When width/height is not explicitly set, measure the child's natural
+    // size instead of defaulting to the parent's full dimension.  This is
+    // critical for offset-based positioning (right / bottom): without it
+    // the natural size equals the parent size and the offset cancels out.
+    const childW = explicitW ?? measureNaturalWidth(child, innerHeight);
+    const childH = explicitH ?? measureNaturalHeight(child, innerWidth);
     const clampedW = clampSize(childW, cp.minWidth, cp.maxWidth);
     const clampedH = clampSize(childH, cp.minHeight, cp.maxHeight);
 
@@ -1433,8 +1417,6 @@ export function computeLayout(
     computeLayout(child, childX, childY, clampedW, clampedH);
   }
 
-  // contentHeight is the ACTUAL content total, not clamped to viewport.
-  // The viewport clip in paintScrollView handles visual clipping.
   node.layout.contentHeight = isColumn ? Math.max(contentTotal, innerHeight) : innerHeight;
   node.layout.contentWidth = isColumn ? innerWidth : Math.max(contentTotal, innerWidth);
 
@@ -1492,13 +1474,12 @@ export function measureNaturalHeight(
       if (i < visibleChildren.length - 1) total += gap;
     }
     return total + pad.top + pad.bottom + margin.top + margin.bottom;
-  } else {
-    let maxH = 0;
-    for (const child of visibleChildren) {
-      maxH = Math.max(maxH, measureNaturalHeight(child, innerWidth));
-    }
-    return maxH + pad.top + pad.bottom + margin.top + margin.bottom;
   }
+  let maxH = 0;
+  for (const child of visibleChildren) {
+    maxH = Math.max(maxH, measureNaturalHeight(child, innerWidth));
+  }
+  return maxH + pad.top + pad.bottom + margin.top + margin.bottom;
 }
 
 /**
@@ -1550,12 +1531,11 @@ export function measureNaturalWidth(
       if (i < visibleChildren.length - 1) total += gap;
     }
     return total + pad.left + pad.right + margin.left + margin.right;
-  } else {
-    // Column: widest child
-    let maxW = 0;
-    for (const child of visibleChildren) {
-      maxW = Math.max(maxW, measureNaturalWidth(child, availableHeight));
-    }
-    return maxW + pad.left + pad.right + margin.left + margin.right;
   }
+  // Column: widest child
+  let maxW = 0;
+  for (const child of visibleChildren) {
+    maxW = Math.max(maxW, measureNaturalWidth(child, availableHeight));
+  }
+  return maxW + pad.left + pad.right + margin.left + margin.right;
 }

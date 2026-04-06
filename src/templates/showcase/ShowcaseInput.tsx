@@ -1,39 +1,22 @@
-/**
- * ShowcaseInput -- "Input Controls" showcase template.
- *
- * Demos 9 input components with interactive state and headings.
- */
-
 import React, { useState } from "react";
 import { useColors } from "../../hooks/useColors.js";
 import { useTui } from "../../context/TuiContext.js";
 import { useInput } from "../../hooks/useInput.js";
-import { ScrollView } from "../../components/ScrollView.js";
-import { TextInput } from "../../components/TextInput.js";
-import { ChatInput } from "../../components/ChatInput.js";
-import { Button } from "../../components/Button.js";
-import { Checkbox } from "../../components/Checkbox.js";
-import { Switch } from "../../components/Switch.js";
-import { RadioGroup } from "../../components/RadioGroup.js";
-import { SearchInput } from "../../components/SearchInput.js";
-import { MaskedInput } from "../../components/MaskedInput.js";
-import { Form } from "../../components/Form.js";
-import type { FormField } from "../../components/Form.js";
+import { ScrollView } from "../../components/core/ScrollView.js";
+import { TextInput } from "../../components/core/TextInput.js";
+import { ChatInput } from "../../components/extras/ChatInput.js";
+import { Button } from "../../components/core/Button.js";
+import { Checkbox } from "../../components/core/Checkbox.js";
+import { Switch } from "../../components/core/Switch.js";
+import { RadioGroup } from "../../components/core/RadioGroup.js";
+import { SearchInput } from "../../components/extras/SearchInput.js";
+import { MaskedInput } from "../../components/extras/MaskedInput.js";
+import { Form } from "../../components/extras/Form.js";
+import type { FormField } from "../../components/extras/Form.js";
+import { heading, blank } from "./helpers.js";
 
 export interface ShowcaseInputProps {
   title?: string;
-}
-
-function heading(label: string, key: string): React.ReactElement {
-  const colors = useColors();
-  return React.createElement("tui-text", {
-    key, bold: true, color: colors.brand.primary,
-  }, `  ${label}`);
-}
-
-function blank(key: string): React.ReactElement {
-  const colors = useColors();
-  return React.createElement("tui-text", { key }, "");
 }
 
 const RADIO_OPTIONS = [

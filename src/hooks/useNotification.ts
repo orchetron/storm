@@ -1,12 +1,3 @@
-/**
- * useNotification — toast-like notification queue, behavioral only.
- *
- * Manages a queue of notifications with auto-removal after a configurable
- * duration. Returns current visible notifications for rendering.
- *
- * Uses useRef + forceUpdate() + useCleanup.
- */
-
 import { useRef } from "react";
 import { useCleanup } from "./useCleanup.js";
 import { useForceUpdate } from "./useForceUpdate.js";
@@ -72,7 +63,6 @@ export function useNotification(
       remove(oldest.id);
     }
 
-    // Schedule auto-removal
     if (duration > 0) {
       const timer = setTimeout(() => {
         timersRef.current.delete(id);

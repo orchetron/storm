@@ -31,6 +31,7 @@ export interface TuiContextValue {
 
 export const TuiContext = createContext<TuiContextValue | null>(null);
 
+/** Access screen, input, focus, exit, requestRender, flushSync, and renderContext. */
 export function useTui(): TuiContextValue {
   const ctx = useContext(TuiContext);
   if (!ctx) {

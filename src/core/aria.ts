@@ -1,13 +1,3 @@
-/**
- * ARIA-like semantic role system for terminal components.
- *
- * ARIA-equivalent semantics for terminal interfaces.
- * This module provides role definitions, property types, and helper
- * functions that generate screen-reader-style announcements from
- * semantic component metadata.
- */
-
-/** ARIA-like roles for terminal components */
 export type AriaRole =
   | "button" | "textbox" | "checkbox" | "radio" | "switch"
   | "listbox" | "option" | "menu" | "menuitem" | "tab" | "tabpanel"
@@ -18,10 +8,8 @@ export type AriaRole =
   | "spinbutton" | "slider" | "scrollbar" | "tooltip" | "timer"
   | "log" | "marquee" | "img" | "link" | "heading" | "group";
 
-/** Live region politeness */
 export type AriaLive = "off" | "polite" | "assertive";
 
-/** Semantic properties for accessibility */
 export interface AriaProps {
   role?: AriaRole;
   "aria-label"?: string;
@@ -55,8 +43,6 @@ export interface AriaProps {
   "aria-rowindex"?: number;
   "aria-rowspan"?: number;
 }
-
-// ── Role display names ──────────────────────────────────────────────
 
 const ROLE_NAMES: Partial<Record<AriaRole, string>> = {
   button: "button",
@@ -104,9 +90,6 @@ const ROLE_NAMES: Partial<Record<AriaRole, string>> = {
   group: "group",
 };
 
-// ── Announcement generation ─────────────────────────────────────────
-
-/** Generate a screen reader announcement string from aria props */
 export function ariaToAnnouncement(props: AriaProps): string {
   const parts: string[] = [];
 
@@ -183,7 +166,6 @@ export function ariaToAnnouncement(props: AriaProps): string {
     }
   }
 
-  // Sort direction
   if (props["aria-sort"] !== undefined && props["aria-sort"] !== "none") {
     parts.push(`sorted ${props["aria-sort"]}`);
   }
@@ -201,9 +183,6 @@ export function ariaToAnnouncement(props: AriaProps): string {
   return parts.join(", ");
 }
 
-// ── Describe helpers ────────────────────────────────────────────────
-
-/** Build AriaProps for a button */
 export function describeButton(label: string, disabled?: boolean, pressed?: boolean): AriaProps {
   const props: AriaProps = {
     role: "button",
@@ -218,7 +197,6 @@ export function describeButton(label: string, disabled?: boolean, pressed?: bool
   return props;
 }
 
-/** Build AriaProps for a checkbox */
 export function describeCheckbox(label: string, checked: boolean, disabled?: boolean): AriaProps {
   const props: AriaProps = {
     role: "checkbox",
@@ -231,7 +209,6 @@ export function describeCheckbox(label: string, checked: boolean, disabled?: boo
   return props;
 }
 
-/** Build AriaProps for a text input */
 export function describeTextInput(label: string, value: string, placeholder?: string): AriaProps {
   const props: AriaProps = {
     role: "textbox",
@@ -246,7 +223,6 @@ export function describeTextInput(label: string, value: string, placeholder?: st
   return props;
 }
 
-/** Build AriaProps for a progress bar */
 export function describeProgressBar(value: number, max: number, label?: string): AriaProps {
   const pct = max > 0 ? Math.round((value / max) * 100) : 0;
   const props: AriaProps = {
@@ -262,7 +238,6 @@ export function describeProgressBar(value: number, max: number, label?: string):
   return props;
 }
 
-/** Build AriaProps for a tab */
 export function describeTab(label: string, selected: boolean, index: number, total: number): AriaProps {
   return {
     role: "tab",
@@ -273,7 +248,6 @@ export function describeTab(label: string, selected: boolean, index: number, tot
   };
 }
 
-/** Build AriaProps for a menu item */
 export function describeMenuItem(label: string, disabled?: boolean, shortcut?: string): AriaProps {
   const props: AriaProps = {
     role: "menuitem",
@@ -288,7 +262,6 @@ export function describeMenuItem(label: string, disabled?: boolean, shortcut?: s
   return props;
 }
 
-/** Build AriaProps for a tree item */
 export function describeTreeItem(label: string, expanded: boolean, level: number): AriaProps {
   return {
     role: "treeitem",
@@ -298,7 +271,6 @@ export function describeTreeItem(label: string, expanded: boolean, level: number
   };
 }
 
-/** Build AriaProps for a list item */
 export function describeListItem(label: string, selected: boolean, index: number, total: number): AriaProps {
   return {
     role: "option",
@@ -309,7 +281,6 @@ export function describeListItem(label: string, selected: boolean, index: number
   };
 }
 
-/** Build AriaProps for a dialog */
 export function describeDialog(title: string): AriaProps {
   return {
     role: "dialog",
@@ -317,7 +288,6 @@ export function describeDialog(title: string): AriaProps {
   };
 }
 
-/** Build AriaProps for an alert */
 export function describeAlert(message: string, type: string): AriaProps {
   return {
     role: "alert",

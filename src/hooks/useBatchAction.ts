@@ -1,12 +1,3 @@
-/**
- * useBatchAction — select multiple items then perform bulk operations.
- *
- * Behavior only. Tracks a set of selected indices and provides
- * toggle, selectAll, deselectAll, and execute operations.
- *
- * Uses useRef + forceUpdate().
- */
-
 import { useRef } from "react";
 import { useForceUpdate } from "./useForceUpdate.js";
 

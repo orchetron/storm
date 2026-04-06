@@ -18,8 +18,6 @@ export interface SvgOptions {
   padding?: number;
 }
 
-// ── ANSI parsing types ──────────────────────────────────────────────
-
 interface CharStyle {
   fg: string | undefined;
   bg: string | undefined;
@@ -48,9 +46,7 @@ function parseAnsi(styledOutput: string): StyledChar[][] {
   let i = 0;
 
   while (i < styledOutput.length) {
-    // Check for ESC sequence
     if (styledOutput[i] === "\x1b" && styledOutput[i + 1] === "[") {
-      // Find the end of the escape sequence (a letter)
       let j = i + 2;
       while (j < styledOutput.length && !isLetter(styledOutput[j]!)) {
         j++;
@@ -92,7 +88,6 @@ function isLetter(ch: string): boolean {
 
 function applyAnsiParams(params: string, style: CharStyle): void {
   if (params === "" || params === "0") {
-    // Reset
     style.fg = undefined;
     style.bg = undefined;
     style.bold = false;
@@ -198,7 +193,6 @@ export function renderToSvg(
     `<rect width="${svgWidth}" height="${svgHeight}" fill="${escapeXml(backgroundColor)}" />`,
   );
 
-  // Render each line
   for (let lineIdx = 0; lineIdx < parsedLines.length && lineIdx < height; lineIdx++) {
     const parsedLine = parsedLines[lineIdx]!;
     if (parsedLine.length === 0) continue;
@@ -241,10 +235,8 @@ export function renderToSvg(
 
     svgParts.push(`</text>`);
 
-    // Render background colors as rects behind the text
     const bgRects = buildBgRects(parsedLine, lineIdx, charWidth, lineHeight, padding, fontSize);
     if (bgRects.length > 0) {
-      // Insert bg rects before the text element for this line
       // We'll collect them separately and inject them
       for (const rect of bgRects) {
         svgParts.splice(svgParts.length - (spans.length + 2), 0, rect);
@@ -309,7 +301,6 @@ function buildBgRects(
     const bg = i < chars.length ? chars[i]!.style.bg : undefined;
 
     if (bg !== runBg) {
-      // Flush previous run
       if (runBg !== undefined && runStart >= 0) {
         const x = padding + runStart * charW;
         const y = padding + lineIdx * lineH;

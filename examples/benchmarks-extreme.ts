@@ -1,11 +1,5 @@
 #!/usr/bin/env npx tsx
-/**
- * Storm TUI EXTREME Performance Benchmark Suite
- *
- * Honest, comprehensive benchmarks with real pipeline measurements.
- * Usage: npx tsx examples/benchmarks-extreme.ts
- */
-
+/** Extreme benchmarks with real pipeline measurements. Usage: npx tsx examples/benchmarks-extreme.ts */
 import React from "react";
 import { Writable } from "stream";
 import { performance } from "perf_hooks";
@@ -14,10 +8,8 @@ import { charWidth, stringWidth } from "../src/core/unicode.js";
 import { DiffRenderer } from "../src/core/diff.js";
 import { computeLayout, type LayoutNode, type LayoutResult } from "../src/layout/engine.js";
 import { renderToString } from "../src/reconciler/render-to-string.js";
-import { Box } from "../src/components/Box.js";
-import { Text } from "../src/components/Text.js";
-import { ScrollView } from "../src/components/ScrollView.js";
-import { SyntaxHighlight } from "../src/widgets/SyntaxHighlight.js";
+import { Box, Text, ScrollView } from "../src/components/index.js";
+import { SyntaxHighlight } from "../src/widgets/index.js";
 
 // ── Types & Helpers ─────────────────────────────────────────────────
 
@@ -483,4 +475,4 @@ section("Memory \u2014 Stress Test");
 
 // ── Summary ─────────────────────────────────────────────────────────
 console.log("\n\x1b[35m" + "\u2501".repeat(60) + "\x1b[0m");
-console.log("\x1b[1;35m  All extreme benchmarks complete. Storm is battle-tested.\x1b[0m\n");
+console.log("\x1b[1;35m  All extreme benchmarks complete.\x1b[0m\n");

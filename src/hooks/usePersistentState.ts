@@ -1,15 +1,5 @@
-/**
- * usePersistentState — save/restore state via a pluggable storage adapter.
- *
- * Uses useRef + forceUpdate() for imperative state management.
- * Ships with a default in-memory storage; users can provide file-backed
- * or other storage implementations.
- */
-
 import { useRef, useCallback } from "react";
 import { useForceUpdate } from "./useForceUpdate.js";
-
-// ── Storage adapter interface ─────────────────────────────────────
 
 export interface StateStorage {
   get(key: string): string | null;
@@ -29,8 +19,6 @@ export function memoryStorage(): StateStorage {
 
 // Singleton default storage so state persists across hook calls within a session
 const defaultStorage = memoryStorage();
-
-// ── Hook ──────────────────────────────────────────────────────────
 
 export interface UsePersistentStateOptions<T> {
   key: string;

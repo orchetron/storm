@@ -1,19 +1,3 @@
-/**
- * Optional tree-sitter integration for AST-accurate syntax highlighting.
- *
- * Tree-sitter is a native dependency — users who don't need it shouldn't
- * pay for it. This module is entirely lazy: nothing is imported until
- * `enableTreeSitter()` is explicitly called, and if the dependency is
- * missing the call is a safe no-op.
- *
- * Usage:
- *   import { enableTreeSitter } from "@orchetron/storm";
- *   await enableTreeSitter(); // dynamically imports web-tree-sitter
- *   // Now SyntaxHighlight uses tree-sitter when available
- */
-
-// ── Public interfaces ────────────────────────────────────────────────
-
 export interface TreeSitterTokenizer {
   tokenize(code: string, language: string): TreeSitterToken[];
   isLanguageAvailable(language: string): boolean;
@@ -38,8 +22,6 @@ export interface TreeSitterToken {
   startIndex: number;
   endIndex: number;
 }
-
-// ── Singleton ────────────────────────────────────────────────────────
 
 let treeSitterInstance: TreeSitterTokenizer | null = null;
 
@@ -68,8 +50,9 @@ export async function enableTreeSitter(): Promise<void> {
     // web-tree-sitter exports either { default: Parser } or Parser directly
     // depending on bundler/CJS vs ESM.
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-    const Parser: any =
-      (ParserModule as any).default ?? ParserModule;
+    // Dynamic import boundary — web-tree-sitter has no stable type export
+    const Parser: { init: () => Promise<void> } =
+      (ParserModule as unknown as { default?: { init: () => Promise<void> } }).default ?? (ParserModule as { init: () => Promise<void> });
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     await Parser.init();
     treeSitterInstance = createTreeSitterTokenizer(Parser);
@@ -78,8 +61,6 @@ export async function enableTreeSitter(): Promise<void> {
     // This is expected and not an error.
   }
 }
-
-// ── Language alias map ───────────────────────────────────────────────
 
 const languageMap: Record<string, string> = {
   javascript: "javascript",
@@ -126,8 +107,6 @@ const languageMap: Record<string, string> = {
   ocaml: "ocaml",
   ml: "ocaml",
 };
-
-// ── Node classification ──────────────────────────────────────────────
 
 /** Keywords recognised from tree-sitter AST node types. */
 const KEYWORD_NODE_TYPES = new Set([
@@ -313,10 +292,8 @@ function classifyNode(node: any): TreeSitterToken["type"] {
   return "plain";
 }
 
-// ── Tokenizer factory ────────────────────────────────────────────────
-
-function createTreeSitterTokenizer(Parser: any): TreeSitterTokenizer {
-  const loadedParsers = new Map<string, any>();
+function createTreeSitterTokenizer(Parser: any): TreeSitterTokenizer { // WASM boundary — web-tree-sitter has no stable type export
+  const loadedParsers = new Map<string, any>(); // WASM boundary — parser instances from web-tree-sitter
 
   return {
     isLanguageAvailable(language: string): boolean {

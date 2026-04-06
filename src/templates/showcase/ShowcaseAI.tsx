@@ -1,34 +1,24 @@
-/**
- * ShowcaseAI — "AI-Native Widgets" showcase template.
- *
- * Demos: TokenStream, ContextWindow, CostTracker, ModelBadge,
- * CommandBlock, PerformanceHUD, OperationTree, StreamingText,
- * WelcomeBanner.
- */
-
 import React from "react";
 import { colors as defaultColors } from "../../theme/colors.js";
 import { useColors } from "../../hooks/useColors.js";
 import { useTui } from "../../context/TuiContext.js";
 import { useInput } from "../../hooks/useInput.js";
-import { TokenStream } from "../../widgets/TokenStream.js";
-import { ContextWindow } from "../../widgets/ContextWindow.js";
-import { CostTracker } from "../../widgets/CostTracker.js";
-import { ModelBadge } from "../../widgets/ModelBadge.js";
-import { CommandBlock } from "../../widgets/CommandBlock.js";
-import { PerformanceHUD } from "../../widgets/PerformanceHUD.js";
-import { OperationTree } from "../../widgets/OperationTree.js";
-import { StreamingText } from "../../widgets/StreamingText.js";
-import { WelcomeBanner } from "../../widgets/WelcomeBanner.js";
-import { ScrollView } from "../../components/ScrollView.js";
+import { TokenStream } from "../../widgets/ai/TokenStream.js";
+import { ContextWindow } from "../../widgets/ai/ContextWindow.js";
+import { CostTracker } from "../../widgets/ai/CostTracker.js";
+import { ModelBadge } from "../../widgets/ai/ModelBadge.js";
+import { CommandBlock } from "../../widgets/ai/CommandBlock.js";
+import { PerformanceHUD } from "../../widgets/dev/PerformanceHUD.js";
+import { OperationTree } from "../../widgets/ai/OperationTree.js";
+import { StreamingText } from "../../widgets/ai/StreamingText.js";
+// WelcomeBanner removed — use custom welcome component
+import { ScrollView } from "../../components/core/ScrollView.js";
 import { useTerminal } from "../../hooks/useTerminal.js";
-import type { OpNode } from "../../widgets/OperationTree.js";
+import type { OpNode } from "../../widgets/ai/OperationTree.js";
 
 export interface ShowcaseAIProps {
   title?: string;
 }
-
-// heading and gap are plain helper functions used by ShowcaseAI below
 
 const OP_NODES: OpNode[] = [
   { id: "op1", label: "Analyzing request", status: "completed", durationMs: 120 },
@@ -49,7 +39,7 @@ const CONTEXT_BREAKDOWN = [
 
 export function ShowcaseAI(props: ShowcaseAIProps): React.ReactElement {
   const colors = useColors();
-  const { title = "AI-Native Widgets" } = props;
+  const { title = "AI Widgets" } = props;
   const { exit } = useTui();
   const { width } = useTerminal();
 
@@ -66,7 +56,7 @@ export function ShowcaseAI(props: ShowcaseAIProps): React.ReactElement {
 
   // 1. TokenStream
   const tokenStream = React.createElement(TokenStream, {
-    tokens: 1500, tokensPerSecond: 45, model: "qwen-2.5-72b", streaming: true,
+    tokens: 1500, tokensPerSecond: 45, model: "demo-model", streaming: true,
   });
 
   // 2. ContextWindow
@@ -81,7 +71,7 @@ export function ShowcaseAI(props: ShowcaseAIProps): React.ReactElement {
 
   // 4. ModelBadge
   const modelBadge = React.createElement(ModelBadge, {
-    model: "qwen-2.5-72b", provider: "community",
+    model: "demo-model", provider: "community",
     capabilities: ["vision", "tools"],
   });
 
@@ -107,10 +97,10 @@ export function ShowcaseAI(props: ShowcaseAIProps): React.ReactElement {
     cursor: true, streaming: false,
   });
 
-  // 9. WelcomeBanner
-  const welcomeBanner = React.createElement(WelcomeBanner, {
-    title: "STORM", subtitle: "Terminal UI Framework",
-  });
+  // 9. WelcomeBanner (removed — placeholder)
+  const welcomeBanner = React.createElement("tui-text", {
+    color: colors.text.secondary, italic: true,
+  }, "WelcomeBanner removed — use custom welcome component");
 
   const footer = React.createElement("tui-text", { dim: true }, "  [q] Quit");
 

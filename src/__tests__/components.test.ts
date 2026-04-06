@@ -8,30 +8,11 @@
 import { describe, it, expect, afterEach } from "vitest";
 import React from "react";
 import { renderForTest, expectOutput } from "../testing/index.js";
-import { Card } from "../components/Card.js";
-import { Alert } from "../components/Alert.js";
-import { Heading } from "../components/Heading.js";
-import { Paragraph } from "../components/Paragraph.js";
-import { ProgressBar } from "../components/ProgressBar.js";
-import { Divider } from "../components/Divider.js";
-import { Separator } from "../components/Separator.js";
-import { Badge } from "../components/Badge.js";
-import { Tabs } from "../components/Tabs.js";
-import { Tag } from "../components/Tag.js";
-import { Spacer } from "../components/Spacer.js";
-import { Newline } from "../components/Newline.js";
-import { Button } from "../components/Button.js";
-import { Spinner } from "../components/Spinner.js";
-import { Switch } from "../components/Switch.js";
-import { Breadcrumb } from "../components/Breadcrumb.js";
-import { Link } from "../components/Link.js";
-import { Footer } from "../components/Footer.js";
-import { GradientProgress } from "../components/GradientProgress.js";
-import { DefinitionList } from "../components/DefinitionList.js";
-import { Tooltip } from "../components/Tooltip.js";
-import { Avatar } from "../components/Avatar.js";
-import { Sparkline } from "../components/Sparkline.js";
-import { Table } from "../components/Table.js";
+import {
+  Card, Alert, Heading, Paragraph, ProgressBar, Divider, Badge, Tabs, Tag,
+  Spacer, Newline, Button, Spinner, Switch, Breadcrumb, Link, Footer,
+  GradientProgress, DefinitionList, Tooltip, Avatar, Sparkline, Table,
+} from "../components/index.js";
 
 // ── Card ──────────────────────────────────────────────────────────────
 
@@ -478,41 +459,12 @@ describe("Divider", () => {
       React.createElement(Divider, { width: 5 }),
       { width: 10, height: 3 },
     );
-    // The divider should render within the visible area
     expect(result.output.length).toBeGreaterThan(0);
-  });
-});
-
-// ── Separator ─────────────────────────────────────────────────────────
-
-describe("Separator", () => {
-  it("renders line style by default", () => {
-    const result = renderForTest(
-      React.createElement(Separator, {}),
-      { width: 40, height: 3 },
-    );
-    expect(result.output.includes("\u2500")).toBe(true);
-  });
-
-  it("renders dashed style", () => {
-    const result = renderForTest(
-      React.createElement(Separator, { style: "dashed" }),
-      { width: 40, height: 3 },
-    );
-    expect(result.output.includes("\u2504")).toBe(true);
-  });
-
-  it("renders dotted style", () => {
-    const result = renderForTest(
-      React.createElement(Separator, { style: "dotted" }),
-      { width: 40, height: 3 },
-    );
-    expect(result.output.includes("\u254C")).toBe(true);
   });
 
   it("renders storm style", () => {
     const result = renderForTest(
-      React.createElement(Separator, { style: "storm" }),
+      React.createElement(Divider, { style: "storm" }),
       { width: 40, height: 3 },
     );
     expect(result.output.includes("\u2501")).toBe(true);
@@ -520,18 +472,10 @@ describe("Separator", () => {
 
   it("renders with label", () => {
     const result = renderForTest(
-      React.createElement(Separator, { label: "Section" }),
+      React.createElement(Divider, { label: "Section" }),
       { width: 40, height: 3 },
     );
     expect(result.hasText("Section")).toBe(true);
-  });
-
-  it("renders without label", () => {
-    const result = renderForTest(
-      React.createElement(Separator, {}),
-      { width: 40, height: 3 },
-    );
-    expect(result.output.length).toBeGreaterThan(0);
   });
 });
 

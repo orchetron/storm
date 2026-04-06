@@ -13,3 +13,15 @@ export {
   type TreeSitterToken,
   type TreeSitterTokenizer,
 } from "./tree-sitter.js";
+export { findNextNavigable, findFirstNavigable, computeScrollWindow } from "./navigation.js";
+export {
+  computeColumnWidths,
+  buildSeparatorText,
+  shouldStripe,
+  computeVirtualWindow,
+  formatRowIndicator,
+  headerTextWithSort,
+  buildRowLine,
+  type ColumnWidthInput,
+  type VirtualWindow,
+} from "./table-render.js";

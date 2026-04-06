@@ -1,13 +1,3 @@
-/**
- * useWizard — multi-step flow with per-step validation.
- *
- * Behavior only. Manages current step, validation errors, and
- * navigation between steps. Calls onComplete when advancing
- * past the last step.
- *
- * Uses useRef + forceUpdate().
- */
-
 import { useRef } from "react";
 import { useForceUpdate } from "./useForceUpdate.js";
 

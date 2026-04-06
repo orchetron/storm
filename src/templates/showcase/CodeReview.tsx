@@ -1,20 +1,13 @@
-/**
- * CodeReview — terminal code review TUI template.
- *
- * File tree, diff viewer with syntax highlighting, and review
- * comment area. Uses Storm theme defaultColors.
- */
-
 import React, { useState, useRef } from "react";
 import { useTui } from "../../context/TuiContext.js";
 import { useInput } from "../../hooks/useInput.js";
-import { Breadcrumb } from "../../components/Breadcrumb.js";
-import { Badge } from "../../components/Badge.js";
-import { Tag } from "../../components/Tag.js";
-import { Button } from "../../components/Button.js";
-import { TextInput } from "../../components/TextInput.js";
-import { ScrollView } from "../../components/ScrollView.js";
-import { KeyboardHelp } from "../../components/KeyboardHelp.js";
+import { Breadcrumb } from "../../components/extras/Breadcrumb.js";
+import { Badge } from "../../components/extras/Badge.js";
+import { Tag } from "../../components/extras/Tag.js";
+import { Button } from "../../components/core/Button.js";
+import { TextInput } from "../../components/core/TextInput.js";
+import { ScrollView } from "../../components/core/ScrollView.js";
+import { KeyboardHelp } from "../../components/extras/KeyboardHelp.js";
 import { useTerminal } from "../../hooks/useTerminal.js";
 import { colors as defaultColors } from "../../theme/colors.js";
 import { useColors } from "../../hooks/useColors.js";

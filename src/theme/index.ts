@@ -31,32 +31,12 @@ export {
   type ThemeShades,
 } from "./shades.js";
 
-// ── Deep merge helpers ──────────────────────────────────────────────
+import { deepMerge } from "./utils.js";
 
 /** Recursively makes all properties optional. */
 export type DeepPartial<T> = {
   [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];
 };
-
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function deepMerge<T extends Record<string, unknown>>(base: T, overrides: Record<string, unknown>): T {
-  const result = { ...base } as Record<string, unknown>;
-  for (const key of Object.keys(overrides)) {
-    // Prototype pollution protection
-    if (key === "__proto__" || key === "constructor" || key === "prototype") continue;
-    const baseVal = result[key];
-    const overVal = overrides[key];
-    if (isPlainObject(baseVal) && isPlainObject(overVal)) {
-      result[key] = deepMerge(baseVal as Record<string, unknown>, overVal);
-    } else {
-      result[key] = overVal;
-    }
-  }
-  return result as T;
-}
 
 /**
  * Deep-merge overrides onto a base theme. Only the properties you specify
@@ -72,8 +52,6 @@ export function extendTheme(base: StormColors, overrides: DeepPartial<StormColor
 export function createTheme(partial: DeepPartial<StormColors>): StormColors {
   return extendTheme(defaultColors, partial);
 }
-
-// ── CSS variable → StormColors extraction ─────────────────────────
 
 /**
  * Mapping from `--storm-{group}-{key}` CSS variable names to nested
@@ -166,8 +144,3 @@ export function extractThemeOverrides(
   return overrides as DeepPartial<StormColors>;
 }
 
-// Theme switching: pass a new `theme` prop to <ThemeProvider> from the parent.
-// A `useThemeSwitcher` hook previously existed here but was broken — it stored
-// the new theme in a local ref without updating the context provider value, so
-// downstream `useTheme()` calls never saw the change. The correct pattern is
-// controlled state in the component that renders <ThemeProvider>.

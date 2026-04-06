@@ -84,7 +84,6 @@ export function screenshotPlugin(options: ScreenshotPluginOptions = {}): StormPl
 
     const svg = bufferToSvg(buffer);
 
-    // Ensure output directory exists
     fs.mkdirSync(outputDir, { recursive: true });
 
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
@@ -117,7 +116,6 @@ export function screenshotPlugin(options: ScreenshotPluginOptions = {}): StormPl
       `<rect width="${svgWidth}" height="${svgHeight}" fill="${escapeXml(backgroundColor)}" />`,
     );
 
-    // Render each row from the buffer
     for (let row = 0; row < buffer.height; row++) {
       const y = padding + (row + 1) * lineHeight - fontSize * 0.2;
 
@@ -133,7 +131,6 @@ export function screenshotPlugin(options: ScreenshotPluginOptions = {}): StormPl
         const bold = isBold(buffer, col, row);
 
         if (fg !== runFg || bold !== runBold) {
-          // Flush the current run
           if (runChars.length > 0) {
             parts.push(buildTextSpan(runStart, y, runChars, runFg, runBold, charWidthPx));
           }
@@ -146,7 +143,6 @@ export function screenshotPlugin(options: ScreenshotPluginOptions = {}): StormPl
         }
       }
 
-      // Flush last run
       if (runChars.length > 0) {
         parts.push(buildTextSpan(runStart, y, runChars, runFg, runBold, charWidthPx));
       }
@@ -170,14 +166,11 @@ export function screenshotPlugin(options: ScreenshotPluginOptions = {}): StormPl
   }
 }
 
-// ── Helpers ─────────────────────────────────────────────────────────
-
 const DEFAULT_COLOR = -1;
 
 function fgHex(buffer: ScreenBuffer, x: number, y: number): string {
   const fg = buffer.getFg(x, y);
   if (fg === DEFAULT_COLOR) return "#D4D4D4"; // default terminal fg
-  // Convert packed RGB int to hex
   const r = (fg >> 16) & 0xff;
   const g = (fg >> 8) & 0xff;
   const b = fg & 0xff;

@@ -1,13 +1,4 @@
 /**
- * Shared formatting utilities for Storm TUI widgets.
- *
- * Centralizes number, duration, and cost formatting to avoid
- * duplicating the same helpers across multiple widget files.
- *
- * @module
- */
-
-/**
  * Format a number with K/M suffixes.
  * e.g. 1500 -> "1.5K", 2000000 -> "2.0M"
  */
@@ -35,7 +26,6 @@ export function fmtDuration(ms: number): string {
  */
 export function fmtCost(cost: number, currency: string = "$"): string {
   if (cost < 0.01) return `${currency}${cost.toFixed(4)}`;
-  if (cost < 1) return `${currency}${cost.toFixed(2)}`;
   return `${currency}${cost.toFixed(2)}`;
 }
 
@@ -69,4 +59,25 @@ export function fmtRelativeTime(timestamp: number): string {
  */
 export function fmtPercent(value: number, decimals: number = 1): string {
   return `${(value * 100).toFixed(decimals)}%`;
+}
+
+/** Max rows to sample when auto-sizing column widths. */
+export const COL_WIDTH_SAMPLE_SIZE = 100;
+
+/**
+ * Pad (or truncate) a string to fit a fixed-width table cell.
+ *
+ * If `text` is longer than `width`, it is truncated with an ellipsis (\u2026).
+ * Otherwise it is padded with spaces according to the given alignment.
+ */
+export function padCell(text: string | undefined | null, width: number, align: "left" | "center" | "right"): string {
+  const t = text ?? "";
+  if (t.length > width) return t.slice(0, width - 1) + "\u2026";
+  const gap = width - t.length;
+  if (align === "right") return " ".repeat(gap) + t;
+  if (align === "center") {
+    const left = Math.floor(gap / 2);
+    return " ".repeat(left) + t + " ".repeat(gap - left);
+  }
+  return t + " ".repeat(gap);
 }

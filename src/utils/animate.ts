@@ -1,11 +1,3 @@
-/**
- * animate — easing/tween utility for terminal animations.
- *
- * Provides simple interpolation between numeric values with configurable
- * easing functions. Designed to work with the imperative requestRender()
- * pattern used throughout Storm TUI.
- */
-
 export type EasingFn = (t: number) => number;
 
 export const easings = {

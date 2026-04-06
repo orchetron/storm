@@ -17,10 +17,9 @@ import type { TuiElement, TuiTextNode, TuiRoot } from "../reconciler/types.js";
 import { isTuiElement, isTuiTextNode } from "../reconciler/types.js";
 import { parseColor, Attr } from "../core/types.js";
 import { colors } from "../theme/index.js";
-import type { RenderMetrics } from "./performance-monitor.js";
+import type { PerformanceMetrics } from "./performance-monitor.js";
 import type { LoggedEvent } from "./event-logger.js";
-
-// ── Theme-derived color constants ──────────────────────────────────
+import { miniSparkline } from "../utils/sparkline.js";
 
 const COL_BRAND    = parseColor(colors.brand.primary);
 const COL_BRAND_LT = parseColor(colors.brand.light);
@@ -36,8 +35,6 @@ const COL_SUCCESS  = parseColor(colors.success);
 const COL_WARNING  = parseColor(colors.warning);
 const COL_ERROR    = parseColor(colors.error);
 
-// ── Types ──────────────────────────────────────────────────────────
-
 export type DevToolsPanel = "tree" | "styles" | "performance" | "events";
 
 export interface DevToolsOverlayOptions {
@@ -49,8 +46,6 @@ export interface DevToolsOverlayOptions {
   panelHeight?: number;
 }
 
-// ── Internal tree node for collapsible view ────────────────────────
-
 interface TreeEntry {
   element: TuiElement;
   depth: number;
@@ -58,22 +53,6 @@ interface TreeEntry {
   collapsed: boolean;
   label: string;
 }
-
-// ── Sparkline helper ───────────────────────────────────────────────
-
-const SPARK_CHARS = "▁▂▃▄▅▆▇█";
-
-function sparkline(values: number[], width: number): string {
-  if (values.length === 0) return "";
-  const slice = values.slice(-width);
-  const max = Math.max(...slice, 1);
-  return slice.map(v => {
-    const idx = Math.min(Math.round((v / max) * (SPARK_CHARS.length - 1)), SPARK_CHARS.length - 1);
-    return SPARK_CHARS[idx]!;
-  }).join("");
-}
-
-// ── Buffer drawing helpers ─────────────────────────────────────────
 
 function writeStr(
   buf: ScreenBuffer,
@@ -102,45 +81,24 @@ function fillRegion(buf: ScreenBuffer, x0: number, y0: number, x1: number, y1: n
   }
 }
 
-// ── Main factory ───────────────────────────────────────────────────
-
 /**
  * Creates a DevTools overlay middleware that renders a debug panel.
  *
- * Features:
- * - Component tree view (collapsible, shows element type + key props)
- * - Style inspector (shows computed styles for selected element)
- * - Performance metrics (FPS, paint/diff/flush timing, cells changed)
- * - Event log (recent input events with timestamps)
- * - Navigation: Tab to switch panels, Up/Down to navigate tree
- * - Selected element highlighting (colored border in main view)
- *
- * Toggle with F12 (configurable).
+ * Panels: component tree, style inspector, performance metrics, event log. Toggle with F12.
  */
 export function createDevToolsOverlay(options?: DevToolsOverlayOptions): {
   middleware: RenderMiddleware;
-  /** Set the root element for tree inspection */
   setRoot: (root: TuiRoot) => void;
-  /** Toggle visibility */
   toggle: () => void;
-  /** Check if visible */
   isVisible: () => boolean;
-  /** Switch active panel */
   setPanel: (panel: DevToolsPanel) => void;
-  /** Get active panel */
   getPanel: () => DevToolsPanel;
-  /** Navigate selection in tree view */
   selectNext: () => void;
   selectPrev: () => void;
-  /** Toggle collapse/expand for selected tree node */
   toggleCollapse: () => void;
-  /** Cycle to the next panel tab */
   selectNextPanel: () => void;
-  /** Cycle to the previous panel tab */
   selectPrevPanel: () => void;
-  /** Feed performance metrics (call each frame) */
-  setMetrics: (metrics: RenderMetrics) => void;
-  /** Feed event log entries */
+  setMetrics: (metrics: PerformanceMetrics) => void;
   setEvents: (events: readonly LoggedEvent[]) => void;
 } {
   const panelHeight = options?.panelHeight ?? 12;
@@ -155,7 +113,7 @@ export function createDevToolsOverlay(options?: DevToolsOverlayOptions): {
   const collapsedSet = new Set<TuiElement>();
 
   // Performance state
-  let currentMetrics: RenderMetrics | null = null;
+  let currentMetrics: PerformanceMetrics | null = null;
   const fpsHistory: number[] = [];
   const FPS_HISTORY_MAX = 60;
 
@@ -184,7 +142,6 @@ export function createDevToolsOverlay(options?: DevToolsOverlayOptions): {
     const isCollapsed = collapsedSet.has(node);
     const layout = node.layoutNode.layout;
 
-    // Build a compact label
     const parts: string[] = [node.type];
     const key = node.props["key"] as string | number | undefined;
     if (key !== undefined) parts.push(`key=${String(key)}`);
@@ -304,7 +261,6 @@ export function createDevToolsOverlay(options?: DevToolsOverlayOptions): {
       return;
     }
 
-    // Ensure selected item is visible (scroll)
     if (selectedIdx < treeScrollOffset) {
       treeScrollOffset = selectedIdx;
     } else if (selectedIdx >= treeScrollOffset + contentHeight) {
@@ -412,7 +368,6 @@ export function createDevToolsOverlay(options?: DevToolsOverlayOptions): {
       }
     }
 
-    // Render as two-column layout
     const labelWidth = Math.max(...lines.map(l => l.label.length), 8) + 1;
 
     for (let row = 0; row < contentHeight && row < lines.length; row++) {
@@ -448,7 +403,7 @@ export function createDevToolsOverlay(options?: DevToolsOverlayOptions): {
 
       // Sparkline
       const sparkW = Math.min(fpsHistory.length, panelWidth - halfW - 4);
-      const spark = sparkline(fpsHistory, sparkW);
+      const spark = miniSparkline(fpsHistory.slice(-sparkW));
       writeStr(buf, halfW, y, " " + spark, COL_BRAND, COL_SURF_RAISED);
     }
 
@@ -669,7 +624,7 @@ export function createDevToolsOverlay(options?: DevToolsOverlayOptions): {
       activePanel = panels[(idx - 1 + panels.length) % panels.length]!;
     },
 
-    setMetrics(metrics: RenderMetrics) {
+    setMetrics(metrics: PerformanceMetrics) {
       currentMetrics = metrics;
       fpsHistory.push(metrics.avgFps);
       if (fpsHistory.length > FPS_HISTORY_MAX) {

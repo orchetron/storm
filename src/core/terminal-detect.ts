@@ -1,14 +1,3 @@
-/**
- * Terminal capability detection.
- *
- * Reads environment variables and known terminal program capabilities
- * to build a {@link TerminalCapabilities} descriptor. No escape-sequence
- * queries are sent — detection is purely static and side-effect free.
- *
- * @module
- */
-
-/** Detected terminal capabilities. */
 export interface TerminalCapabilities {
   /** Terminal name (xterm, iterm2, alacritty, kitty, wezterm, etc.) */
   name: string;
@@ -41,8 +30,6 @@ export interface TerminalCapabilities {
   /** Terminal height in rows */
   rows: number;
 }
-
-// ── Known terminal program capability maps ───────────────────────────
 
 interface KnownCaps {
   readonly name: string;
@@ -143,8 +130,6 @@ const KNOWN_TERMINALS: ReadonlyMap<string, KnownCaps> = new Map([
   ],
 ]);
 
-// ── Helpers ──────────────────────────────────────────────────────────
-
 function envOrEmpty(key: string): string {
   return process.env[key] ?? "";
 }
@@ -157,8 +142,6 @@ function inferNameFromTerm(term: string): string {
   if (term.startsWith("linux")) return "linux-console";
   return term || "unknown";
 }
-
-// ── Public API ───────────────────────────────────────────────────────
 
 /**
  * Detect terminal capabilities from environment variables.

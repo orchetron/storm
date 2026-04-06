@@ -1,13 +1,3 @@
-/**
- * useEasedInterval — variable-speed frame timer.
- *
- * Each frame can have a different duration. Uses chained setTimeout
- * (not setInterval) so each timeout schedules the next with the
- * appropriate duration. Cycles through the durations array.
- *
- * Uses useRef + setTimeout + useCleanup.
- */
-
 import { useRef } from "react";
 import { useCleanup } from "./useCleanup.js";
 import { useForceUpdate } from "./useForceUpdate.js";

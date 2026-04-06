@@ -1,14 +1,5 @@
-/**
- * Internal element types for the TUI reconciler.
- *
- * These are the "host" elements that the React reconciler creates
- * and manages. They form a tree that gets laid out and painted.
- */
-
 import type { LayoutProps, LayoutResult, LayoutNode, FlexDirection, FlexWrap, Align, AlignSelf, Justify, Overflow, Display, Position } from "../layout/engine.js";
 import type { Style, BorderStyle } from "../core/types.js";
-
-// ── Host element types ──────────────────────────────────────────────
 
 export const TUI_BOX = "tui-box";
 export const TUI_TEXT = "tui-text";
@@ -22,8 +13,6 @@ export type TuiElementType =
   | typeof TUI_SCROLL_VIEW
   | typeof TUI_TEXT_INPUT
   | typeof TUI_OVERLAY;
-
-// ── Props ───────────────────────────────────────────────────────────
 
 export interface TuiBoxProps extends LayoutProps {
   borderStyle?: BorderStyle;
@@ -93,8 +82,6 @@ export interface TuiOverlayProps extends Omit<LayoutProps, "position"> {
 
 export type TuiProps = TuiBoxProps | TuiTextProps | TuiScrollViewProps | TuiTextInputProps | TuiOverlayProps;
 
-// ── Background patterns ────────────────────────────────────────────
-
 export type BackgroundPreset = "dots" | "grid" | "crosshatch";
 
 export interface BackgroundPattern {
@@ -126,8 +113,6 @@ export interface BackgroundPattern {
 
 export type BackgroundProp = BackgroundPreset | BackgroundPattern;
 
-// ── Element node ────────────────────────────────────────────────────
-
 export interface TuiElement {
   type: TuiElementType;
   props: Record<string, unknown>;
@@ -149,6 +134,17 @@ export interface TuiTextNode {
   parent: TuiElement | null;
 }
 
+/** Ref target for imperative mutation. Set properties directly, then call requestRender(). */
+export interface HostTextNode extends Pick<TuiTextNode, "text"> {
+  scrollTop?: number;
+  scrollLeft?: number;
+  cursorOffset?: number;
+  value?: string;
+  _elementPositions?: unknown;
+  _viewportHeight?: unknown;
+  _viewportWidth?: unknown;
+}
+
 export function isTuiElement(node: TuiElement | TuiTextNode): node is TuiElement {
   return node.type !== "TEXT_NODE";
 }
@@ -156,8 +152,6 @@ export function isTuiElement(node: TuiElement | TuiTextNode): node is TuiElement
 export function isTuiTextNode(node: TuiElement | TuiTextNode): node is TuiTextNode {
   return node.type === "TEXT_NODE";
 }
-
-// ── Root container ──────────────────────────────────────────────────
 
 export interface TuiRoot {
   children: Array<TuiElement | TuiTextNode>;
@@ -168,8 +162,6 @@ export interface TuiRoot {
 export function createRoot(onCommit: () => void): TuiRoot {
   return { children: [], onCommit };
 }
-
-// ── Element creation ────────────────────────────────────────────────
 
 export function createElement(
   type: TuiElementType,
@@ -231,7 +223,6 @@ export function extractLayoutProps(
   const showLeft = hasBorder && (props["borderLeft"] as boolean | undefined) !== false;
   const showRight = hasBorder && (props["borderRight"] as boolean | undefined) !== false;
 
-  // Resolve explicit padding values, then add border offset per side
   const basePad = (props["padding"] as number | undefined) ?? 0;
   const basePX = (props["paddingX"] as number | undefined) ?? basePad;
   const basePY = (props["paddingY"] as number | undefined) ?? basePad;
@@ -240,7 +231,6 @@ export function extractLayoutProps(
   const pLeft = ((props["paddingLeft"] as number | undefined) ?? basePX) + (showLeft ? 1 : 0);
   const pRight = ((props["paddingRight"] as number | undefined) ?? basePX) + (showRight ? 1 : 0);
 
-  // Resolve margin values
   const baseMargin = (props["margin"] as number | undefined) ?? 0;
   const baseMX = (props["marginX"] as number | undefined) ?? baseMargin;
   const baseMY = (props["marginY"] as number | undefined) ?? baseMargin;
@@ -250,45 +240,23 @@ export function extractLayoutProps(
   const mRight = (props["marginRight"] as number | undefined) ?? baseMX;
   const hasMargin = mTop > 0 || mBottom > 0 || mLeft > 0 || mRight > 0;
 
-  return {
-    ...(props["width"] !== undefined ? { width: props["width"] as number | `${number}%` } : {}),
-    ...(props["height"] !== undefined ? { height: props["height"] as number | `${number}%` } : {}),
-    ...(props["minWidth"] !== undefined ? { minWidth: props["minWidth"] as number } : {}),
-    ...(props["minHeight"] !== undefined ? { minHeight: props["minHeight"] as number } : {}),
-    ...(props["maxWidth"] !== undefined ? { maxWidth: props["maxWidth"] as number } : {}),
-    ...(props["maxHeight"] !== undefined ? { maxHeight: props["maxHeight"] as number } : {}),
-    ...(props["flex"] !== undefined ? { flex: props["flex"] as number } : {}),
-    ...(props["flexGrow"] !== undefined ? { flexGrow: props["flexGrow"] as number } : {}),
-    ...(props["flexShrink"] !== undefined ? { flexShrink: props["flexShrink"] as number } : {}),
-    ...(props["flexBasis"] !== undefined ? { flexBasis: props["flexBasis"] as number } : {}),
-    ...(props["flexDirection"] !== undefined ? { flexDirection: props["flexDirection"] as FlexDirection } : {}),
-    ...(props["flexWrap"] !== undefined ? { flexWrap: props["flexWrap"] as FlexWrap } : {}),
-    paddingTop: pTop,
-    paddingBottom: pBottom,
-    paddingLeft: pLeft,
-    paddingRight: pRight,
-    ...(hasMargin ? { marginTop: mTop } : {}),
-    ...(hasMargin ? { marginBottom: mBottom } : {}),
-    ...(hasMargin ? { marginLeft: mLeft } : {}),
-    ...(hasMargin ? { marginRight: mRight } : {}),
-    ...(props["gap"] !== undefined ? { gap: props["gap"] as number } : {}),
-    ...(props["columnGap"] !== undefined ? { columnGap: props["columnGap"] as number } : {}),
-    ...(props["rowGap"] !== undefined ? { rowGap: props["rowGap"] as number } : {}),
-    ...(props["alignItems"] !== undefined ? { alignItems: props["alignItems"] as Align } : {}),
-    ...(props["alignSelf"] !== undefined ? { alignSelf: props["alignSelf"] as AlignSelf } : {}),
-    ...(props["justifyContent"] !== undefined ? { justifyContent: props["justifyContent"] as Justify } : {}),
-    ...(type === TUI_SCROLL_VIEW
-      ? { overflow: "scroll" as Overflow }
-      : props["overflow"] !== undefined
-        ? { overflow: props["overflow"] as Overflow }
-        : {}),
-    ...(props["overflowX"] !== undefined ? { overflowX: props["overflowX"] as Overflow } : {}),
-    ...(props["overflowY"] !== undefined ? { overflowY: props["overflowY"] as Overflow } : {}),
-    ...(props["display"] !== undefined ? { display: props["display"] as Display } : {}),
-    ...(props["position"] !== undefined ? { position: props["position"] as Position } : {}),
-    ...(props["top"] !== undefined ? { top: props["top"] as number } : {}),
-    ...(props["left"] !== undefined ? { left: props["left"] as number } : {}),
-    ...(props["right"] !== undefined ? { right: props["right"] as number } : {}),
-    ...(props["bottom"] !== undefined ? { bottom: props["bottom"] as number } : {}),
-  };
+  const result: LayoutProps = { paddingTop: pTop, paddingBottom: pBottom, paddingLeft: pLeft, paddingRight: pRight };
+  const set = (key: string, val: unknown) => { if (val !== undefined) (result as Record<string, unknown>)[key] = val; };
+  set("width", props["width"]); set("height", props["height"]);
+  set("minWidth", props["minWidth"]); set("minHeight", props["minHeight"]);
+  set("maxWidth", props["maxWidth"]); set("maxHeight", props["maxHeight"]);
+  set("flex", props["flex"]); set("flexGrow", props["flexGrow"]);
+  set("flexShrink", props["flexShrink"]); set("flexBasis", props["flexBasis"]);
+  set("flexDirection", props["flexDirection"]); set("flexWrap", props["flexWrap"]);
+  if (hasMargin) { result.marginTop = mTop; result.marginBottom = mBottom; result.marginLeft = mLeft; result.marginRight = mRight; }
+  set("gap", props["gap"]); set("columnGap", props["columnGap"]); set("rowGap", props["rowGap"]);
+  set("alignItems", props["alignItems"]); set("alignSelf", props["alignSelf"]);
+  set("justifyContent", props["justifyContent"]);
+  if (type === TUI_SCROLL_VIEW) result.overflow = "scroll" as Overflow;
+  else set("overflow", props["overflow"]);
+  set("overflowX", props["overflowX"]); set("overflowY", props["overflowY"]);
+  set("display", props["display"]); set("position", props["position"]);
+  set("top", props["top"]); set("left", props["left"]);
+  set("right", props["right"]); set("bottom", props["bottom"]);
+  return result;
 }

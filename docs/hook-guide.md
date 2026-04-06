@@ -1,7 +1,5 @@
 # Storm TUI Hook Guide
 
-> For a full API reference of all hooks with signatures, see [Hooks Reference](hooks.md).
-
 All hooks are imported from `@orchetron/storm`. They follow React conventions but are adapted for the custom reconciler -- notably, `useEffect` cleanup does not fire, so cleanup is handled by `useCleanup`.
 
 ---
@@ -159,6 +157,19 @@ useTick(80, (tick) => {
 
 For most apps that need focus, shortcuts, timers, or animation.
 
+### useHotkey()
+
+Declarative keyboard shortcut registration with labels for help display.
+
+```tsx
+useHotkey({
+  hotkeys: [
+    { key: "ctrl+s", label: "Save", action: () => save() },
+    { key: "ctrl+q", label: "Quit", action: () => exit() },
+  ],
+});
+```
+
 ### useFocus()
 
 Make a component focusable. Tab cycling is handled globally by the renderer.
@@ -181,21 +192,52 @@ function Button({ label }: { label: string }) {
 }
 ```
 
-### useKeyboardShortcuts()
+### useMouse()
 
-Declarative shortcut definitions. Matches key + modifiers and calls the handler.
+Subscribe to mouse events including clicks, scroll, and motion.
 
 ```ts
-import { useKeyboardShortcuts } from "@orchetron/storm";
+import { useMouse } from "@orchetron/storm";
 
-function App() {
-  useKeyboardShortcuts([
-    { key: "q", handler: () => process.exit(0), description: "Quit" },
-    { key: "r", ctrl: true, handler: () => refresh(), description: "Refresh" },
-    { key: "f", handler: () => toggleSearch(), description: "Find" },
-  ], { isActive: true });
-}
+useMouse((event) => {
+  if (event.button === "left") console.log(`Clicked at ${event.x}, ${event.y}`);
+  if (event.button === "scroll-up") console.log("Scrolled up");
+}, { isActive: true });
 ```
+
+**Signature:** `useMouse(handler: (event: MouseEvent) => void, options?: { isActive?: boolean }) => void`
+
+### useFocusManager()
+
+Programmatic focus control -- cycle through focusable elements, jump to a specific ID, or enable/disable the focus system.
+
+```ts
+import { useFocusManager, useInput } from "@orchetron/storm";
+
+const { focusNext, focusPrevious, focus } = useFocusManager();
+
+useInput((event) => {
+  if (event.key === "tab" && event.shift) focusPrevious();
+  else if (event.key === "tab") focusNext();
+  else if (event.char === "1") focus("panel-1");
+});
+```
+
+**Signature:** `useFocusManager() => { enableFocus, disableFocus, focusNext, focusPrevious, focus: (id: string) => void }`
+
+### useTheme()
+
+Access the active theme colors and auto-generated shades from the nearest `ThemeProvider`.
+
+```ts
+import { useTheme } from "@orchetron/storm";
+
+const { colors, shades } = useTheme();
+// colors.brand.primary, colors.success, colors.error, etc.
+// shades.brand.lighten2, shades.brand.darken1, etc.
+```
+
+**Signature:** `useTheme() => { colors: StormColors; shades: ThemeShades }`
 
 ### useInterval() / useTimeout()
 
@@ -395,6 +437,96 @@ requestRender();
 
 **Returns:** `BufferAccess` with `writeCell`, `readCell`, and `requestRender`.
 
+### useClipboard()
+
+Read and write the system clipboard via OSC 52 escape sequences.
+
+```ts
+import { useClipboard } from "@orchetron/storm";
+
+const { copy, read, content } = useClipboard();
+copy("text to copy");
+```
+
+**Signature:** `useClipboard() => { copy: (text: string) => void; read: () => void; content: string | null }`
+
+### usePaste()
+
+Subscribe to bracketed paste events. Separate from `useInput` because paste events can contain newlines and special characters.
+
+```ts
+import { usePaste } from "@orchetron/storm";
+
+usePaste((text) => {
+  console.log("Pasted:", text.length, "characters");
+}, { isActive: true });
+```
+
+**Signature:** `usePaste(handler: (text: string) => void, options?: { isActive?: boolean }) => void`
+
+### useAccessibility()
+
+Access accessibility preferences: high contrast, reduced motion, screen reader detection. Results are cached.
+
+```ts
+import { useAccessibility } from "@orchetron/storm";
+
+const { highContrast, reducedMotion, screenReader } = useAccessibility();
+```
+
+**Signature:** `useAccessibility() => { highContrast: boolean; reducedMotion: boolean; screenReader: boolean }`
+
+### useReducedMotion()
+
+Convenience hook returning `true` if the user prefers reduced motion. Uses `useAccessibility` internally.
+
+```ts
+import { useReducedMotion } from "@orchetron/storm";
+
+const reducedMotion = useReducedMotion(); // boolean
+```
+
+**Signature:** `useReducedMotion() => boolean`
+
+### useAdaptive()
+
+Detect terminal capabilities: image protocol, color depth, Unicode support. Computed once and cached.
+
+```ts
+import { useAdaptive } from "@orchetron/storm";
+
+const { imageProtocol, colorDepth, unicode } = useAdaptive();
+```
+
+**Signature:** `useAdaptive() => { imageProtocol: "kitty" | "iterm2" | "sixel" | "block"; colorDepth: "truecolor" | "256" | "16" | "basic"; unicode: boolean }`
+
+### useAnnounce()
+
+Announce dynamic content changes to screen readers via OSC 99 escape sequences.
+
+```ts
+import { useAnnounce } from "@orchetron/storm";
+
+const { announce, announceUrgent } = useAnnounce();
+announce("File saved successfully");
+announceUrgent("Save failed!");
+```
+
+**Signature:** `useAnnounce() => { announce: (message: string) => void; announceUrgent: (message: string) => void }`
+
+### usePluginManager()
+
+Access the shared `PluginManager` instance for registering plugins, querying custom elements, or accessing plugin-provided shortcuts.
+
+```ts
+import { usePluginManager } from "@orchetron/storm";
+
+const plugins = usePluginManager();
+plugins.hasPlugin("vim-mode"); // boolean
+```
+
+**Signature:** `usePluginManager() => PluginManager`
+
 ### useMeasure()
 
 Read layout dimensions of a rendered element by ID.
@@ -577,7 +709,6 @@ const calendar = useCalendarBehavior({
 | Exit, rerender, or clear (simple) | `useApp()` |
 | Access full render context and exit | `useTui()` |
 | Handle raw keyboard input | `useInput()` |
-| Define keyboard shortcuts | `useKeyboardShortcuts()` |
 | Show shortcuts in a help bar | `useHotkey()` |
 | Get terminal dimensions | `useTerminal()` |
 | Clean up on unmount | `useCleanup()` |
@@ -587,7 +718,6 @@ const calendar = useCalendarBehavior({
 | Run code after a delay | `useTimeout()` |
 | Run a periodic callback (polling, animation) | `useTick()` |
 | Animate frames (spinner, etc.) | `useAnimation()` |
-| Tween a numeric value | `useTween()` |
 | Scroll content imperatively | `useScroll()` |
 | Render a large list efficiently | `useVirtualList()` |
 | Add fuzzy command search | `useCommandPalette()` |

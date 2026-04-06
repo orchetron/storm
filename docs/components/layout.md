@@ -45,7 +45,7 @@ import { Modal, Text, Button } from "@orchetron/storm";
   <Form
     fields={[
       { key: "apiKey", label: "API Key", type: "password", required: true },
-      { key: "model", label: "Model", placeholder: "llama-3.1-70b" },
+      { key: "model", label: "Model", placeholder: "demo-model" },
       { key: "maxTokens", label: "Max Tokens", type: "number", placeholder: "4096" },
     ]}
     onSubmit={(values) => { saveSettings(values); setShowSettings(false); }}
@@ -54,7 +54,7 @@ import { Modal, Text, Button } from "@orchetron/storm";
 </Modal>
 ```
 
-Modal automatically traps focus. See [Common Pitfalls](pitfalls.md#focus) for focus management details.
+Modal automatically traps focus. See [Common Pitfalls](../pitfalls.md#7-focus-management-basics) for focus management details.
 
 ---
 
@@ -449,6 +449,22 @@ Easing options: `"linear"`, `"easeIn"`, `"easeOut"`, `"easeInOut"`.
 </Transition>
 ```
 
+
+---
+
+### Welcome
+
+First-run welcome screen with app name, version, and getting-started hints.
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `title` | `string` | -- | App name |
+| `version` | `string` | -- | Version string |
+| `hints` | `string[]` | -- | Getting-started tips |
+
+```tsx
+<Welcome title="My App" version="1.0.0" hints={["Press ? for help", "Ctrl+C to quit"]} />
+```
 
 ---
 [Back to Components](README.md)

@@ -1,10 +1,3 @@
-/**
- * useContextMenu — position-aware popup triggered by key.
- *
- * Uses useRef + forceUpdate() + useInput for imperative state management.
- * Opens on trigger key, navigates with Up/Down, selects with Enter, closes with Escape.
- */
-
 import { useRef, useCallback } from "react";
 import { useInput } from "./useInput.js";
 import { useForceUpdate } from "./useForceUpdate.js";
@@ -71,7 +64,6 @@ export function useContextMenu(options: UseContextMenuOptions): UseContextMenuRe
   useInput((event) => {
     if (!isActive) return;
 
-    // Trigger key to open
     if (!isOpenRef.current) {
       const ctrlMatch = triggerKey.ctrl ? event.ctrl : !event.ctrl;
       const shiftMatch = triggerKey.shift ? event.shift : !event.shift;

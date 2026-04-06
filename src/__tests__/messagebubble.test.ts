@@ -5,7 +5,7 @@
 import { describe, it, expect } from "vitest";
 import React from "react";
 import { renderForTest } from "../testing/index.js";
-import { MessageBubble } from "../widgets/MessageBubble.js";
+import { MessageBubble } from "../widgets/index.js";
 
 describe("MessageBubble", () => {
   it("renders user role with > symbol", () => {

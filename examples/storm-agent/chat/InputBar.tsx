@@ -21,7 +21,7 @@ import {
 // -- Theme Colors -------------------------------------------------------------
 
 const THEME = {
-  accent: "#8C8CF9",
+  accent: "#82AAFF",
   text: "#DEE1E4",
   textSecondary: "#A5A8AB",
   textDisabled: "#46484A",

@@ -239,7 +239,7 @@ function LogViewer({ entries }: { entries: string[] }) {
 }
 ```
 
-See [Common Pitfalls](pitfalls.md#scrollview) for height constraint requirements.
+See [Common Pitfalls](../pitfalls.md#2-scrollview-needs-a-height-constraint) for height constraint requirements.
 
 ---
 

@@ -1,13 +1,3 @@
-/**
- * useStepperBehavior — headless behavior hook for step-by-step wizards.
- *
- * Extracts active step, completed steps, and navigation from the Stepper component.
- * The Stepper component itself is purely presentational with no keyboard input,
- * so this hook provides programmatic step management.
- *
- * Returns state + props objects with no JSX.
- */
-
 import { useRef, useCallback } from "react";
 import { useTui } from "../../context/TuiContext.js";
 

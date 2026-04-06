@@ -558,4 +558,53 @@ Keys: Space=toggle, A=select all, N=deselect all, Shift+Up/Down=range select.
 
 
 ---
+
+### OptionList
+
+Scrollable list of options with keyboard navigation and type-to-filter. Lightweight alternative to `Select` for flat option lists.
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `options` | `Array<{ label: string; value: string }>` | -- | Options to display |
+| `onSelect` | `(value: string) => void` | -- | Called on Enter |
+| `isFocused` | `boolean` | `true` | Accept keyboard input |
+
+```tsx
+<OptionList options={[{ label: "Yes", value: "y" }, { label: "No", value: "n" }]} onSelect={handle} />
+```
+
+---
+
+### TextArea
+
+Multi-line text editor with line numbers, word wrap, and scroll support.
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `value` | `string` | -- | Current text content |
+| `onChange` | `(value: string) => void` | -- | Called on change |
+| `height` | `number` | `10` | Visible rows |
+| `placeholder` | `string` | -- | Placeholder text |
+
+```tsx
+<TextArea value={text} onChange={setText} height={8} placeholder="Enter description..." />
+```
+
+---
+
+### DatePicker
+
+Calendar-based date selector with keyboard navigation. Built on `useCalendarBehavior`.
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `value` | `Date` | -- | Selected date |
+| `onChange` | `(date: Date) => void` | -- | Called on selection |
+| `isFocused` | `boolean` | `true` | Accept keyboard input |
+
+```tsx
+<DatePicker value={date} onChange={setDate} />
+```
+
+---
 [Back to Components](README.md)

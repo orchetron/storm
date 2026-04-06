@@ -1,10 +1,3 @@
-/**
- * ResizeObserver — monitors element size changes across paint cycles.
- *
- * Observes elements by their _measureId and fires a callback whenever
- * the measured layout dimensions change between paints.
- */
-
 import type { MeasuredLayout } from "../reconciler/renderer.js";
 
 export interface ResizeObserverEntry {

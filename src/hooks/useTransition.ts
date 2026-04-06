@@ -28,8 +28,6 @@ import {
   type EasingFn,
 } from "../utils/animate.js";
 
-// ── Types ──────────────────────────────────────────────────────────
-
 export interface TransitionConfig {
   /** Starting value. */
   from: number;
@@ -58,8 +56,6 @@ export interface UseTransitionResult {
   reset: () => void;
 }
 
-// ── Spring easing approximation ───────────────────────────────────
-
 /** Attempt a spring-like bounce via damped sine. */
 const springEasing: EasingFn = (t: number): number => {
   const c4 = (2 * Math.PI) / 3;
@@ -79,8 +75,6 @@ function resolveEasing(name: TransitionConfig["easing"]): EasingFn {
       return easings.easeOut;
   }
 }
-
-// ── Hook ──────────────────────────────────────────────────────────
 
 export function useTransition(config: TransitionConfig): UseTransitionResult {
   const { renderContext, requestRender } = useTui();

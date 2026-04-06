@@ -1,10 +1,3 @@
-/**
- * RenderContext — encapsulates all per-instance mutable state.
- *
- * Each call to render() creates a new RenderContext, eliminating
- * module-level singletons and enabling multi-instance use and testing.
- */
-
 import { FocusManager } from "./focus.js";
 import { ScreenBuffer } from "./buffer.js";
 import { AnimationScheduler } from "./animation-scheduler.js";
@@ -171,9 +164,18 @@ export class RenderContext {
     this.animationScheduler = new AnimationScheduler();
   }
 
-  /** Prepare for next frame — swap current states to prev */
+  /** When true, only dirty subtrees should be painted. */
+  _incrementalPaint = false;
+  /** Set by paint() when buffer.clear() was called. */
+  _bufferCleared = false;
+  /** Set by requestRender() — visual change occurred. Cleared after repaint. */
+  _renderRequested = false;
+
+  /** Prepare for next frame — pointer swap, no copy. */
   swapScrollStates(): void {
-    this.prevScrollViewStates = new Map(this.scrollViewStates);
+    const tmp = this.prevScrollViewStates;
+    this.prevScrollViewStates = this.scrollViewStates;
+    this.scrollViewStates = tmp;
     this.scrollViewStates.clear();
   }
 

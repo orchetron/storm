@@ -1,11 +1,3 @@
-/**
- * useMouse — mouse event hook.
- *
- * Subscribe to mouse events (clicks, scroll, motion).
- * Uses eager registration (not useEffect) because effects don't fire
- * reliably in the custom reconciler for complex component trees.
- */
-
 import { useRef } from "react";
 import { useTui } from "../context/TuiContext.js";
 import { useCleanup } from "./useCleanup.js";
@@ -22,13 +14,11 @@ export function useMouse(
   const { input } = useTui();
   const isActive = options.isActive ?? true;
 
-  // Store handler in ref to always access latest version
   const handlerRef = useRef(handler);
   handlerRef.current = handler;
   const activeRef = useRef(isActive);
   activeRef.current = isActive;
 
-  // Register ONCE eagerly — not in useEffect
   const registeredRef = useRef(false);
   const unsubRef = useRef<(() => void) | null>(null);
   if (!registeredRef.current) {
@@ -39,7 +29,6 @@ export function useMouse(
     });
   }
 
-  // Unregister on app unmount
   useCleanup(() => {
     unsubRef.current?.();
   });

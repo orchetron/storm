@@ -1,12 +1,3 @@
-/**
- * useTypeahead — type a letter to jump to a matching item in a list.
- *
- * Accumulates typed characters, finds first item starting with that prefix
- * (case-insensitive), calls onMatch. Resets after resetMs of no typing.
- *
- * Uses useRef + forceUpdate() + useInput + useCleanup.
- */
-
 import { useRef } from "react";
 import { useInput } from "./useInput.js";
 import { useCleanup } from "./useCleanup.js";
@@ -50,13 +41,11 @@ export function useTypeahead(options: UseTypeaheadOptions): UseTypeaheadResult {
       if (!event.char || event.ctrl || event.meta) return;
       if (event.key === "return" || event.key === "escape" || event.key === "tab" ||
           event.key === "backspace" || event.key === "delete" || event.key === "space") return;
-      // Skip arrow/function keys
       if (event.char.length !== 1) return;
 
       typedRef.current += event.char;
       const prefix = typedRef.current.toLowerCase();
 
-      // Find first item matching the accumulated prefix
       const currentItems = itemsRef.current;
       for (let i = 0; i < currentItems.length; i++) {
         if (currentItems[i]!.toLowerCase().startsWith(prefix)) {
@@ -65,7 +54,6 @@ export function useTypeahead(options: UseTypeaheadOptions): UseTypeaheadResult {
         }
       }
 
-      // Reset the timer
       if (timerRef.current !== null) {
         clearTimeout(timerRef.current);
       }

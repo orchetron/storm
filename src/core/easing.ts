@@ -1,9 +1,3 @@
-/**
- * Easing functions for terminal animations.
- *
- * Input t is 0-1 (progress). Output is 0-1 (value).
- */
-
 export const ease = {
   linear: (t: number): number => t,
 

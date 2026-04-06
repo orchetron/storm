@@ -1,12 +1,3 @@
-/**
- * useTreeBehavior — headless behavior hook for expandable/collapsible tree views.
- *
- * Extracts expand/collapse state, keyboard navigation (up/down/left/right),
- * highlight tracking, and virtual scrolling from the Tree component.
- *
- * Returns state + props objects with no JSX.
- */
-
 import { useRef, useCallback } from "react";
 import { useInput } from "../useInput.js";
 import { useForceUpdate } from "../useForceUpdate.js";
@@ -206,7 +197,6 @@ export function useTreeBehavior(options: UseTreeBehaviorOptions): UseTreeBehavio
 
   useInput(handleInput, { isActive });
 
-  // Determine visible range
   const visibleStart = scrollOffsetRef.current;
   const visibleEnd = useVirtualScroll
     ? Math.min(scrollOffsetRef.current + maxVisible, flatNodes.length)
@@ -217,7 +207,6 @@ export function useTreeBehavior(options: UseTreeBehaviorOptions): UseTreeBehavio
 
   const expandedKeys = collectExpandedKeys(nodes, 0);
 
-  // Build node key to flat index map for getNodeProps
   const keyToIndex = new Map<string, number>();
   for (let i = 0; i < flatNodes.length; i++) {
     keyToIndex.set(flatNodes[i]!.node.key, i);

@@ -1,17 +1,8 @@
-/**
- * useSelectBehavior — headless behavior hook for dropdown select.
- *
- * Extracts open/close state, active index, filter text, keyboard navigation
- * (up/down/enter/escape/type-ahead), disabled item skipping, maxVisible
- * windowing, and grouped options from the Select component.
- *
- * Returns state + props objects with no JSX.
- */
-
 import { useRef, useCallback } from "react";
 import { useInput } from "../useInput.js";
 import { useForceUpdate } from "../useForceUpdate.js";
 import type { KeyEvent } from "../../input/types.js";
+import { findNextNavigable as findNextNav } from "../../utils/navigation.js";
 
 export interface SelectBehaviorOption {
   label: string;
@@ -67,15 +58,8 @@ export interface UseSelectBehaviorResult {
 }
 
 /** Find next navigable (non-disabled) index in the given direction, wrapping around. */
-function findNextNavigable(options: SelectBehaviorOption[], from: number, direction: 1 | -1): number {
-  const len = options.length;
-  if (len === 0) return from;
-  let idx = from;
-  for (let i = 0; i < len; i++) {
-    idx = (idx + direction + len) % len;
-    if (!options[idx]!.disabled) return idx;
-  }
-  return from;
+function findNextOption(options: SelectBehaviorOption[], from: number, direction: 1 | -1): number {
+  return findNextNav(options.length, from, direction, (i) => !options[i]!.disabled);
 }
 
 function getFiltered(opts: SelectBehaviorOption[], filter: string): SelectBehaviorOption[] {
@@ -125,12 +109,10 @@ export function useSelectBehavior(options: UseSelectBehaviorOptions): UseSelectB
     if (idx >= 0) activeIndexRef.current = idx;
   }
 
-  // Clear filter when closed
   if (!effectiveIsOpen) {
     filterRef.current = "";
   }
 
-  // Compute filtered options
   const filteredOptions = getFiltered(items, effectiveIsOpen ? filterRef.current : "");
 
   // Clamp activeIndex
@@ -138,9 +120,8 @@ export function useSelectBehavior(options: UseSelectBehaviorOptions): UseSelectB
     activeIndexRef.current = Math.max(0, filteredOptions.length - 1);
   }
 
-  // Ensure activeIndex points to a non-disabled item
   if (filteredOptions.length > 0 && filteredOptions[activeIndexRef.current]?.disabled) {
-    activeIndexRef.current = findNextNavigable(filteredOptions, activeIndexRef.current, 1);
+    activeIndexRef.current = findNextOption(filteredOptions, activeIndexRef.current, 1);
   }
 
   const open = useCallback(() => {
@@ -168,10 +149,10 @@ export function useSelectBehavior(options: UseSelectBehaviorOptions): UseSelectB
       const filtered = getFiltered(opts, filterRef.current);
 
       if (event.key === "up") {
-        activeIndexRef.current = findNextNavigable(filtered, activeIndexRef.current, -1);
+        activeIndexRef.current = findNextOption(filtered, activeIndexRef.current, -1);
         forceUpdate();
       } else if (event.key === "down") {
-        activeIndexRef.current = findNextNavigable(filtered, activeIndexRef.current, 1);
+        activeIndexRef.current = findNextOption(filtered, activeIndexRef.current, 1);
         forceUpdate();
       } else if (event.key === "return") {
         const selected = filtered[activeIndexRef.current];
@@ -197,7 +178,7 @@ export function useSelectBehavior(options: UseSelectBehaviorOptions): UseSelectB
           activeIndexRef.current = 0;
           const newFiltered = getFiltered(opts, filterRef.current);
           if (newFiltered.length > 0 && newFiltered[0]?.disabled) {
-            activeIndexRef.current = findNextNavigable(newFiltered, 0, 1);
+            activeIndexRef.current = findNextOption(newFiltered, 0, 1);
           }
           forceUpdate();
         }
@@ -206,7 +187,7 @@ export function useSelectBehavior(options: UseSelectBehaviorOptions): UseSelectB
         activeIndexRef.current = 0;
         const newFiltered = getFiltered(opts, filterRef.current);
         if (newFiltered.length > 0 && newFiltered[0]?.disabled) {
-          activeIndexRef.current = findNextNavigable(newFiltered, 0, 1);
+          activeIndexRef.current = findNextOption(newFiltered, 0, 1);
         }
         forceUpdate();
       }
@@ -223,7 +204,6 @@ export function useSelectBehavior(options: UseSelectBehaviorOptions): UseSelectB
 
   useInput(handleInput, { isActive });
 
-  // Compute visible window
   let visibleItems: SelectBehaviorOption[];
   let visibleOffset: number;
   if (maxVisible !== undefined && filteredOptions.length > maxVisible) {

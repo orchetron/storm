@@ -1,16 +1,12 @@
-/**
- * ShowcaseRichContent — Image, Markdown, and Code highlighting demo.
- */
-
 import React from "react";
 import * as path from "path";
 import { useColors } from "../../hooks/useColors.js";
 import { useTui } from "../../context/TuiContext.js";
 import { useInput } from "../../hooks/useInput.js";
-import { ScrollView } from "../../components/ScrollView.js";
-import { Image } from "../../components/Image.js";
-import { MarkdownText } from "../../widgets/MarkdownText.js";
-import { SyntaxHighlight } from "../../widgets/SyntaxHighlight.js";
+import { ScrollView } from "../../components/core/ScrollView.js";
+import { Image } from "../../components/effects/Image.js";
+import { Markdown as MarkdownText } from "../../components/extras/Markdown.js";
+import { SyntaxHighlight } from "../../widgets/dev/SyntaxHighlight.js";
 
 export interface ShowcaseRichContentProps {
   title?: string;
@@ -19,11 +15,11 @@ export interface ShowcaseRichContentProps {
 
 const MARKDOWN = `# Storm TUI Framework
 
-The **most powerful** terminal UI framework ever built.
+A terminal UI framework for building rich applications.
 
 ## Features
 
-- **73 components** + 19 widgets
+- **Components and widgets** for common UI patterns
 - Pure TypeScript flexbox + CSS Grid
 - Cell-based diff rendering with \`synchronized output\`
 - 100 syntax highlighting languages
@@ -43,11 +39,11 @@ render(
 );
 \`\`\`
 
-> Storm is the most complete terminal UI framework in the TypeScript ecosystem.
+> Storm provides components, layout, and rendering for terminal UIs.
 
 ---
 
-Built with love by **Orchetron**.`;
+Built with Storm.`;
 
 const TS_CODE = `import React, { useState } from "react";
 import { render } from "@orchetron/storm";
@@ -121,7 +117,7 @@ class TokenStream:
         )
 
 async def main():
-    stream = TokenStream(model="qwen-coder")
+    stream = TokenStream(model="my-model")
     async for token in stream.generate("Explain quantum computing"):
         print(token, end="", flush=True)
     print()

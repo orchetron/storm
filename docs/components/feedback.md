@@ -256,20 +256,19 @@ Overlay tooltip with configurable position, auto-flip, delay, and arrow indicato
 
 ---
 
-### LightningPulse
+### LoadingIndicator
 
-Storm's signature gesture. A full-width amber line that flashes briefly then fades to dim.
+Full-width loading bar with optional label and indeterminate animation mode.
 
 | Prop | Type | Default | Description |
 |---|---|---|---|
-| `active` | `boolean` | -- | Trigger a flash-then-fade cycle |
-| `color` | `string` | personality brand primary | Pulse color |
-| `width` | `number` | screen width | Width in columns |
+| `label` | `string` | -- | Text shown beside the indicator |
+| `progress` | `number` | -- | 0-100 for determinate; omit for indeterminate |
+| `color` | `string \| number` | `colors.brand.primary` | Indicator color |
 
 ```tsx
-<LightningPulse active={showPulse} />
+<LoadingIndicator label="Fetching data..." />
 ```
-
 
 ---
 [Back to Components](README.md)

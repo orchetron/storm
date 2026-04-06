@@ -2,8 +2,6 @@
  * Input event types for keyboard and mouse.
  */
 
-// ── Key names ───────────────────────────────────────────────────────
-
 export type KeyName =
   | "return"
   | "escape"
@@ -54,8 +52,6 @@ export interface KeyEvent {
   consumed?: boolean;
 }
 
-// ── Mouse events ────────────────────────────────────────────────────
-
 export type MouseButton =
   | "left"
   | "middle"
@@ -82,12 +78,8 @@ export interface MouseEvent {
   raw: string;
 }
 
-// ── Handlers ────────────────────────────────────────────────────────
-
 export type KeyHandler = (event: KeyEvent) => void;
 export type MouseHandler = (event: MouseEvent) => void;
-
-// ── Paste events ────────────────────────────────────────────────────
 
 export interface PasteEvent {
   text: string;

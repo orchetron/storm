@@ -1,13 +1,3 @@
-/**
- * useStreamConsumer — consume an async iterator/stream and accumulate text.
- *
- * Behavior only. Call start() with an AsyncIterable<string> to begin
- * consuming. Each chunk appends to text and triggers forceUpdate().
- * Supports cancel and reset.
- *
- * Uses useRef + forceUpdate() + useCleanup.
- */
-
 import { useRef } from "react";
 import { useCleanup } from "./useCleanup.js";
 import { useForceUpdate } from "./useForceUpdate.js";
@@ -60,7 +50,6 @@ export function useStreamConsumer(
   };
 
   const start = (stream: AsyncIterable<string>) => {
-    // Reset state for new stream
     textRef.current = "";
     errorRef.current = null;
     doneRef.current = false;

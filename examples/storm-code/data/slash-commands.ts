@@ -28,7 +28,7 @@ export const SLASH_COMMANDS: SlashCommand[] = [
     handler: (args) =>
       args
         ? `Switched model to: ${args}`
-        : "Current model: qwen-2.5-coder-32b\nAvailable: qwen-2.5-coder-32b, phi-4, command-r-plus, qwen-2.5-72b",
+        : "Current model: demo-coder\nAvailable: demo-coder, demo-small, demo-chat, demo-model",
   },
   {
     name: "/new",
@@ -93,7 +93,7 @@ export const SLASH_COMMANDS: SlashCommand[] = [
     category: "debug",
     handler: () =>
       "Diagnostics:\n" +
-      "  Model: OK (qwen-2.5-coder-32b, connected)\n" +
+      "  Model: OK (demo-coder, connected)\n" +
       "  Tools: OK (8 tools registered)\n" +
       "  Context: OK (9.7% used)\n" +
       "  Latency: 142ms avg\n" +

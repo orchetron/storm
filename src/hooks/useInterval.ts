@@ -1,10 +1,3 @@
-/**
- * useInterval — repeating timer hook.
- *
- * Calls the callback at the given interval. Uses eager registration
- * (not useEffect) and refs for the latest callback. Cleaned up on unmount.
- */
-
 import { useRef } from "react";
 import { useCleanup } from "./useCleanup.js";
 
@@ -31,7 +24,6 @@ export function useInterval(
     }, delayMs);
   }
 
-  // Cleanup on unmount
   useCleanup(() => {
     if (timerRef.current !== null) {
       clearInterval(timerRef.current);

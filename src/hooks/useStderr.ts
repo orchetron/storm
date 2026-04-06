@@ -1,9 +1,3 @@
-/**
- * useStderr — access stderr and write to it.
- *
- * Access the stderr stream and write to it.
- */
-
 export interface UseStderrResult {
   stderr: NodeJS.WriteStream;
   write: (data: string) => void;

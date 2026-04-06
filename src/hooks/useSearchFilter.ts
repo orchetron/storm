@@ -1,12 +1,3 @@
-/**
- * useSearchFilter — debounced search/filter with match info.
- *
- * Filters items by case-insensitive substring match.
- * Debounces the filter computation.
- *
- * Uses useRef + forceUpdate() + useCleanup.
- */
-
 import { useRef } from "react";
 import { useCleanup } from "./useCleanup.js";
 import { useForceUpdate } from "./useForceUpdate.js";

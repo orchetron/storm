@@ -1,18 +1,4 @@
-/**
- * WASM tokenizer — optional accelerator for SyntaxHighlight.
- *
- * Lazily loads the Rust WASM module and exposes `wasmTokenizeLine()`.
- * Returns null when WASM is unavailable so the caller can fall back
- * to the TypeScript tokenizer. Same loading pattern as diff.ts.
- *
- * The WASM tokenizer returns a flat u32 array of (start, end, kind)
- * triples. We convert those back to Token objects that SyntaxHighlight
- * already understands.
- */
-
 import { createRequire } from "node:module";
-
-// ── Token types (must match SyntaxHighlight.tsx) ───────────────────
 
 type TokenKind =
   | "plain"
@@ -46,8 +32,6 @@ const KIND_MAP: TokenKind[] = [
   "tag",          // 8
 ];
 
-// ── Lazy WASM loading ──────────────────────────────────────────────
-
 let wasmModule: any = null;
 let loadAttempted = false;
 
@@ -68,8 +52,6 @@ function ensureLoaded(): boolean {
 export function isWasmTokenizerAvailable(): boolean {
   return ensureLoaded();
 }
-
-// ── Public API ─────────────────────────────────────────────────────
 
 /**
  * Tokenize a single line of source code using the WASM accelerator.

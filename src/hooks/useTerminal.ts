@@ -1,9 +1,3 @@
-/**
- * useTerminal — terminal dimensions and utilities hook.
- *
- * Provides reactive terminal width/height that updates on resize.
- */
-
 import { useState, useRef } from "react";
 import { useTui } from "../context/TuiContext.js";
 import { useCleanup } from "./useCleanup.js";

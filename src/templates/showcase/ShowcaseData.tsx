@@ -1,23 +1,18 @@
-/**
- * ShowcaseData -- "Data Display" showcase template.
- *
- * Demos 9 data-oriented components with headings and live rendered examples.
- */
-
 import React from "react";
 import { useColors } from "../../hooks/useColors.js";
 import { useTui } from "../../context/TuiContext.js";
 import { useInput } from "../../hooks/useInput.js";
-import { ScrollView } from "../../components/ScrollView.js";
-import { Table } from "../../components/Table.js";
-import { DataGrid } from "../../components/DataGrid.js";
-import { Tree } from "../../components/Tree.js";
-import { ListView } from "../../components/ListView.js";
-import { OrderedList } from "../../components/OrderedList.js";
-import { UnorderedList } from "../../components/UnorderedList.js";
-import { DefinitionList } from "../../components/DefinitionList.js";
-import { Pretty } from "../../components/Pretty.js";
-import { Sparkline } from "../../components/Sparkline.js";
+import { ScrollView } from "../../components/core/ScrollView.js";
+import { Table } from "../../components/data/Table.js";
+import { DataGrid } from "../../components/data/DataGrid.js";
+import { Tree } from "../../components/data/Tree.js";
+import { ListView } from "../../components/core/ListView.js";
+import { OrderedList } from "../../components/extras/OrderedList.js";
+import { UnorderedList } from "../../components/extras/UnorderedList.js";
+import { DefinitionList } from "../../components/data/DefinitionList.js";
+import { Pretty } from "../../components/data/Pretty.js";
+import { Sparkline } from "../../components/data/Sparkline.js";
+import { heading, blank } from "./helpers.js";
 
 export interface ShowcaseDataProps {
   title?: string;
@@ -64,18 +59,6 @@ const LIST_ITEMS = [
 ];
 
 const SPARK_DATA = [3, 7, 2, 9, 5, 11, 4, 8, 1, 6, 10, 3, 7, 12, 5];
-
-function heading(label: string, key: string): React.ReactElement {
-  const colors = useColors();
-  return React.createElement("tui-text", {
-    key, bold: true, color: colors.brand.primary,
-  }, `  ${label}`);
-}
-
-function blank(key: string): React.ReactElement {
-  const colors = useColors();
-  return React.createElement("tui-text", { key }, "");
-}
 
 export function ShowcaseData(props: ShowcaseDataProps): React.ReactElement {
   const colors = useColors();

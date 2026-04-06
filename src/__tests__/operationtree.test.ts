@@ -5,7 +5,7 @@
 import { describe, it, expect } from "vitest";
 import React from "react";
 import { renderForTest } from "../testing/index.js";
-import { OperationTree, type OpNode } from "../widgets/OperationTree.js";
+import { OperationTree, type OpNode } from "../widgets/index.js";
 
 describe("OperationTree", () => {
   it("renders a pending node with circle icon", () => {

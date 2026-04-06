@@ -1,14 +1,3 @@
-/**
- * useFocus — simple focus management hook.
- *
- * Delegates entirely to FocusManager from TuiContext.
- * Tab cycling is handled once in render.ts — no per-component listeners.
- *
- * When autoTab is true (the default), the hook registers a key listener
- * that calls focusManager.handleTabKey(shift) on Tab/Shift+Tab. This
- * only fires while the component is mounted.
- */
-
 import { useRef, useCallback, useState } from "react";
 import { useTui } from "../context/TuiContext.js";
 import { useCleanup } from "./useCleanup.js";
@@ -42,6 +31,11 @@ export interface UseFocusResult {
   focusRingStyle: FocusRingStyle | null;
 }
 
+/**
+ * Register this component as focusable and get focus state.
+ * Side effect: registers with FocusManager on first render (not in useEffect).
+ * Unregistration happens via useCleanup, not useEffect cleanup.
+ */
 export function useFocus(options: UseFocusOptions = {}): UseFocusResult {
   const { focus: fm, input } = useTui();
   const idRef = useRef(options.id ?? `focus-${nextId++}`);

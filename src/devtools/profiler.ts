@@ -19,8 +19,6 @@
 import type { RenderContext } from "../core/render-context.js";
 import type { TuiRoot, TuiElement, TuiTextNode } from "../reconciler/types.js";
 
-// ── Types ──────────────────────────────────────────────────────────────
-
 export interface ProfilerSnapshot {
   timestamp: number;
   frame: number;
@@ -88,8 +86,6 @@ export interface Profiler {
   onSlowFrame(thresholdMs: number, callback: ProfilerAlertCallback): () => void;
   onGCPressure(threshold: number, callback: ProfilerAlertCallback): () => void;
 }
-
-// ── Implementation ─────────────────────────────────────────────────────
 
 /** Bytes per cell in the ScreenBuffer (see buffer.ts layout):
  *  - chars: 1 string ref (~8 bytes on V8)

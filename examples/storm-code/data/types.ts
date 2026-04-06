@@ -22,7 +22,7 @@ export interface Message {
   toolName?: string;
   /** Tool parameters for function_call messages. */
   toolParams?: Record<string, unknown>;
-  /** Memory operation type: core_memory_append, core_memory_replace, archival_memory_insert, etc. */
+  /** Memory operation type: memory_append, memory_replace, archival_insert, etc. */
   memoryAction?: string;
   /** Risk level for tool approval. */
   riskLevel?: "low" | "medium" | "high";

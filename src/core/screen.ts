@@ -1,10 +1,3 @@
-/**
- * Screen — terminal lifecycle and output management.
- *
- * Owns stdout, manages raw mode, alternate screen, mouse reporting,
- * resize events, and cleanup on exit/crash.
- */
-
 import {
   CURSOR_HIDE,
   CURSOR_SHOW,
@@ -41,6 +34,7 @@ export interface ScreenOptions {
   rawMode?: boolean;
 }
 
+/** Owns stdout, alt screen, raw mode, cursor, signal traps. Restores terminal on crash/exit. */
 export class Screen {
   readonly stdout: NodeJS.WriteStream;
   readonly stdin: NodeJS.ReadStream;
@@ -76,7 +70,6 @@ export class Screen {
   private resizeListeners: Array<(w: number, h: number) => void> = [];
   private readonly onResize: () => void;
 
-  // Cleanup handlers
   private readonly onExit: () => void;
   private readonly onSignal: (sig: string) => void;
   private readonly onUncaughtException: (err: Error) => void;
@@ -102,12 +95,8 @@ export class Screen {
       if (w !== this._width || h !== this._height) {
         this._width = w;
         this._height = h;
-        // DON'T resize buffer or diff here — let the next paint handle it.
-        // Replacing the buffer mid-paint causes a race condition where
-        // paint() is still writing to the old buffer while we swap it out.
-        // The DiffRenderer handles dimension changes in its render() method
-        // (fullRedraw check), and repaint() already checks dimensions.
-        // Just notify listeners who will trigger a new paint cycle.
+        // Don't resize buffer here — let the next paint handle it.
+        // Replacing mid-paint causes a race; just notify listeners.
         for (const listener of this.resizeListeners) {
           listener(w, h);
         }
@@ -183,7 +172,7 @@ export class Screen {
     else if (caps.name !== "unknown") depth = "16";
     setColorDepth(depth);
 
-    const isTTY = this.stdout.isTTY === true || FORCE_TTY;
+    const isTTY = this.stdout.isTTY || FORCE_TTY;
 
     if (isTTY) {
       let init = "";
@@ -211,7 +200,6 @@ export class Screen {
     // Listen for resize (only fires on TTYs, but harmless to register)
     this.stdout.on("resize", this.onResize);
 
-    // Remove any previously registered handlers before re-registering
     // to prevent signal handler accumulation from repeated start()/stop() cycles.
     if (this._signalsBound) {
       process.removeListener("exit", this.onExit);
@@ -222,7 +210,6 @@ export class Screen {
       process.removeListener("unhandledRejection", this.onUnhandledRejection);
     }
 
-    // Cleanup on exit
     process.on("exit", this.onExit);
     process.on("SIGINT", this.onSignal);
     process.on("SIGTERM", this.onSignal);
@@ -245,7 +232,7 @@ export class Screen {
     if (this.cleanedUp) return;
     this.cleanedUp = true;
 
-    if (this.stdout.isTTY === true || FORCE_TTY) {
+    if (this.stdout.isTTY || FORCE_TTY) {
       let restore = "";
       restore += "\x1b]111\x07"; // Reset terminal bg to original default (OSC 111)
       restore += RESET;
@@ -284,7 +271,7 @@ export class Screen {
    *  Pass null to reset to the terminal's original default.
    *  No-op when stdout is not a TTY. */
   setTerminalBg(hexColor: string | null): void {
-    if (this.stdout.isTTY !== true && !FORCE_TTY) return;
+    if (!this.stdout.isTTY && !FORCE_TTY) return;
     if (hexColor) {
       // OSC 11 ; rgb:RR/GG/BB BEL — set terminal default background
       const r = hexColor.slice(1, 3);
@@ -321,8 +308,7 @@ export class Screen {
     // Cursor visibility: always emit the correct state on every flush.
     // If cursor should be visible, position it and show it.
     // If not, explicitly hide it to stop the terminal's blinking hardware cursor.
-    // Skip cursor control sequences when stdout is not a TTY.
-    if (this.stdout.isTTY === true || FORCE_TTY) {
+    if (this.stdout.isTTY || FORCE_TTY) {
       if (this._cursorVisible) {
         output += cursorTo(this._cursorY, this._cursorX) + CURSOR_SHOW;
       } else {
@@ -330,12 +316,10 @@ export class Screen {
       }
     }
 
-    // Apply output transform (used by middleware pipeline)
     if (this._outputTransform && output.length > 0) {
       output = this._outputTransform(output);
     }
 
-    // Append pending graphics protocol image sequences AFTER the diff output.
     // These are queued by the Image component via paintBox -> RenderContext.
     // Writing them after the diff ensures the terminal renders the image
     // on top of the spacer box cells, not the other way around.
@@ -380,7 +364,7 @@ export class Screen {
     this._cursorVisible = visible;
     // When hiding cursor, emit CURSOR_HIDE immediately so the terminal
     // stops showing the blinking hardware cursor. Skip when not a TTY.
-    if (wasVisible && !visible && this.stdout.isTTY === true) {
+    if (wasVisible && !visible && this.stdout.isTTY) {
       this.stdout.write(CURSOR_HIDE);
     }
   }

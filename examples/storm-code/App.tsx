@@ -9,20 +9,20 @@
  * diamond left, info right. After 3 seconds, transitions to ChatScreen.
  */
 
-import React, { useState, useCallback, useRef } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import {
   Box,
   Text,
   useInput,
   useTerminal,
   useTui,
-  useCleanup,
+  useTick,
 } from "../../src/index.js";
 
 import { ChatScreen } from "./screens/ChatScreen.js";
 import { S, toggleTheme } from "./data/theme.js";
 
-const MODEL = "qwen-2.5-coder-32b";
+const MODEL = "demo-coder";
 
 // -- 3D Rotating Diamond (8 frames) ----------------------------------------------
 // A diamond shape that rotates using block density (█▓▒░) for 3D depth.
@@ -96,57 +96,32 @@ const LOGO_FRAMES: string[][] = [
 ];
 
 // Per-frame durations in ms
-const FRAME_DURATIONS = [200, 120, 120, 200, 120, 200, 120, 120];
 
 // -- Welcome Screen --------------------------------------------------------------
 
 function WelcomeScreen({ onDismiss }: { onDismiss: () => void }) {
   const { width, height } = useTerminal();
-  const { requestRender } = useTui();
   const frameRef = useRef(0);
   const textNodeRef = useRef<any>(null);
   const countdownRef = useRef(3);
   const countdownTextRef = useRef<any>(null);
 
-  const animTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const countdownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  // Logo rotation — simple setInterval for frame cycling
-  if (animTimerRef.current === null) {
-    animTimerRef.current = setInterval(() => {
-      frameRef.current = (frameRef.current + 1) % LOGO_FRAMES.length;
-      if (textNodeRef.current) {
-        textNodeRef.current.text = LOGO_FRAMES[frameRef.current]!.join("\n");
-        requestRender();
-      }
-    }, 150);
-  }
-
-  // Countdown timer (3 → 2 → 1 → dismiss)
-  if (countdownTimerRef.current === null) {
-    countdownTimerRef.current = setInterval(() => {
-      countdownRef.current -= 1;
-      if (countdownRef.current <= 0) {
-        if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
-        countdownTimerRef.current = null;
-        onDismiss();
-      } else {
-        if (countdownTextRef.current) {
-          countdownTextRef.current.text = `Starting in ${countdownRef.current}...`;
-          requestRender();
-        }
-      }
-    }, 1000);
-  }
-
-  useCleanup(() => {
-    if (animTimerRef.current) {
-      clearTimeout(animTimerRef.current);
-      animTimerRef.current = null;
+  // Logo rotation animation (imperative — no React re-render needed)
+  useTick(150, (tick) => {
+    frameRef.current = tick % LOGO_FRAMES.length;
+    if (textNodeRef.current) {
+      textNodeRef.current.text = LOGO_FRAMES[frameRef.current]!.join("\n");
     }
-    if (countdownTimerRef.current) {
-      clearInterval(countdownTimerRef.current);
-      countdownTimerRef.current = null;
+  }, { reactive: false });
+
+  // Countdown timer (reactive — updates countdown text)
+  useTick(1000, (tick) => {
+    const remaining = 3 - tick;
+    countdownRef.current = remaining;
+    if (remaining <= 0) {
+      onDismiss();
+    } else if (countdownTextRef.current) {
+      countdownTextRef.current.text = `Starting in ${remaining}...`;
     }
   });
 
@@ -215,8 +190,8 @@ export function App(): React.ReactElement {
   );
 
   const handleWelcomeDismiss = useCallback(() => {
-    flushSync(() => setScreen("chat"));
-  }, [flushSync]);
+    setScreen("chat");
+  }, []);
 
   const handleExit = useCallback(() => {
     exit();

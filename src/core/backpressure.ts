@@ -1,11 +1,3 @@
-/**
- * Output Backpressure Handler — buffers terminal writes when stdout
- * cannot keep up, preventing data loss and respecting flow control.
- *
- * @module
- */
-
-/** Configuration for output buffering behaviour. */
 export interface BackpressureOptions {
   /** High water mark for buffered writes in bytes (default 64 KB). */
   highWaterMark?: number;
@@ -16,10 +8,8 @@ export interface BackpressureOptions {
 const DEFAULT_HIGH_WATER_MARK = 64 * 1024; // 64 KB
 
 /**
- * Wraps a `WriteStream` with backpressure-aware buffering.
- *
- * When `stdout.write()` returns `false` (kernel buffer full), subsequent
- * data is queued internally and flushed once the `drain` event fires.
+ * When stdout.write() returns false (kernel buffer full), data is queued
+ * internally and flushed once the drain event fires.
  */
 export class OutputBuffer {
   private pending: string[] = [];
@@ -39,14 +29,7 @@ export class OutputBuffer {
     });
   }
 
-  /**
-   * Write data to stdout, respecting backpressure.
-   *
-   * @returns `true` if the data was written immediately, `false` if it was
-   *          buffered (or dropped, depending on the strategy).
-   */
   write(data: string): boolean {
-    // If we are already buffering, queue or handle per strategy.
     if (this.draining || this.pending.length > 0) {
       return this.enqueue(data);
     }
@@ -59,7 +42,6 @@ export class OutputBuffer {
     return ok;
   }
 
-  /** Flush all pending writes, resolving when the buffer is empty. */
   flush(): Promise<void> {
     if (this.pending.length === 0) {
       return Promise.resolve();
@@ -78,17 +60,13 @@ export class OutputBuffer {
     });
   }
 
-  /** Current amount of buffered data in bytes. */
   get bufferedSize(): number {
     return this._bufferedSize;
   }
 
-  /** Whether the output stream is ready to accept more data without buffering. */
   get isReady(): boolean {
     return !this.draining && this.pending.length === 0;
   }
-
-  // ── Private ────────────────────────────────────────────────────────
 
   private enqueue(data: string): boolean {
     const dataSize = Buffer.byteLength(data, "utf8");

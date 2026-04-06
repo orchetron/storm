@@ -1,38 +1,21 @@
-/**
- * ShowcasePrimitives -- "Core Primitives" showcase template.
- *
- * Demos 9 primitive components with headings and live rendered examples.
- */
-
 import React from "react";
 import { useColors } from "../../hooks/useColors.js";
 import { useTui } from "../../context/TuiContext.js";
 import { useInput } from "../../hooks/useInput.js";
-import { ScrollView } from "../../components/ScrollView.js";
-import { Text } from "../../components/Text.js";
-import { Divider } from "../../components/Divider.js";
-import { Separator } from "../../components/Separator.js";
-import { Link } from "../../components/Link.js";
-import { Kbd } from "../../components/Kbd.js";
-import { Badge } from "../../components/Badge.js";
-import { Tag } from "../../components/Tag.js";
-import { Avatar } from "../../components/Avatar.js";
-import { Breadcrumb } from "../../components/Breadcrumb.js";
+import { ScrollView } from "../../components/core/ScrollView.js";
+import { Text } from "../../components/core/Text.js";
+import { Divider } from "../../components/core/Divider.js";
+import { Divider as Separator } from "../../components/core/Divider.js";
+import { Link } from "../../components/extras/Link.js";
+import { Kbd } from "../../components/extras/Kbd.js";
+import { Badge } from "../../components/extras/Badge.js";
+import { Tag } from "../../components/extras/Tag.js";
+import { Avatar } from "../../components/extras/Avatar.js";
+import { Breadcrumb } from "../../components/extras/Breadcrumb.js";
+import { heading, blank } from "./helpers.js";
 
 export interface ShowcasePrimitivesProps {
   title?: string;
-}
-
-function heading(label: string, key: string): React.ReactElement {
-  const colors = useColors();
-  return React.createElement("tui-text", {
-    key, bold: true, color: colors.brand.primary,
-  }, `  ${label}`);
-}
-
-function blank(key: string): React.ReactElement {
-  const colors = useColors();
-  return React.createElement("tui-text", { key }, "");
 }
 
 export function ShowcasePrimitives(props: ShowcasePrimitivesProps): React.ReactElement {

@@ -1,12 +1,3 @@
-/**
- * usePaginatorBehavior — headless behavior hook for page navigation.
- *
- * Extracts current page, keyboard navigation (left/right), and page bounds
- * from the Paginator component.
- *
- * Returns state + props objects with no JSX.
- */
-
 import { useRef, useCallback } from "react";
 import { useInput } from "../useInput.js";
 import type { KeyEvent } from "../../input/types.js";

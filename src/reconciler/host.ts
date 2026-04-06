@@ -1,10 +1,3 @@
-/**
- * React reconciler host configuration.
- *
- * Tells React how to create, mutate, and commit our TUI elements.
- * After React commits all changes, we trigger layout → paint → diff.
- */
-
 import Reconciler from "react-reconciler";
 import { DefaultEventPriority } from "react-reconciler/constants.js";
 import {
@@ -29,7 +22,6 @@ type HostUpdatePayload = Record<string, unknown> | null;
 /** Extracted from react-reconciler's createReconciler parameter type. */
 type StormHostConfig = Parameters<typeof Reconciler>[0];
 
-// ── Custom element lifecycle hooks ───────────────────────────────
 // These are set by render() to wire the PluginManager's custom element
 // mount/unmount notifications into the reconciler's tree mutation calls.
 // Module-level because hostConfig is a static singleton.
@@ -58,43 +50,52 @@ export function setCustomElementLifecycleHooks(
 /** Known built-in element types — anything else is a custom element. */
 const BUILTIN_TYPES = new Set(["tui-box", "tui-text", "tui-scroll-view", "tui-text-input", "tui-overlay"]);
 
+const BOX_IN_TEXT_WARNING = "Storm TUI: <Box> cannot be nested inside <Text>. Use <Text> for styled content, <Box> for layout. Wrap text content in <Text> elements inside a <Box>.";
+
+function notifyMountIfCustom(child: HostInstance | HostTextInstance): void {
+  if ("type" in child && child.type !== "TEXT_NODE" && !BUILTIN_TYPES.has(child.type) && _onCustomElementMount) {
+    _onCustomElementMount(child.type, child);
+  }
+}
+
+function notifyUnmountIfCustom(child: HostInstance | HostTextInstance): void {
+  if ("type" in child && child.type !== "TEXT_NODE" && !BUILTIN_TYPES.has(child.type) && _onCustomElementUnmount) {
+    _onCustomElementUnmount(child.type, child);
+  }
+}
+
 function appendChild(
   parent: HostInstance | HostContainer,
   child: HostInstance | HostTextInstance,
 ): void {
   // Validate nesting: tui-box cannot be a child of tui-text
-  if ("type" in child && child.type === "tui-box" && "type" in parent && parent.type === "tui-text") {
-    console.warn(
-      "Storm TUI: <Box> cannot be nested inside <Text>. " +
-      "Use <Text> for styled content, <Box> for layout. " +
-      "Wrap text content in <Text> elements inside a <Box>."
-    );
+  if (process.env.NODE_ENV !== "production") {
+    if ("type" in child && child.type === "tui-box" && "type" in parent && parent.type === "tui-text") {
+      console.warn(BOX_IN_TEXT_WARNING);
+    }
   }
   const children = "children" in parent ? parent.children : [];
+  const existingIdx = children.indexOf(child);
+  if (existingIdx >= 0) children.splice(existingIdx, 1);
   children.push(child);
   if ("parent" in child) {
     child.parent = "type" in parent && parent.type !== undefined
       ? (parent as HostInstance)
       : null;
   }
-  // Capture text node ref for imperative mutation (Spinner, etc.)
   if (child.type === "TEXT_NODE" && "props" in parent) {
     const ref = (parent as HostInstance).props["_textNodeRef"] as { current: unknown } | undefined;
     if (ref) {
       ref.current = child;
     }
   }
-  // Notify custom element lifecycle: mount
-  if ("type" in child && child.type !== "TEXT_NODE" && !BUILTIN_TYPES.has(child.type) && _onCustomElementMount) {
-    _onCustomElementMount(child.type, child);
-  }
+  notifyMountIfCustom(child);
 }
 
 function removeChild(
   parent: HostInstance | HostContainer,
   child: HostInstance | HostTextInstance,
 ): void {
-  // Notify custom element lifecycle: unmount (before removal)
   if ("type" in child && child.type !== "TEXT_NODE" && !BUILTIN_TYPES.has(child.type) && _onCustomElementUnmount) {
     _onCustomElementUnmount(child.type, child);
   }
@@ -110,14 +111,14 @@ function insertBefore(
   before: HostInstance | HostTextInstance,
 ): void {
   // Validate nesting: tui-box cannot be a child of tui-text
-  if ("type" in child && child.type === "tui-box" && "type" in parent && parent.type === "tui-text") {
-    console.warn(
-      "Storm TUI: <Box> cannot be nested inside <Text>. " +
-      "Use <Text> for styled content, <Box> for layout. " +
-      "Wrap text content in <Text> elements inside a <Box>."
-    );
+  if (process.env.NODE_ENV !== "production") {
+    if ("type" in child && child.type === "tui-box" && "type" in parent && parent.type === "tui-text") {
+      console.warn(BOX_IN_TEXT_WARNING);
+    }
   }
   const children = "children" in parent ? parent.children : [];
+  const existingIdx = children.indexOf(child);
+  if (existingIdx >= 0) children.splice(existingIdx, 1);
   const idx = children.indexOf(before);
   if (idx >= 0) {
     children.splice(idx, 0, child);
@@ -129,10 +130,7 @@ function insertBefore(
       ? (parent as HostInstance)
       : null;
   }
-  // Notify custom element lifecycle: mount
-  if ("type" in child && child.type !== "TEXT_NODE" && !BUILTIN_TYPES.has(child.type) && _onCustomElementMount) {
-    _onCustomElementMount(child.type, child);
-  }
+  notifyMountIfCustom(child);
 }
 
 function diffProps(
@@ -140,7 +138,6 @@ function diffProps(
   newProps: HostProps,
 ): HostUpdatePayload {
   let changed: Record<string, unknown> | null = null;
-  // Check for changed/added props
   for (const key of Object.keys(newProps)) {
     if (key === "children") continue;
     if (oldProps[key] !== newProps[key]) {
@@ -148,7 +145,6 @@ function diffProps(
       changed[key] = newProps[key];
     }
   }
-  // Check for removed props
   for (const key of Object.keys(oldProps)) {
     if (key === "children") continue;
     if (!(key in newProps)) {
@@ -158,6 +154,20 @@ function diffProps(
   }
   return changed;
 }
+
+const LAYOUT_KEYS = [
+  "width", "height", "flex", "flexGrow", "flexShrink", "flexBasis",
+  "flexDirection", "flexWrap", "padding", "paddingTop", "paddingBottom", "paddingLeft", "paddingRight",
+  "paddingX", "paddingY",
+  "margin", "marginTop", "marginBottom", "marginLeft", "marginRight",
+  "marginX", "marginY",
+  "gap", "columnGap", "rowGap", "alignItems", "alignSelf", "justifyContent",
+  "overflow", "overflowX", "overflowY", "display", "position",
+  "minWidth", "minHeight", "maxWidth", "maxHeight",
+  "borderStyle", "borderTop", "borderBottom", "borderLeft", "borderRight",
+  "top", "left", "right", "bottom",
+  "aspectRatio", "order",
+];
 
 export const hostConfig: StormHostConfig = {
   // ── Feature flags ───────────────────────────────────────────────
@@ -190,18 +200,12 @@ export const hostConfig: StormHostConfig = {
   appendChildToContainer(container: HostContainer, child: HostInstance | HostTextInstance): void {
     container.children.push(child);
     if ("parent" in child) child.parent = null;
-    // Notify custom element lifecycle: mount
-    if ("type" in child && child.type !== "TEXT_NODE" && !BUILTIN_TYPES.has(child.type) && _onCustomElementMount) {
-      _onCustomElementMount(child.type, child);
-    }
+    notifyMountIfCustom(child);
   },
 
   removeChild: removeChild,
   removeChildFromContainer(container: HostContainer, child: HostInstance | HostTextInstance): void {
-    // Notify custom element lifecycle: unmount (before removal)
-    if ("type" in child && child.type !== "TEXT_NODE" && !BUILTIN_TYPES.has(child.type) && _onCustomElementUnmount) {
-      _onCustomElementUnmount(child.type, child);
-    }
+    notifyUnmountIfCustom(child);
     const idx = container.children.indexOf(child);
     if (idx >= 0) container.children.splice(idx, 1);
     if ("parent" in child) child.parent = null;
@@ -220,10 +224,7 @@ export const hostConfig: StormHostConfig = {
       container.children.push(child);
     }
     if ("parent" in child) child.parent = null;
-    // Notify custom element lifecycle: mount
-    if ("type" in child && child.type !== "TEXT_NODE" && !BUILTIN_TYPES.has(child.type) && _onCustomElementMount) {
-      _onCustomElementMount(child.type, child);
-    }
+    notifyMountIfCustom(child);
   },
 
   clearContainer(container: HostContainer): void {
@@ -249,33 +250,18 @@ export const hostConfig: StormHostConfig = {
   ): void {
     // React freezes props objects — never mutate, always replace
     instance.props = { ...newProps };
-    // Notify custom element handlers of prop updates
     if (!BUILTIN_TYPES.has(instance.type) && _onCustomElementUpdate) {
       _onCustomElementUpdate(instance.type, instance, { ...newProps });
     }
     // Invalidate styled-run cache for this instance (props changed — runs may differ)
     instance._cachedRunsVersion = undefined;
     instance._runsDirty = true;
-    // Update hostPropsRef to point to the new props object
     const ref = newProps["_hostPropsRef"] as { current: unknown } | undefined;
     if (ref) ref.current = instance.props;
     // Sync layout-relevant props only if any layout prop actually changed
     if (instance.layoutNode) {
-      const layoutKeys = [
-        "width", "height", "flex", "flexGrow", "flexShrink", "flexBasis",
-        "flexDirection", "flexWrap", "padding", "paddingTop", "paddingBottom", "paddingLeft", "paddingRight",
-        "paddingX", "paddingY",
-        "margin", "marginTop", "marginBottom", "marginLeft", "marginRight",
-        "marginX", "marginY",
-        "gap", "columnGap", "rowGap", "alignItems", "alignSelf", "justifyContent",
-        "overflow", "overflowX", "overflowY", "display", "position",
-        "minWidth", "minHeight", "maxWidth", "maxHeight",
-        "borderStyle", "borderTop", "borderBottom", "borderLeft", "borderRight",
-        "top", "left", "right", "bottom",
-        "aspectRatio", "order",
-      ];
       let layoutChanged = false;
-      for (const k of layoutKeys) {
+      for (const k of LAYOUT_KEYS) {
         if (oldProps[k] !== newProps[k]) { layoutChanged = true; break; }
       }
       if (layoutChanged) {
@@ -287,7 +273,7 @@ export const hostConfig: StormHostConfig = {
         // reference changes and the node is correctly marked dirty.
         // This also removes any old keys that are no longer present
         // (e.g., switching from flex:1 to height:100).
-        instance.layoutNode.props = extractLayoutProps(instance.type as any, newProps);
+        instance.layoutNode.props = extractLayoutProps(instance.type, newProps);
       }
     }
   },

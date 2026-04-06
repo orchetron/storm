@@ -94,7 +94,6 @@ export function useStyleSheet(options: StyleSheetLoaderOptions): UseStyleSheetRe
   const { renderContext, requestRender, flushSync } = useTui();
   const existingSheet = useContext(StyleContext);
 
-  // Track initialization per file path so we don't re-create watchers.
   // Also stores the current themeOverrides so they survive re-renders.
   const loaderRef = useRef<{
     path: string;
@@ -118,43 +117,38 @@ export function useStyleSheet(options: StyleSheetLoaderOptions): UseStyleSheetRe
     ...(options.watch !== undefined ? { watch: options.watch } : {}),
     ...(options.onError !== undefined ? { onError: options.onError } : {}),
     onReload: (newParsed) => {
-      // Build a fresh StyleSheet from the reloaded file
       const newSheet = createStyleSheet(toStyleSheetRules(newParsed));
 
       // Replace the StyleContext value imperatively. The StyleContext.Provider
       // is owned by a parent component (or the framework's render wrapper).
       // We mutate the context's _currentValue directly — same pattern used
       // throughout storm for imperative updates that bypass React state.
-      (StyleContext as any)._currentValue = newSheet;
-      (StyleContext as any)._currentValue2 = newSheet;
+      (StyleContext as unknown as { _currentValue: unknown })._currentValue = newSheet; // React private API — imperative context update
+      (StyleContext as unknown as { _currentValue2: unknown })._currentValue2 = newSheet; // React private API — imperative context update
 
       // Update theme overrides from :root CSS variables
       if (loaderRef.current) {
         loaderRef.current.themeOverrides = extractThemeOverrides(newParsed.variables);
       }
 
-      // Notify caller
       options.onReload?.(newParsed);
 
-      // Trigger a full re-render so components pick up the new styles
       // and the parent can read the updated themeOverrides
       requestRender();
     },
   });
 
-  // Apply the initial stylesheet
   const sheet = createStyleSheet(toStyleSheetRules(stylesheet));
 
   // Inject into context imperatively
-  (StyleContext as any)._currentValue = sheet;
-  (StyleContext as any)._currentValue2 = sheet;
+  (StyleContext as unknown as { _currentValue: unknown })._currentValue = sheet; // React private API — imperative context update
+  (StyleContext as unknown as { _currentValue2: unknown })._currentValue2 = sheet; // React private API — imperative context update
 
   // Extract initial theme overrides from :root CSS variables
   const themeOverrides = extractThemeOverrides(stylesheet.variables);
 
   loaderRef.current = { path: options.path, close, themeOverrides };
 
-  // Register cleanup so the watcher is stopped on app unmount
   renderContext.cleanups.set(`stylesheet-loader:${options.path}`, close);
 
   return { themeOverrides };

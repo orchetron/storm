@@ -1,29 +1,9 @@
-/**
- * Plugin system for Storm TUI.
- *
- * Plugins can hook into the render lifecycle, intercept input events,
- * register custom elements, and add global keyboard shortcuts.
- *
- * Features:
- * - Priority-based ordering (lower priority runs first, default: 100)
- * - Dependency validation and topological sorting
- * - Per-plugin configuration via generic TConfig
- * - Error isolation: every hook call is wrapped in try/catch
- * - Guaranteed cleanup in reverse order with double-cleanup protection
- * - Custom element mount/unmount lifecycle hooks
- * - Async plugin setup with sequential dependency-respecting initialization
- * - Scoped plugins that only affect components within a matching scope subtree
- * - Inter-plugin communication via PluginBus (pub/sub)
- * - Plugin metadata discovery (getPlugins, hasPlugin, getPluginConfig)
- */
-
 import type { KeyEvent, MouseEvent } from "../input/types.js";
-import type { Shortcut } from "../hooks/useKeyboardShortcuts.js";
+
+interface Shortcut { key: string; ctrl?: boolean; shift?: boolean; meta?: boolean; handler: () => void; label?: string; description?: string; }
 import type { RenderContext } from "./render-context.js";
 import type { ScreenBuffer } from "./buffer.js";
 import type { StormColors } from "../theme/colors.js";
-
-// ── Custom element handler ─────────────────────────────────────────
 
 export interface CustomElementHandler {
   /** Paint the custom element to the buffer. Receives the element's React props via the optional `props` parameter. */
@@ -45,8 +25,6 @@ export interface CustomElementHandler {
   /** Called on keyboard input when the custom element (or its ancestor) is focused. */
   onKey?: (event: KeyEvent) => void;
 }
-
-// ── Plugin bus (inter-plugin communication) ───────────────────────
 
 export class PluginBus {
   private listeners = new Map<string, Set<(data: unknown) => void>>();
@@ -92,8 +70,6 @@ export class PluginBus {
   }
 }
 
-// ── Plugin context ─────────────────────────────────────────────────
-
 export interface PluginContext {
   /** Register a custom element type. */
   registerElement: (tagName: string, handler: CustomElementHandler) => void;
@@ -106,8 +82,6 @@ export interface PluginContext {
   /** Inter-plugin communication bus. */
   bus: PluginBus;
 }
-
-// ── Plugin interface ───────────────────────────────────────────────
 
 export interface StormPlugin<TConfig = unknown> {
   /** Plugin name — must be unique. */
@@ -160,8 +134,6 @@ export interface StormPlugin<TConfig = unknown> {
   componentDefaults?: Record<string, Record<string, unknown>>;
 }
 
-// ── Plugin manager options ─────────────────────────────────────────
-
 export interface PluginManagerOptions {
   /**
    * When true, circular dependencies throw an Error instead of warning.
@@ -170,11 +142,10 @@ export interface PluginManagerOptions {
   strictDependencies?: boolean;
 }
 
-// ── Plugin manager ─────────────────────────────────────────────────
-
 /** Default priority for plugins that don't specify one. */
 const DEFAULT_PRIORITY = 100;
 
+/** Lifecycle hooks, input interception, custom elements, and component prop transforms. Priority + dependency ordered. */
 export class PluginManager {
   private plugins: StormPlugin[] = [];
   private customElements = new Map<string, CustomElementHandler>();
@@ -186,6 +157,12 @@ export class PluginManager {
   private registrationOrder = new Map<string, number>();
   private registrationCounter = 0;
   private readonly strictDependencies: boolean;
+
+  private comparePriority = (a: { name: string; priority?: number }, b: { name: string; priority?: number }): number => {
+    const priDiff = (a.priority ?? DEFAULT_PRIORITY) - (b.priority ?? DEFAULT_PRIORITY);
+    if (priDiff !== 0) return priDiff;
+    return (this.registrationOrder.get(a.name) ?? 0) - (this.registrationOrder.get(b.name) ?? 0);
+  };
   /** Scope stack for scoped plugin support. */
   private scopeStack: string[] = [];
   /** Inter-plugin communication bus. */
@@ -219,7 +196,6 @@ export class PluginManager {
   private sortPlugins(): void {
     const names = new Set(this.plugins.map((p) => p.name));
 
-    // Validate dependencies exist
     for (const plugin of this.plugins) {
       if (plugin.dependencies) {
         for (const dep of plugin.dependencies) {
@@ -247,11 +223,7 @@ export class PluginManager {
       process.stderr.write(
         `[storm] Circular plugin dependency detected. Falling back to priority order.\n`,
       );
-      this.plugins.sort((a, b) => {
-        const priDiff = (a.priority ?? DEFAULT_PRIORITY) - (b.priority ?? DEFAULT_PRIORITY);
-        if (priDiff !== 0) return priDiff;
-        return (this.registrationOrder.get(a.name) ?? 0) - (this.registrationOrder.get(b.name) ?? 0);
-      });
+      this.plugins.sort(this.comparePriority);
     }
   }
 
@@ -265,7 +237,6 @@ export class PluginManager {
       pluginMap.set(p.name, p);
     }
 
-    // Build adjacency: if A depends on B, B must come before A (edge B -> A)
     const inDegree = new Map<string, number>();
     const dependents = new Map<string, string[]>(); // dep -> plugins that depend on it
 
@@ -293,11 +264,7 @@ export class PluginManager {
       }
     }
     // Sort initial queue by priority, then registration order for stable tie-breaking
-    queue.sort((a, b) => {
-      const priDiff = (a.priority ?? DEFAULT_PRIORITY) - (b.priority ?? DEFAULT_PRIORITY);
-      if (priDiff !== 0) return priDiff;
-      return (this.registrationOrder.get(a.name) ?? 0) - (this.registrationOrder.get(b.name) ?? 0);
-    });
+    queue.sort(this.comparePriority);
 
     const result: StormPlugin[] = [];
     while (queue.length > 0) {
@@ -316,18 +283,9 @@ export class PluginManager {
           }
         }
         // Sort newly ready plugins by priority, then registration order for stable tie-breaking
-        readyPlugins.sort((a, b) => {
-          const priDiff = (a.priority ?? DEFAULT_PRIORITY) - (b.priority ?? DEFAULT_PRIORITY);
-          if (priDiff !== 0) return priDiff;
-          return (this.registrationOrder.get(a.name) ?? 0) - (this.registrationOrder.get(b.name) ?? 0);
-        });
+        readyPlugins.sort(this.comparePriority);
         queue.push(...readyPlugins);
-        // Re-sort the queue to maintain global priority + registration ordering
-        queue.sort((a, b) => {
-          const priDiff = (a.priority ?? DEFAULT_PRIORITY) - (b.priority ?? DEFAULT_PRIORITY);
-          if (priDiff !== 0) return priDiff;
-          return (this.registrationOrder.get(a.name) ?? 0) - (this.registrationOrder.get(b.name) ?? 0);
-        });
+        queue.sort(this.comparePriority);
       }
     }
 
@@ -345,7 +303,6 @@ export class PluginManager {
       throw new Error(`Plugin "${plugin.name}" is already registered.`);
     }
 
-    // Resolve overloaded arguments:
     // register(plugin, context)         — backward compatible
     // register(plugin, config)          — new: config only (no context)
     // register(plugin, config, context) — new: config + context
@@ -387,7 +344,6 @@ export class PluginManager {
     this.registrationOrder.set(plugin.name, this.registrationCounter++);
     this.plugins.push(plugin);
 
-    // Sort plugins by priority and dependencies
     this.sortPlugins();
 
     if (plugin.setup && context) {
@@ -469,37 +425,30 @@ export class PluginManager {
     this.registrationOrder.delete(name);
   }
 
-  /** Get a plugin by name. */
   getPlugin(name: string): StormPlugin | undefined {
     return this.plugins.find((p) => p.name === name);
   }
 
-  /** Get the merged config for a plugin by name. */
   getPluginConfig<T = unknown>(name: string): T | undefined {
     return this.configs.get(name) as T | undefined;
   }
 
-  /** Get all registered plugins. */
   getAll(): readonly StormPlugin[] {
     return this.plugins;
   }
 
-  /** Get all registered custom element handlers. */
   getCustomElements(): ReadonlyMap<string, CustomElementHandler> {
     return this.customElements;
   }
 
-  /** Get all registered shortcuts from plugins. */
   getShortcuts(): readonly Shortcut[] {
     return this.shortcuts;
   }
 
-  /** Check if a plugin's setup failed. Failed plugins have their hooks skipped. */
   isPluginFailed(name: string): boolean {
     return this.failedPlugins.has(name);
   }
 
-  /** Run all beforeRender hooks. */
   runBeforeRender(): void {
     for (const plugin of this.plugins) {
       if (this.failedPlugins.has(plugin.name)) continue;
@@ -511,7 +460,6 @@ export class PluginManager {
     }
   }
 
-  /** Run all afterRender hooks. */
   runAfterRender(info: { renderTimeMs: number; cellsChanged: number }): void {
     for (const plugin of this.plugins) {
       if (this.failedPlugins.has(plugin.name)) continue;
@@ -523,7 +471,6 @@ export class PluginManager {
     }
   }
 
-  /** Run key event through the middleware chain. Returns null if consumed. */
   processKey(event: KeyEvent): KeyEvent | null {
     let current: KeyEvent | null = event;
     for (const plugin of this.plugins) {
@@ -543,7 +490,6 @@ export class PluginManager {
     return current;
   }
 
-  /** Run mouse event through the middleware chain. Returns null if consumed. */
   processMouse(event: MouseEvent): MouseEvent | null {
     let current: MouseEvent | null = event;
     for (const plugin of this.plugins) {
@@ -556,7 +502,6 @@ export class PluginManager {
           process.stderr.write(
             `[storm] Plugin "${plugin.name}" error in onMouse: ${(err as Error).message}\n`,
           );
-          // Don't lose the event — continue with current value
         }
       }
     }
@@ -583,7 +528,6 @@ export class PluginManager {
     }
   }
 
-  /** Whether runCleanup() has already been called. */
   isDestroyed(): boolean {
     return this.destroyed;
   }
@@ -599,7 +543,6 @@ export class PluginManager {
     this.scopeStack.push(scopeId);
   }
 
-  /** Pop the most recent scope from the scope stack. */
   popScope(): void {
     this.scopeStack.pop();
   }
@@ -625,12 +568,10 @@ export class PluginManager {
     }));
   }
 
-  /** Check if a plugin with the given name is registered. */
   hasPlugin(name: string): boolean {
     return this.plugins.some((p) => p.name === name);
   }
 
-  /** Get merged component defaults from all plugins for a given component. */
   getComponentDefaults(componentName: string): Record<string, unknown> {
     let merged: Record<string, unknown> = {};
     for (const plugin of this.plugins) {
@@ -643,15 +584,14 @@ export class PluginManager {
     return merged;
   }
 
-  /** Apply all registered plugin interceptors to component props. */
-  applyComponentProps(
+  applyComponentProps<T extends Record<string, unknown>>(
     componentName: string,
-    props: Record<string, unknown>,
-  ): Record<string, unknown> {
+    props: T,
+  ): T {
     // 1. Start with merged defaults from all plugins
     const defaults = this.getComponentDefaults(componentName);
     // 2. User props override defaults
-    let result: Record<string, unknown> = { ...defaults, ...props };
+    let result: Record<string, unknown> = { ...defaults, ...(props as unknown as Record<string, unknown>) };
     // 3. Run each plugin's onComponentProps interceptor in order
     for (const plugin of this.plugins) {
       if (this.failedPlugins.has(plugin.name)) continue;
@@ -675,7 +615,7 @@ export class PluginManager {
         }
       }
     }
-    return result;
+    return result as unknown as T;
   }
 
   /**
@@ -683,52 +623,23 @@ export class PluginManager {
    * Called by the reconciler when a custom element is added to the tree.
    * @internal
    */
+  private notifyCustomElement(tagName: string, hook: string, fn: () => void): void {
+    const handler = this.customElements.get(tagName);
+    if (!handler || !(hook in handler) || !handler[hook as keyof CustomElementHandler]) return;
+    try { fn(); } catch (err) {
+      process.stderr.write(`[storm] Custom element "${tagName}" error in ${hook}: ${(err as Error).message}\n`);
+    }
+  }
+
   notifyCustomElementMount(tagName: string, element: unknown): void {
-    const handler = this.customElements.get(tagName);
-    if (handler?.mount) {
-      try {
-        handler.mount(element);
-      } catch (err) {
-        process.stderr.write(
-          `[storm] Custom element "${tagName}" error in mount: ${(err as Error).message}\n`,
-        );
-      }
-    }
+    this.notifyCustomElement(tagName, "mount", () => this.customElements.get(tagName)!.mount!(element));
   }
 
-  /**
-   * Notify custom element handlers of an unmount event.
-   * Called by the reconciler when a custom element is removed from the tree.
-   * @internal
-   */
   notifyCustomElementUnmount(tagName: string, element: unknown): void {
-    const handler = this.customElements.get(tagName);
-    if (handler?.unmount) {
-      try {
-        handler.unmount(element);
-      } catch (err) {
-        process.stderr.write(
-          `[storm] Custom element "${tagName}" error in unmount: ${(err as Error).message}\n`,
-        );
-      }
-    }
+    this.notifyCustomElement(tagName, "unmount", () => this.customElements.get(tagName)!.unmount!(element));
   }
 
-  /**
-   * Notify custom element handlers of a prop update.
-   * Called by the reconciler when commitUpdate is called for a custom element.
-   * @internal
-   */
   notifyCustomElementUpdate(tagName: string, element: unknown, props: Record<string, unknown>): void {
-    const handler = this.customElements.get(tagName);
-    if (handler?.update) {
-      try {
-        handler.update(element, props);
-      } catch (err) {
-        process.stderr.write(
-          `[storm] Custom element "${tagName}" error in update: ${(err as Error).message}\n`,
-        );
-      }
-    }
+    this.notifyCustomElement(tagName, "update", () => this.customElements.get(tagName)!.update!(element, props));
   }
 }

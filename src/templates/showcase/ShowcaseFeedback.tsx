@@ -1,39 +1,21 @@
-/**
- * ShowcaseFeedback -- "Feedback & Status" showcase template.
- *
- * Demos 9 feedback/status components with headings and live rendered examples.
- */
-
-import React, { useState, useRef } from "react";
+import React, { useState } from "react";
 import { useColors } from "../../hooks/useColors.js";
 import { useTui } from "../../context/TuiContext.js";
 import { useInput } from "../../hooks/useInput.js";
-import { useCleanup } from "../../hooks/useCleanup.js";
-import { ScrollView } from "../../components/ScrollView.js";
-import { Spinner } from "../../components/Spinner.js";
-import { ProgressBar } from "../../components/ProgressBar.js";
-import { GradientProgress } from "../../components/GradientProgress.js";
-import { Gauge } from "../../components/Gauge.js";
-import { Toast } from "../../components/Toast.js";
-import { Timer } from "../../components/Timer.js";
-import { Stopwatch } from "../../components/Stopwatch.js";
-import { StatusMessage } from "../../components/StatusMessage.js";
-import { Alert } from "../../components/Alert.js";
+import { ScrollView } from "../../components/core/ScrollView.js";
+import { Spinner } from "../../components/core/Spinner.js";
+import { ProgressBar } from "../../components/core/ProgressBar.js";
+import { GradientProgress } from "../../components/effects/GradientProgress.js";
+import { Gauge } from "../../components/data/Gauge.js";
+import { Toast } from "../../components/extras/Toast.js";
+import { Timer } from "../../components/extras/Timer.js";
+import { Stopwatch } from "../../components/extras/Stopwatch.js";
+import { StatusMessage } from "../../components/extras/StatusMessage.js";
+import { Alert } from "../../components/extras/Alert.js";
+import { heading, blank } from "./helpers.js";
 
 export interface ShowcaseFeedbackProps {
   title?: string;
-}
-
-function heading(label: string, key: string): React.ReactElement {
-  const colors = useColors();
-  return React.createElement("tui-text", {
-    key, bold: true, color: colors.brand.primary,
-  }, `  ${label}`);
-}
-
-function blank(key: string): React.ReactElement {
-  const colors = useColors();
-  return React.createElement("tui-text", { key }, "");
 }
 
 export function ShowcaseFeedback(props: ShowcaseFeedbackProps): React.ReactElement {

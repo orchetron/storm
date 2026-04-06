@@ -1,37 +1,20 @@
-/**
- * ShowcaseLayout -- "Layout & Containers" showcase template.
- *
- * Demos 9 layout/container components with headings and live rendered examples.
- */
-
 import React, { useState } from "react";
 import { useColors } from "../../hooks/useColors.js";
 import { useTui } from "../../context/TuiContext.js";
 import { useInput } from "../../hooks/useInput.js";
-import { ScrollView } from "../../components/ScrollView.js";
-import { Collapsible } from "../../components/Collapsible.js";
-import { Accordion } from "../../components/Accordion.js";
-import { ContentSwitcher } from "../../components/ContentSwitcher.js";
-import { TabbedContent } from "../../components/TabbedContent.js";
-import { Modal } from "../../components/Modal.js";
-import { Tooltip } from "../../components/Tooltip.js";
-import { Card } from "../../components/Card.js";
-import { Shadow } from "../../components/Shadow.js";
+import { ScrollView } from "../../components/core/ScrollView.js";
+import { Collapsible } from "../../components/extras/Collapsible.js";
+import { Accordion } from "../../components/extras/Accordion.js";
+import { ContentSwitcher } from "../../components/extras/ContentSwitcher.js";
+import { TabbedContent } from "../../components/extras/TabbedContent.js";
+import { Modal } from "../../components/core/Modal.js";
+import { Tooltip } from "../../components/extras/Tooltip.js";
+import { Card } from "../../components/extras/Card.js";
+import { Shadow } from "../../components/effects/Shadow.js";
+import { heading, blank } from "./helpers.js";
 
 export interface ShowcaseLayoutProps {
   title?: string;
-}
-
-function heading(label: string, key: string): React.ReactElement {
-  const colors = useColors();
-  return React.createElement("tui-text", {
-    key, bold: true, color: colors.brand.primary,
-  }, `  ${label}`);
-}
-
-function blank(key: string): React.ReactElement {
-  const colors = useColors();
-  return React.createElement("tui-text", { key }, "");
 }
 
 const SCROLL_LINES = Array.from({ length: 10 }, (_, i) =>
@@ -49,7 +32,6 @@ export function ShowcaseLayout(props: ShowcaseLayoutProps): React.ReactElement {
 
   useInput((event) => {
     if (event.key === "q" || event.char === "q") exit();
-    // Toggle ContentSwitcher with 's'
     if (event.char === "s") {
       flushSync(() => setSwitcherIndex((prev) => (prev === 0 ? 1 : 0)));
     }

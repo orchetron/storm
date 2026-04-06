@@ -1,26 +1,13 @@
-/**
- * Storm theme presets.
- *
- * 11 professionally curated palettes — Storm's own brand identity,
- * plus calm, high-contrast, and monochrome accessibility variants.
- *
- * Each theme defines ALL fields of StormColors with role colors derived
- * consistently from the base semantic palette.
- */
-
 import { colors as defaultColors } from "./colors.js";
 import type { StormColors } from "./colors.js";
 
 export { defaultColors };
 
-// ── 1. Arctic ───────────────────────────────────────────────────────
-// Cool blue frost — crisp, calm, Scandinavian clarity.
-
 export const arcticTheme: StormColors = {
   brand: {
-    primary: "#5CB8C8",   // Storm frost — warmer, greener teal
-    light:   "#8AD0D8",   // Lighter frost (+20% white)
-    glow:    "#4A94A0",   // Dimmer frost (−20%)
+    primary: "#5CB8C8",
+    light:   "#8AD0D8",
+    glow:    "#4A94A0",
   },
 
   text: {
@@ -31,7 +18,7 @@ export const arcticTheme: StormColors = {
   },
 
   surface: {
-    base:      "#1C2028",   // Deeper, more contrast
+    base:      "#1C2028",
     raised:    "#2A3040",
     overlay:   "#384050",
     highlight: "#4C566A",
@@ -39,7 +26,7 @@ export const arcticTheme: StormColors = {
 
   divider: "#2A3040",
 
-  success: "#7EC9A8",   // Vibrant sage-green, less olive
+  success: "#7EC9A8",
   warning: "#EBCB8B",
   error:   "#BF616A",
   info:    "#81A1C1",
@@ -74,9 +61,7 @@ export const arcticTheme: StormColors = {
   diff: {
     added:     "#7EC9A8",
     removed:   "#BF616A",
-    addedBg:   "#142820",   // Deep tinted success
-    removedBg: "#2E1A1A",   // Deep tinted error
-  },
+    addedBg:   "#142820",    removedBg: "#2E1A1A",  },
 
   syntax: {
     keyword:  "#5CB8C8",
@@ -89,15 +74,10 @@ export const arcticTheme: StormColors = {
   },
 } as const;
 
-// ── 2. Midnight ─────────────────────────────────────────────────────
-// Deep blue night — luminous accents against a dark sky.
-
 export const midnightTheme: StormColors = {
   brand: {
-    primary: "#6B9EF0",   // Storm midnight — slightly muted, more refined
-    light:   "#90B8F4",   // Lighter (+20% white)
-    glow:    "#4878C0",   // Dimmer (−20%)
-  },
+    primary: "#6B9EF0",
+    light:   "#90B8F4",    glow:    "#4878C0",  },
 
   text: {
     primary:   "#A9B1D6",
@@ -107,7 +87,7 @@ export const midnightTheme: StormColors = {
   },
 
   surface: {
-    base:      "#12141E",   // Even deeper midnight
+    base:      "#12141E",
     raised:    "#1E2234",
     overlay:   "#2C3350",
     highlight: "#414868",
@@ -117,7 +97,7 @@ export const midnightTheme: StormColors = {
 
   success: "#9ECE6A",
   warning: "#E0AF68",
-  error:   "#E8657A",   // Deeper, less pink — warm crimson accent
+  error:   "#E8657A",
   info:    "#BB9AF7",
 
   system:    { text: "#565F89" },
@@ -150,9 +130,7 @@ export const midnightTheme: StormColors = {
   diff: {
     added:     "#9ECE6A",
     removed:   "#E8657A",
-    addedBg:   "#141E14",   // Deep tinted success
-    removedBg: "#241418",   // Deep tinted error
-  },
+    addedBg:   "#141E14",    removedBg: "#241418",  },
 
   syntax: {
     keyword:  "#6B9EF0",
@@ -165,15 +143,10 @@ export const midnightTheme: StormColors = {
   },
 } as const;
 
-// ── 3. Ember ────────────────────────────────────────────────────────
-// Warm earth tones — cozy amber glow and toasted neutrals.
-
 export const emberTheme: StormColors = {
   brand: {
-    primary: "#6EB0A0",   // Storm ember — teal undercurrent in warm earth
-    light:   "#90C8B8",   // Lighter (+20% white)
-    glow:    "#588E80",   // Dimmer (−20%)
-  },
+    primary: "#6EB0A0",
+    light:   "#90C8B8",    glow:    "#588E80",  },
 
   text: {
     primary:   "#EBDBB2",
@@ -183,7 +156,7 @@ export const emberTheme: StormColors = {
   },
 
   surface: {
-    base:      "#1E1C18",   // Warmer, less gray
+    base:      "#1E1C18",
     raised:    "#302C24",
     overlay:   "#443E34",
     highlight: "#665C54",
@@ -191,7 +164,7 @@ export const emberTheme: StormColors = {
 
   divider: "#302C24",
 
-  success: "#A0C840",   // Brighter, less yellow-green
+  success: "#A0C840",
   warning: "#FABD2F",
   error:   "#FB4934",
   info:    "#D3869B",
@@ -226,9 +199,7 @@ export const emberTheme: StormColors = {
   diff: {
     added:     "#A0C840",
     removed:   "#FB4934",
-    addedBg:   "#1A2410",   // Deep tinted success
-    removedBg: "#2A1410",   // Deep tinted error
-  },
+    addedBg:   "#1A2410",    removedBg: "#2A1410",  },
 
   syntax: {
     keyword:  "#6EB0A0",
@@ -241,15 +212,10 @@ export const emberTheme: StormColors = {
   },
 } as const;
 
-// ── 4. Mist ─────────────────────────────────────────────────────────
-// Soft pastels — gentle, soothing tones that never tire the eye.
-
 export const mistTheme: StormColors = {
   brand: {
-    primary: "#78B0E8",   // Storm mist — less saturated, more mature
-    light:   "#A0C8F0",   // Lighter (+20% white)
-    glow:    "#5888B8",   // Dimmer (−20%)
-  },
+    primary: "#78B0E8",
+    light:   "#A0C8F0",    glow:    "#5888B8",  },
 
   text: {
     primary:   "#CDD6F4",
@@ -259,7 +225,7 @@ export const mistTheme: StormColors = {
   },
 
   surface: {
-    base:      "#181824",   // Deeper
+    base:      "#181824",
     raised:    "#282840",
     overlay:   "#3C3C54",
     highlight: "#585B70",
@@ -268,9 +234,9 @@ export const mistTheme: StormColors = {
   divider: "#282840",
 
   success: "#A6E3A1",
-  warning: "#E8C870",   // Warmer gold (swapped unique)
+  warning: "#E8C870",
   error:   "#F38BA8",
-  info:    "#A090D8",   // Lavender instead of purple (swapped unique)
+  info:    "#A090D8",
 
   system:    { text: "#A6ADC8" },
   user:      { symbol: "#78B0E8" },
@@ -302,9 +268,7 @@ export const mistTheme: StormColors = {
   diff: {
     added:     "#A6E3A1",
     removed:   "#F38BA8",
-    addedBg:   "#142418",   // Deep tinted success
-    removedBg: "#281820",   // Deep tinted error
-  },
+    addedBg:   "#142418",    removedBg: "#281820",  },
 
   syntax: {
     keyword:  "#78B0E8",
@@ -317,15 +281,10 @@ export const mistTheme: StormColors = {
   },
 } as const;
 
-// ── 5. Voltage ──────────────────────────────────────────────────────
-// Vivid electric — high-energy saturated colors that pop.
-
 export const voltageTheme: StormColors = {
   brand: {
-    primary: "#A080E8",   // Storm voltage — less pink, more blue-violet
-    light:   "#BCA0F0",   // Lighter (+20% white)
-    glow:    "#7860B8",   // Dimmer (−20%)
-  },
+    primary: "#A080E8",
+    light:   "#BCA0F0",    glow:    "#7860B8",  },
 
   text: {
     primary:   "#F8F8F2",
@@ -335,7 +294,7 @@ export const voltageTheme: StormColors = {
   },
 
   surface: {
-    base:      "#1A1C28",   // Darker for more contrast
+    base:      "#1A1C28",
     raised:    "#30324A",
     overlay:   "#3C3E50",
     highlight: "#343746",
@@ -343,9 +302,9 @@ export const voltageTheme: StormColors = {
 
   divider: "#30324A",
 
-  success: "#40E890",   // Turquoise-green — unique Storm voltage accent
+  success: "#40E890",
   warning: "#F1FA8C",
-  error:   "#F04060",   // Deeper, more crimson
+  error:   "#F04060",
   info:    "#8BE9FD",
 
   system:    { text: "#6272A4" },
@@ -378,9 +337,7 @@ export const voltageTheme: StormColors = {
   diff: {
     added:     "#40E890",
     removed:   "#F04060",
-    addedBg:   "#102818",   // Deep tinted success
-    removedBg: "#281014",   // Deep tinted error
-  },
+    addedBg:   "#102818",    removedBg: "#281014",  },
 
   syntax: {
     keyword:  "#A080E8",
@@ -393,15 +350,10 @@ export const voltageTheme: StormColors = {
   },
 } as const;
 
-// ── 6. Dusk ─────────────────────────────────────────────────────────
-// Muted purple twilight — soft sunset hues fading into night.
-
 export const duskTheme: StormColors = {
   brand: {
-    primary: "#B898D8",   // Storm dusk — slightly warmer iris
-    light:   "#D0B8E8",   // Lighter (+20% white)
-    glow:    "#9070B0",   // Dimmer (−20%)
-  },
+    primary: "#B898D8",
+    light:   "#D0B8E8",    glow:    "#9070B0",  },
 
   text: {
     primary:   "#E0DEF4",
@@ -411,7 +363,7 @@ export const duskTheme: StormColors = {
   },
 
   surface: {
-    base:      "#14121E",   // Deeper purple-black
+    base:      "#14121E",
     raised:    "#1C1A2A",
     overlay:   "#242034",
     highlight: "#403D52",
@@ -419,8 +371,8 @@ export const duskTheme: StormColors = {
 
   divider: "#1C1A2A",
 
-  success: "#80C0B8",   // Sage-teal, less cyan — Storm's twilight green
-  warning: "#D8A870",   // Amber-rose — unique warm accent
+  success: "#80C0B8",
+  warning: "#D8A870",
   error:   "#EB6F92",
   info:    "#31748F",
 
@@ -454,9 +406,7 @@ export const duskTheme: StormColors = {
   diff: {
     added:     "#80C0B8",
     removed:   "#EB6F92",
-    addedBg:   "#141E1C",   // Deep tinted success
-    removedBg: "#24141C",   // Deep tinted error
-  },
+    addedBg:   "#141E1C",    removedBg: "#24141C",  },
 
   syntax: {
     keyword:  "#B898D8",
@@ -469,15 +419,10 @@ export const duskTheme: StormColors = {
   },
 } as const;
 
-// ── 7. Horizon ──────────────────────────────────────────────────────
-// Precise blue-gold — clean, balanced, engineered for clarity.
-
 export const horizonTheme: StormColors = {
   brand: {
-    primary: "#2890C8",   // Storm horizon — slightly greener blue
-    light:   "#58B0D8",   // Lighter (+20% white)
-    glow:    "#1C6898",   // Dimmer (−20%)
-  },
+    primary: "#2890C8",
+    light:   "#58B0D8",    glow:    "#1C6898",  },
 
   text: {
     primary:   "#839496",
@@ -487,7 +432,7 @@ export const horizonTheme: StormColors = {
   },
 
   surface: {
-    base:      "#001E28",   // Tighter, less green-tinted
+    base:      "#001E28",
     raised:    "#042E38",
     overlay:   "#083E4C",
     highlight: "#0A5264",
@@ -495,8 +440,8 @@ export const horizonTheme: StormColors = {
 
   divider: "#042E38",
 
-  success: "#68A828",   // Less harsh yellow-green, more natural
-  warning: "#C89830",   // Brighter, less muddy
+  success: "#68A828",
+  warning: "#C89830",
   error:   "#DC322F",
   info:    "#2AA198",
 
@@ -530,9 +475,7 @@ export const horizonTheme: StormColors = {
   diff: {
     added:     "#68A828",
     removed:   "#DC322F",
-    addedBg:   "#081E08",   // Deep tinted success
-    removedBg: "#240808",   // Deep tinted error
-  },
+    addedBg:   "#081E08",    removedBg: "#240808",  },
 
   syntax: {
     keyword:  "#2890C8",
@@ -544,9 +487,6 @@ export const horizonTheme: StormColors = {
     operator: "#DC322F",
   },
 } as const;
-
-// ── 8. Neon ─────────────────────────────────────────────────────────
-// Hyper-saturated warm electric for maximum visual punch.
 
 export const neonTheme: StormColors = {
   brand: {
@@ -621,9 +561,6 @@ export const neonTheme: StormColors = {
   },
 } as const;
 
-// ── Calm ────────────────────────────────────────────────────────────
-// Desaturated warm tones for long coding sessions.
-
 export const calmTheme: StormColors = {
   brand: {
     primary: "#C49848",
@@ -697,9 +634,6 @@ export const calmTheme: StormColors = {
   },
 } as const;
 
-// ── High Contrast ───────────────────────────────────────────────────
-// Maximum readability for accessibility.
-
 export const highContrastTheme: StormColors = {
   brand: {
     primary: "#FFFFFF",
@@ -772,9 +706,6 @@ export const highContrastTheme: StormColors = {
     function: "#FFFFFF",
   },
 } as const;
-
-// ── Monochrome ──────────────────────────────────────────────────────
-// Minimal all-grey theme with no color.
 
 export const monochromeTheme: StormColors = {
   brand: {

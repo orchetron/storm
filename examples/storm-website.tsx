@@ -161,11 +161,11 @@ function App() {
         </Box>
         <Box height={2} />
         <Box flexDirection="row" justifyContent="center" width={width} gap={3}>
-          <Text color={C.blue}>92 components</Text>
+          <Text color={C.blue}>97 components</Text>
           <Text color={C.dim}>·</Text>
-          <Text color={C.cyan}>19 AI widgets</Text>
+          <Text color={C.cyan}>15 AI widgets</Text>
           <Text color={C.dim}>·</Text>
-          <Text color={C.green}>82 hooks</Text>
+          <Text color={C.green}>83 hooks</Text>
           <Text color={C.dim}>·</Text>
           <Text color={C.amber}>12 themes</Text>
         </Box>
@@ -464,11 +464,11 @@ function App() {
         <>
           <Box height={1} />
           <Box flexDirection="row" justifyContent="center" width={width} gap={2}>
-            <Text color={C.blue}>92 components</Text>
+            <Text color={C.blue}>97 components</Text>
             <Text color={C.dim}>·</Text>
-            <Text color={C.cyan}>19 AI widgets</Text>
+            <Text color={C.cyan}>15 AI widgets</Text>
             <Text color={C.dim}>·</Text>
-            <Text color={C.green}>82 hooks</Text>
+            <Text color={C.green}>83 hooks</Text>
           </Box>
         </>
       )}

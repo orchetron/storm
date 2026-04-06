@@ -1,16 +1,4 @@
-/**
- * i18n — Internationalization foundation for Storm TUI.
- *
- * Provides locale definitions, a locale registry, number formatting,
- * and a simple string interpolation function `t()`.
- *
- * This is a minimal foundation — no ICU, no pluralization engine.
- * Components opt in by accepting a Locale or using the useLocale() hook.
- */
-
 import { createContext, useContext, createElement, type ReactNode } from "react";
-
-// ── Plural types ──────────────────────────────────────────────────
 
 export type PluralCategory = "zero" | "one" | "two" | "few" | "many" | "other";
 
@@ -18,8 +6,6 @@ export interface PluralRule {
   /** Given a number, return the plural category */
   select: (n: number) => PluralCategory;
 }
-
-// ── Built-in plural rules ─────────────────────────────────────────
 
 /** English: 1 = "one", everything else = "other" */
 export const PLURAL_EN: PluralRule = {
@@ -60,8 +46,6 @@ export const PLURAL_JA: PluralRule = {
   select: () => "other",
 };
 
-// ── Types ──────────────────────────────────────────────────────────
-
 export interface NumberFormat {
   /** Decimal separator, e.g. "." or "," */
   readonly decimal: string;
@@ -92,8 +76,6 @@ export interface Locale {
   readonly pluralRule?: PluralRule;
 }
 
-// ── Built-in locale: English ───────────────────────────────────────
-
 export const EN: Locale = {
   code: "en",
   direction: "ltr",
@@ -115,8 +97,6 @@ export const EN: Locale = {
   strings: {},
 };
 
-// ── Locale registry ────────────────────────────────────────────────
-
 const locales = new Map<string, Locale>();
 locales.set("en", EN);
 
@@ -134,8 +114,6 @@ export function getLocale(code: string): Locale | undefined {
 export function getRegisteredLocales(): string[] {
   return Array.from(locales.keys());
 }
-
-// ── Format helpers ─────────────────────────────────────────────────
 
 /**
  * Format a number according to the locale's decimal/thousands conventions.
@@ -193,8 +171,6 @@ export function t(
   return text;
 }
 
-// ── Pluralization ─────────────────────────────────────────────────
-
 /**
  * Select the correct plural form for a number.
  *
@@ -237,8 +213,6 @@ export function plural(
 
   return text.split("{count}").join(String(count));
 }
-
-// ── React context ──────────────────────────────────────────────────
 
 export const LocaleContext = createContext<Locale>(EN);
 

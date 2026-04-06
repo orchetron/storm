@@ -1,11 +1,3 @@
-/**
- * useAsyncLoader — loading states with retry and error handling.
- *
- * Uses useRef + forceUpdate() for imperative state management.
- * Calls load() on mount (if autoLoad). On error, retries up to
- * retryCount times with configurable delay.
- */
-
 import { useRef } from "react";
 import { useCleanup } from "./useCleanup.js";
 import { useForceUpdate } from "./useForceUpdate.js";
@@ -41,7 +33,6 @@ export function useAsyncLoader<T>(options: UseAsyncLoaderOptions<T>): UseAsyncLo
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortedRef = useRef(false);
 
-  // Store latest load fn
   const loadRef = useRef(load);
   loadRef.current = load;
 

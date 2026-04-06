@@ -1,31 +1,8 @@
-/**
- * WebRenderer — renders Storm TUI to HTML via WebSocket.
- *
- * Streams the cell buffer as HTML to connected browsers.
- * Same app runs in terminal and browser simultaneously.
- * Zero dependencies beyond Node.js built-ins (http, ws via raw WebSocket protocol).
- *
- * Implements RFC 6455 WebSocket handshake and framing manually — no external
- * WebSocket library. This keeps the zero-dependency promise.
- *
- * Usage:
- *   const web = new WebRenderer({ port: 3000 });
- *   await web.start();
- *   const app = render(<App />, {
- *     onRender: () => {
- *       const screen = app.screen;
- *       web.sendFrame(screen.getBuffer(), screen.cursorX, screen.cursorY);
- *     },
- *   });
- */
-
 import { createServer, type Server, type IncomingMessage, type ServerResponse } from "node:http";
 import { createHash } from "node:crypto";
 import type { Socket } from "node:net";
 import { ScreenBuffer, WIDE_CHAR_PLACEHOLDER } from "./buffer.js";
 import { DEFAULT_COLOR, Attr, isRgbColor, rgbR, rgbG, rgbB } from "./types.js";
-
-// ── ANSI 256-color palette ──────────────────────────────────────────
 
 const ANSI_256_PALETTE: string[] = buildAnsi256Palette();
 
@@ -69,8 +46,6 @@ function colorToCSS(c: number): string | null {
   return null;
 }
 
-// ── WebSocket RFC 6455 Implementation ───────────────────────────────
-
 const WS_MAGIC = "258EAFA5-E914-47DA-95CA-5AB9064DC5BB";
 
 /** Compute the Sec-WebSocket-Accept header value. */
@@ -113,7 +88,6 @@ function encodeFrame(opcode: number, payload: Buffer): Buffer {
     frame.writeUInt16BE(len, 2);
   } else {
     frame[1] = 127;
-    // Write as two 32-bit integers (BigInt not needed for reasonable payloads)
     frame.writeUInt32BE(0, 2);
     frame.writeUInt32BE(len, 6);
   }
@@ -146,7 +120,6 @@ function decodeFrame(data: Buffer): DecodedFrame | null {
     offset = 4;
   } else if (payloadLen === 127) {
     if (data.length < 10) return null;
-    // Read lower 32 bits (upper should be 0 for sane payloads)
     payloadLen = data.readUInt32BE(6);
     offset = 10;
   }
@@ -169,8 +142,6 @@ function decodeFrame(data: Buffer): DecodedFrame | null {
   return { opcode, payload, totalLength };
 }
 
-// ── Client connection state ─────────────────────────────────────────
-
 interface WsClient {
   socket: Socket;
   /** Accumulation buffer for incomplete frames. */
@@ -191,7 +162,6 @@ interface CellSnapshot {
   attrs: number;
 }
 
-// ── Frame protocol ──────────────────────────────────────────────────
 //
 // Messages are JSON for simplicity and debuggability.
 //
@@ -203,8 +173,6 @@ interface CellSnapshot {
 //
 // Resize (dimensions changed → send full):
 //   Same as full frame.
-
-// ── Public API ──────────────────────────────────────────────────────
 
 export interface WebRendererOptions {
   /** HTTP port (default 3000). */
@@ -410,7 +378,6 @@ export class WebRenderer {
       alive: true,
     };
 
-    // Process any data that arrived with the upgrade
     if (head.length > 0) {
       client.recvBuffer = head;
       this.processIncoming(client);
@@ -448,7 +415,6 @@ export class WebRenderer {
           this.sendPong(client, frame.payload);
           break;
         case WsOpcode.PONG:
-          // Ignore
           break;
         case WsOpcode.CLOSE:
           this.sendClose(client);

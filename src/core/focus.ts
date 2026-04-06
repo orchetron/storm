@@ -54,6 +54,7 @@ export type FocusRingMode = "border" | "prefix" | "none";
 /** Callback signature for focus change notifications. */
 export type FocusChangeCallback = (focusedId: string | null, previousId: string | null) => void;
 
+/** Keyboard focus routing, Tab cycling (with tabIndex + groups), and mouse hit-testing for ScrollViews. */
 export class FocusManager {
   readonly entries = new Map<string, FocusableEntry>();
   private order: string[] = [];
@@ -186,7 +187,6 @@ export class FocusManager {
    * if the currently focused element is outside it.
    */
   trapFocus(groupId: string): void {
-    // Save the currently focused element so releaseFocus() can restore it
     this._focusRestoreStack.push(this.focusedId ?? "");
     this.trapStack.push(groupId);
     // If current focus is not in the trapped group, move to first input in group
@@ -289,7 +289,6 @@ export class FocusManager {
     const eligible = this.order.filter((id) => {
       const e = this.entries.get(id);
       if (!e || e.type !== "input") return false;
-      // Skip disabled entries
       if (e.disabled) return false;
       // Focus trap takes priority
       if (activeGroup !== undefined) return e.groupId === activeGroup;
@@ -309,13 +308,6 @@ export class FocusManager {
     });
 
     return eligible;
-  }
-
-  /**
-   * @deprecated Use sortedInputs() internally. Kept as alias for backward compat.
-   */
-  private scopedInputs(): string[] {
-    return this.sortedInputs();
   }
 
   enableFocus(): void {
@@ -342,12 +334,10 @@ export class FocusManager {
     return this.focusedId ? this.entries.get(this.focusedId) : undefined;
   }
 
-  /** Returns true if a focus trap is currently active. */
   get isTrapped(): boolean {
     return this.trapStack.length > 0;
   }
 
-  /** Returns the currently active trap group ID, or null if none. */
   get activeGroup(): string | null {
     return this.trapStack.length > 0
       ? this.trapStack[this.trapStack.length - 1]!
@@ -357,7 +347,6 @@ export class FocusManager {
   /** Hit-test: find the ScrollView containing (x, y).
    *  Also updates activeScrollId so keyboard scroll routes to this ScrollView. */
   hitTestScroll(x: number, y: number): FocusableEntry | undefined {
-    // Check in reverse order (last registered = topmost)
     for (let i = this.order.length - 1; i >= 0; i--) {
       const entry = this.entries.get(this.order[i]!);
       if (!entry || entry.type !== "scroll") continue;
@@ -402,12 +391,10 @@ export class FocusManager {
     return sole;
   }
 
-  /** Explicitly set which ScrollView receives keyboard scroll events. */
   setActiveScroll(id: string | null): void {
     this._activeScrollId = id;
   }
 
-  /** Update bounds for a registered entry (called by renderer after layout) */
   updateBounds(id: string, x: number, y: number, width: number, height: number): void {
     const entry = this.entries.get(id);
     if (entry) {
@@ -418,7 +405,6 @@ export class FocusManager {
     }
   }
 
-  /** Subscribe to any focus change (general notification). */
   onChange(fn: () => void): () => void {
     this.listeners.add(fn);
     return () => { this.listeners.delete(fn); };
@@ -477,7 +463,6 @@ export class FocusManager {
     this._focusRingMode = mode;
   }
 
-  /** Returns the current focus ring mode. */
   get focusRingMode(): FocusRingMode {
     return this._focusRingMode;
   }

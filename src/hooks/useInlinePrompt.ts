@@ -1,10 +1,3 @@
-/**
- * useInlinePrompt — lightweight inline yes/no/custom prompt.
- *
- * Uses useForceUpdate to trigger React re-render when state changes,
- * so the component reads the updated `selected` value.
- */
-
 import { useRef } from "react";
 import { useTui } from "../context/TuiContext.js";
 import { useCleanup } from "./useCleanup.js";
@@ -69,7 +62,6 @@ export function useInlinePrompt<T extends string = string>(
     forceUpdate();
   };
 
-  // Register ONCE on InputManager
   if (!registeredRef.current) {
     registeredRef.current = true;
     unsubRef.current = input.onKey((event: KeyEvent) => {

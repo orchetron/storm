@@ -5,7 +5,7 @@
 import { describe, it, expect } from "vitest";
 import React from "react";
 import { renderForTest } from "../testing/index.js";
-import { Badge } from "../components/Badge.js";
+import { Badge } from "../components/index.js";
 
 describe("Badge", () => {
   it("renders with label in default mode", () => {

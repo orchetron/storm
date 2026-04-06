@@ -1,17 +1,13 @@
 /**
  * Render Diff Heatmap — visualizes which cells changed between frames.
  *
- * No other TUI framework has this. It shows a real-time overlay where:
+ * It shows a real-time overlay where:
  * - Cells that changed THIS frame glow bright (hot red/orange)
  * - Cells that changed 2-5 frames ago fade (warm yellow)
  * - Cells that changed 6-15 frames ago are cool (dim blue)
  * - Stable cells (unchanged 15+ frames) are invisible (no overlay)
  *
- * This instantly reveals:
- * - Which parts of your UI are thrashing (constantly changing)
- * - Animation hotspots
- * - Unnecessary re-renders (cells changing when they shouldn't)
- * - Stable regions (everything that doesn't need repainting)
+ * Reveals thrashing, animation hotspots, and unnecessary re-renders.
  */
 
 import type { ScreenBuffer } from "../core/buffer.js";
@@ -118,7 +114,6 @@ export function createRenderHeatmap(options?: HeatmapOptions): {
     name: "render-heatmap",
 
     onPaint(buffer: ScreenBuffer, width: number, height: number): ScreenBuffer {
-      // Handle resize or first call
       if (
         lastChanged === null ||
         trackedWidth !== width ||
@@ -159,7 +154,6 @@ export function createRenderHeatmap(options?: HeatmapOptions): {
           lastChanged![i] = frameCounter;
         }
 
-        // Store current state for next-frame comparison
         prevChars![i] = ch;
         prevFgs![i] = fg;
         prevBgs![i] = bg;

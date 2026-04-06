@@ -8,7 +8,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { DiffRenderer, isWasmAccelerated } from "../core/diff.js";
 import { ScreenBuffer } from "../core/buffer.js";
-import { DEFAULT_COLOR, Attr } from "../core/types.js";
+import { DEFAULT_COLOR, Attr, rgb } from "../core/types.js";
 import { RenderContext } from "../core/render-context.js";
 
 describe("DiffRenderer", () => {
@@ -109,11 +109,11 @@ describe("DiffRenderer", () => {
 
   it("handles foreground color changes", () => {
     const buf1 = new ScreenBuffer(10, 3);
-    buf1.setCell(0, 0, { char: "X", fg: 0xFF0000, bg: DEFAULT_COLOR, attrs: Attr.NONE, ulColor: DEFAULT_COLOR });
+    buf1.setCell(0, 0, { char: "X", fg: rgb(255, 0, 0), bg: DEFAULT_COLOR, attrs: Attr.NONE, ulColor: DEFAULT_COLOR });
     renderer.render(buf1);
 
     const buf2 = new ScreenBuffer(10, 3);
-    buf2.setCell(0, 0, { char: "X", fg: 0x00FF00, bg: DEFAULT_COLOR, attrs: Attr.NONE, ulColor: DEFAULT_COLOR });
+    buf2.setCell(0, 0, { char: "X", fg: rgb(0, 255, 0), bg: DEFAULT_COLOR, attrs: Attr.NONE, ulColor: DEFAULT_COLOR });
 
     const result = renderer.render(buf2);
     expect(result.output.length).toBeGreaterThan(0);
@@ -122,11 +122,11 @@ describe("DiffRenderer", () => {
 
   it("handles background color changes", () => {
     const buf1 = new ScreenBuffer(10, 3);
-    buf1.setCell(0, 0, { char: "X", fg: DEFAULT_COLOR, bg: 0xFF0000, attrs: Attr.NONE, ulColor: DEFAULT_COLOR });
+    buf1.setCell(0, 0, { char: "X", fg: DEFAULT_COLOR, bg: rgb(255, 0, 0), attrs: Attr.NONE, ulColor: DEFAULT_COLOR });
     renderer.render(buf1);
 
     const buf2 = new ScreenBuffer(10, 3);
-    buf2.setCell(0, 0, { char: "X", fg: DEFAULT_COLOR, bg: 0x00FF00, attrs: Attr.NONE, ulColor: DEFAULT_COLOR });
+    buf2.setCell(0, 0, { char: "X", fg: DEFAULT_COLOR, bg: rgb(0, 255, 0), attrs: Attr.NONE, ulColor: DEFAULT_COLOR });
 
     const result = renderer.render(buf2);
     expect(result.changedLines).toBe(1);
@@ -192,7 +192,7 @@ describe("DiffRenderer", () => {
     // A line where the last cell has non-default content should not emit CSI K
     const buf = new ScreenBuffer(5, 3);
     for (let x = 0; x < 5; x++) {
-      buf.setCell(x, 0, { char: "X", fg: 0xFF0000, bg: DEFAULT_COLOR, attrs: Attr.NONE, ulColor: DEFAULT_COLOR });
+      buf.setCell(x, 0, { char: "X", fg: rgb(255, 0, 0), bg: DEFAULT_COLOR, attrs: Attr.NONE, ulColor: DEFAULT_COLOR });
     }
     const result = renderer.render(buf);
     // The output should not contain CSI K for row 0 (which fills full width)
@@ -297,7 +297,7 @@ describe("DiffRenderer", () => {
 
   it("handles combined attributes", () => {
     const buf = new ScreenBuffer(10, 3);
-    buf.setCell(0, 0, { char: "C", fg: 0xFF0000, bg: 0x00FF00, attrs: Attr.BOLD | Attr.ITALIC, ulColor: DEFAULT_COLOR });
+    buf.setCell(0, 0, { char: "C", fg: rgb(255, 0, 0), bg: rgb(0, 255, 0), attrs: Attr.BOLD | Attr.ITALIC, ulColor: DEFAULT_COLOR });
     const result = renderer.render(buf);
     expect(result.output.length).toBeGreaterThan(0);
   });

@@ -1,20 +1,11 @@
-/**
- * Personality presets — 4 curated interaction identities.
- *
- * Each preset defines a complete StormPersonality: color theme,
- * border style, animation timing, typography, and interaction feel.
- */
-
 import { colors as defaultColors } from "../theme/colors.js";
 import { createPersonality, type StormPersonality } from "./personality.js";
 
-// ── 1. Default ─────────────────────────────────────────────────────
 // Current Storm style — amber accent, round borders, easeOut
 // animations, "❯" prompt, "bar" focus indicator.
 
 export const defaultPreset: StormPersonality = createPersonality({});
 
-// ── 2. Minimal ─────────────────────────────────────────────────────
 // Thin single borders, no animations, ">" prompt, "arrow" focus,
 // reduced spacing. For distraction-free work.
 
@@ -57,7 +48,6 @@ export const minimalPreset: StormPersonality = createPersonality({
   },
 });
 
-// ── 3. Hacker ──────────────────────────────────────────────────────
 // ASCII borders, green accent (#00FF00), "$" prompt, fast
 // animations, braille spinner. Terminal purist.
 
@@ -125,7 +115,6 @@ export const hackerPreset: StormPersonality = createPersonality({
   },
 });
 
-// ── 4. Playful ─────────────────────────────────────────────────────
 // Round borders, bouncy animations, "→" prompt, colorful, slow
 // easing. Fun and expressive.
 

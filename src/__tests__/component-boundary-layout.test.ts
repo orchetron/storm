@@ -8,8 +8,7 @@
 import { describe, it, expect } from "vitest";
 import React from "react";
 import { renderToString } from "../reconciler/render-to-string.js";
-import { Box } from "../components/Box.js";
-import { Text } from "../components/Text.js";
+import { Box, Text } from "../components/index.js";
 
 describe("Component boundary layout", () => {
   it("inline vs component-returned children produce identical output (raw elements)", () => {

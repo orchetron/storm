@@ -341,23 +341,6 @@ Term and definition pairs with stacked or inline layout.
 
 ---
 
-### Separator
-
-Horizontal section separator with optional centered label.
-
-| Prop | Type | Default | Description |
-|---|---|---|---|
-| `label` | `string` | -- | Centered label text |
-| `style` | `"line" \| "dashed" \| "dotted" \| "storm"` | `"line"` | Line style |
-| `color` | `string \| number` | `colors.divider` | Line color |
-| `width` | `number` | `200` | Width (clipped by parent) |
-
-```tsx
-<Separator label="Settings" style="dashed" />
-```
-
----
-
 ### Divider
 
 Horizontal line that fills available width with configurable style.
@@ -536,6 +519,37 @@ Colored label chip with filled or outlined variant and optional dismiss.
 </Box>
 ```
 
+
+---
+
+### Markdown
+
+Renders a markdown string as styled terminal output with headings, bold, italic, code blocks, and lists.
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `children` | `string` | -- | Markdown source text |
+| `width` | `number` | -- | Wrap width |
+
+```tsx
+<Markdown>{`# Title\nSome **bold** and *italic* text.`}</Markdown>
+```
+
+---
+
+### MarkdownViewer
+
+Scrollable markdown viewer with syntax-highlighted code blocks. Wraps `Markdown` in a `ScrollView`.
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `content` | `string` | -- | Markdown source text |
+| `height` | `number` | -- | Viewport height |
+| `isFocused` | `boolean` | `true` | Accept scroll input |
+
+```tsx
+<MarkdownViewer content={readmeText} height={20} />
+```
 
 ---
 [Back to Components](README.md)

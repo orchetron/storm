@@ -9,12 +9,12 @@
  */
 
 import React, { useState, useCallback } from "react";
-import { Box, Text, useInput, useTui } from "../../../src/index.js";
+import { Box, Text, useInput } from "../../../src/index.js";
 
 // -- Theme Colors -------------------------------------------------------------
 
 const THEME = {
-  accent: "#8C8CF9",
+  accent: "#82AAFF",
   text: "#DEE1E4",
   textSecondary: "#A5A8AB",
   textDisabled: "#46484A",
@@ -51,7 +51,6 @@ export function ToolApproval({
   onDeny,
   onAlwaysApprove,
 }: ToolApprovalProps): React.ReactElement {
-  const { flushSync } = useTui();
   const [selected, setSelected] = useState(0);
 
   const options = [
@@ -70,14 +69,14 @@ export function ToolApproval({
         } else if (e.key === "3" || e.key === "a") {
           onAlwaysApprove();
         } else if (e.key === "up" || (e.key === "k" && !e.ctrl)) {
-          flushSync(() => setSelected((s) => Math.max(0, s - 1)));
+          setSelected((prev) => Math.max(0, prev - 1));
         } else if (e.key === "down" || (e.key === "j" && !e.ctrl)) {
-          flushSync(() => setSelected((s) => Math.min(options.length - 1, s + 1)));
+          setSelected((prev) => Math.min(options.length - 1, prev + 1));
         } else if (e.key === "return") {
           options[selected]!.action();
         }
       },
-      [onApprove, onDeny, onAlwaysApprove, selected, flushSync, options],
+      [onApprove, onDeny, onAlwaysApprove, options, selected],
     ),
   );
 

@@ -1,12 +1,3 @@
-/**
- * useMultiSelect — shift+arrow range selection and toggle for lists.
- *
- * Manages a Set of selected indices. Keyboard: Space toggles,
- * Shift+Up/Down extends range, A selects all, N deselects all.
- *
- * Uses useRef + forceUpdate() + useInput.
- */
-
 import { useRef } from "react";
 import { useInput } from "./useInput.js";
 import { useForceUpdate } from "./useForceUpdate.js";

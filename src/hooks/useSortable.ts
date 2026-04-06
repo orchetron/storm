@@ -1,13 +1,3 @@
-/**
- * useSortable — sort state management for columns/lists.
- *
- * Behavior only. Tracks current sort key and direction, provides
- * toggleSort (cycle: none -> asc -> desc -> none), setSort, clearSort,
- * and indicator helper.
- *
- * Uses useRef + forceUpdate().
- */
-
 import { useRef } from "react";
 import { useForceUpdate } from "./useForceUpdate.js";
 

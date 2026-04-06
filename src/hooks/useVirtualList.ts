@@ -1,12 +1,3 @@
-/**
- * useVirtualList — virtual list hook for efficiently rendering large datasets.
- *
- * Only computes the visible slice of items (plus overscan), avoiding the cost
- * of creating React elements for thousands of off-screen rows.
- *
- * Uses requestRender() instead of React state for instant scroll response.
- */
-
 import { useRef, useCallback } from "react";
 import { useTui } from "../context/TuiContext.js";
 
@@ -76,12 +67,10 @@ export function useVirtualList<T>(options: VirtualListOptions<T>): VirtualListRe
     requestRender();
   }, [maxScroll, requestRender]);
 
-  // Calculate visible range
   const scrollTop = scrollTopRef.current;
   const rawStart = Math.floor(scrollTop / itemHeight);
   const rawEnd = rawStart + Math.ceil(viewportHeight / itemHeight);
 
-  // Apply overscan and clamp to bounds
   const startIndex = Math.max(0, rawStart - overscan);
   const endIndex = Math.min(items.length - 1, rawEnd + overscan);
 

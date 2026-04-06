@@ -11,9 +11,9 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/components-98-82AAFF?style=flat-square" alt="98 Components">
-  <img src="https://img.shields.io/badge/AI_widgets-19-82AAFF?style=flat-square" alt="19 AI Widgets">
-  <img src="https://img.shields.io/badge/hooks-85-82AAFF?style=flat-square" alt="80 Hooks">
+  <img src="https://img.shields.io/badge/components-97-82AAFF?style=flat-square" alt="97 Components">
+  <img src="https://img.shields.io/badge/AI_widgets-15-82AAFF?style=flat-square" alt="15 AI Widgets">
+  <img src="https://img.shields.io/badge/hooks-83-82AAFF?style=flat-square" alt="83 Hooks">
   <img src="https://img.shields.io/badge/TypeScript-strict-82AAFF?style=flat-square" alt="TypeScript">
   <img src="https://img.shields.io/badge/license-MIT-82AAFF?style=flat-square" alt="MIT License">
 </p>
@@ -165,9 +165,9 @@ All four run as render middleware — non-blocking, the app keeps running.
 
 ## What's inside
 
-**98 components** — Box, Text, ScrollView, Tabs, Modal, Table, DataGrid, Tree, Form, Select, CommandPalette, TextArea, Markdown, DatePicker, Spinner (14 types), DiffView, Calendar, and more. [Browse all →](docs/components.md)<br>
-**19 AI widgets** — OperationTree, MessageBubble, ApprovalPrompt, StreamingText, SyntaxHighlight, MarkdownText, TokenStream, ContextWindow, CostTracker. [Browse all →](docs/widgets.md)<br>
-**85 hooks** — 4 tiers: Essential, Common, Interactive, and 15 headless behavior hooks. [Decision matrix →](docs/hook-guide.md)<br>
+**97 components** — Box, Text, ScrollView, Tabs, Modal, Table, DataGrid, Tree, Form, Select, CommandPalette, TextArea, Markdown, DatePicker, Spinner (14 types), DiffView, Calendar, and more. [Browse all →](docs/components.md)<br>
+**15 AI widgets** — OperationTree, MessageBubble, ApprovalPrompt, StreamingText, SyntaxHighlight, TokenStream, ContextWindow, CostTracker. [Browse all →](docs/widgets.md)<br>
+**83 hooks** — 4 tiers: Essential, Common, Interactive, and 20 headless behavior hooks. [Decision matrix →](docs/hook-guide.md)<br>
 **12 themes** — Arctic, Midnight, Ember, Voltage, Neon, High Contrast + live `.storm.css` hot-reload. [Guide →](docs/theming.md)<br>
 **Animations** — `<Transition>` enter/exit, `<AnimatePresence>` mount/unmount, spring physics. [Guide →](docs/animations.md)<br>
 **Plugins** — Vim mode, compact mode, auto-scroll, screenshot, status bar. [Guide →](docs/plugins.md)<br>

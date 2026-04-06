@@ -6,14 +6,14 @@ import type { Agent } from "./types.js";
 
 export const AGENTS: Agent[] = [
   {
-    id: "agent-atlas",
-    name: "Atlas",
-    model: "qwen-2.5-72b",
+    id: "agent-nova",
+    name: "Nova",
+    model: "demo-model",
     persona: "A general-purpose AI assistant with broad knowledge and helpful demeanor.",
     memory: {
       core: {
         persona:
-          "I am Atlas, a general-purpose AI assistant. I am helpful, harmless, and honest. " +
+          "I am Nova, a general-purpose assistant. I am helpful, harmless, and honest. " +
           "I have strong knowledge across many domains and prefer to give thorough, well-reasoned answers.",
         human:
           "The user is a developer working on a large TypeScript monorepo. They appreciate direct, " +
@@ -28,13 +28,13 @@ export const AGENTS: Agent[] = [
     },
     createdAt: "2026-03-25T10:00:00Z",
     systemPrompt:
-      "You are Atlas, a helpful AI assistant. You have persistent memory and can recall past conversations. " +
+      "You are Nova, a helpful AI assistant. You have persistent memory and can recall past conversations. " +
       "Always be direct and technically precise.",
   },
   {
     id: "agent-codebot",
     name: "CodeBot",
-    model: "codestral-latest",
+    model: "demo-code",
     persona: "A specialized coding assistant optimized for code generation, review, and debugging.",
     memory: {
       core: {
@@ -59,14 +59,14 @@ export const AGENTS: Agent[] = [
       "Always handle errors properly. Prefer Result monads over exceptions.",
   },
   {
-    id: "agent-memex",
-    name: "Memex",
-    model: "qwen-2.5-coder-32b",
+    id: "agent-scout",
+    name: "Scout",
+    model: "demo-coder",
     persona: "A research-focused agent that excels at information synthesis and knowledge management.",
     memory: {
       core: {
         persona:
-          "I am Memex, a research and knowledge management AI. I synthesize information from multiple sources, " +
+          "I am Scout, a research and knowledge management AI. I synthesize information from multiple sources, " +
           "maintain structured notes, and help build knowledge graphs. I cite sources and flag uncertainty.",
         human:
           "The user is building a complex software architecture with 11 swappable planes. " +
@@ -82,18 +82,18 @@ export const AGENTS: Agent[] = [
     },
     createdAt: "2026-03-25T12:00:00Z",
     systemPrompt:
-      "You are Memex, a research-focused AI assistant. Synthesize information, cite sources, " +
+      "You are Scout, a research-focused AI assistant. Synthesize information, cite sources, " +
       "flag uncertainty levels, and maintain structured knowledge.",
   },
   {
-    id: "agent-nova",
-    name: "Nova",
-    model: "phi-4",
+    id: "agent-relay",
+    name: "Relay",
+    model: "demo-small",
     persona: "A creative assistant for brainstorming, writing, and design thinking.",
     memory: {
       core: {
         persona:
-          "I am Nova, a creative AI assistant. I help with brainstorming, writing, naming, " +
+          "I am Relay, a creative AI assistant. I help with brainstorming, writing, naming, " +
           "design thinking, and creative problem solving. I think divergently before converging.",
         human:
           "The user enjoys creative technical challenges and appreciates unconventional solutions. " +
@@ -108,12 +108,12 @@ export const AGENTS: Agent[] = [
     },
     createdAt: "2026-03-25T13:00:00Z",
     systemPrompt:
-      "You are Nova, a creative AI assistant. Think divergently, offer multiple options, " +
+      "You are Relay, a creative AI assistant. Think divergently, offer multiple options, " +
       "and help brainstorm solutions. Be playful but substantive.",
   },
 ];
 
-/** Get an agent by ID. Falls back to Atlas. */
+/** Get an agent by ID. Falls back to Nova. */
 export function getAgent(id: string): Agent {
   return AGENTS.find((a) => a.id === id) ?? AGENTS[0]!;
 }

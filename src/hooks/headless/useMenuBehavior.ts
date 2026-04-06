@@ -1,17 +1,8 @@
-/**
- * useMenuBehavior — headless behavior hook for menus with keyboard navigation.
- *
- * Extracts active index, submenu navigation (right to open, left to close),
- * shortcut matching, disabled/separator skipping, and maxVisible windowing
- * from the Menu component.
- *
- * Returns state + props objects with no JSX.
- */
-
 import { useRef, useCallback } from "react";
 import { useInput } from "../useInput.js";
 import { useForceUpdate } from "../useForceUpdate.js";
 import type { KeyEvent } from "../../input/types.js";
+import { findNextNavigable as findNextNav, findFirstNavigable as findFirstNav } from "../../utils/navigation.js";
 
 export interface MenuBehaviorItem {
   label: string;
@@ -69,21 +60,12 @@ function isNavigable(item: MenuBehaviorItem): boolean {
   return !item.separator && !item.disabled;
 }
 
-function findNextNavigable(items: MenuBehaviorItem[], from: number, direction: 1 | -1): number {
-  const len = items.length;
-  let idx = from;
-  for (let i = 0; i < len; i++) {
-    idx = (idx + direction + len) % len;
-    if (isNavigable(items[idx]!)) return idx;
-  }
-  return from;
+function findNextItem(items: MenuBehaviorItem[], from: number, direction: 1 | -1): number {
+  return findNextNav(items.length, from, direction, (i) => isNavigable(items[i]!));
 }
 
-function findFirstNavigable(items: MenuBehaviorItem[]): number {
-  for (let i = 0; i < items.length; i++) {
-    if (isNavigable(items[i]!)) return i;
-  }
-  return 0;
+function findFirstItem(items: MenuBehaviorItem[]): number {
+  return findFirstNav(items.length, (i) => isNavigable(items[i]!));
 }
 
 export function useMenuBehavior(options: UseMenuBehaviorOptions): UseMenuBehaviorResult {
@@ -96,10 +78,10 @@ export function useMenuBehavior(options: UseMenuBehaviorOptions): UseMenuBehavio
 
   const forceUpdate = useForceUpdate();
 
-  const activeIndexRef = useRef(findFirstNavigable(items));
+  const activeIndexRef = useRef(findFirstItem(items));
   const submenuStackRef = useRef<SubmenuFrame[]>([]);
   const currentItemsRef = useRef(items);
-  const subActiveIndexRef = useRef(findFirstNavigable(items));
+  const subActiveIndexRef = useRef(findFirstItem(items));
 
   // Refs for latest prop values
   const itemsRef = useRef(items);
@@ -112,16 +94,15 @@ export function useMenuBehavior(options: UseMenuBehaviorOptions): UseMenuBehavio
     currentItemsRef.current = items;
   }
 
-  // Determine active ref based on depth
   const currentItems = currentItemsRef.current;
   const activeRef = submenuStackRef.current.length === 0 ? activeIndexRef : subActiveIndexRef;
 
   // Clamp active index
   if (activeRef.current >= currentItems.length) {
-    activeRef.current = findFirstNavigable(currentItems);
+    activeRef.current = findFirstItem(currentItems);
   }
   if (currentItems[activeRef.current] && !isNavigable(currentItems[activeRef.current]!)) {
-    activeRef.current = findNextNavigable(currentItems, activeRef.current, 1);
+    activeRef.current = findNextItem(currentItems, activeRef.current, 1);
   }
 
   const handleInput = useCallback(
@@ -131,10 +112,10 @@ export function useMenuBehavior(options: UseMenuBehaviorOptions): UseMenuBehavio
       const aRef = submenuStackRef.current.length === 0 ? activeIndexRef : subActiveIndexRef;
 
       if (event.key === "up") {
-        aRef.current = findNextNavigable(itms, aRef.current, -1);
+        aRef.current = findNextItem(itms, aRef.current, -1);
         forceUpdate();
       } else if (event.key === "down") {
-        aRef.current = findNextNavigable(itms, aRef.current, 1);
+        aRef.current = findNextItem(itms, aRef.current, 1);
         forceUpdate();
       } else if (event.key === "return") {
         const item = itms[aRef.current];
@@ -142,7 +123,7 @@ export function useMenuBehavior(options: UseMenuBehaviorOptions): UseMenuBehavio
           if (item.children && item.children.length > 0) {
             submenuStackRef.current.push({ items: itms, activeIndex: aRef.current });
             currentItemsRef.current = item.children;
-            subActiveIndexRef.current = findFirstNavigable(item.children);
+            subActiveIndexRef.current = findFirstItem(item.children);
             forceUpdate();
           } else if (cb) {
             cb(item.value);
@@ -153,7 +134,7 @@ export function useMenuBehavior(options: UseMenuBehaviorOptions): UseMenuBehavio
         if (item && item.children && item.children.length > 0 && isNavigable(item)) {
           submenuStackRef.current.push({ items: itms, activeIndex: aRef.current });
           currentItemsRef.current = item.children;
-          subActiveIndexRef.current = findFirstNavigable(item.children);
+          subActiveIndexRef.current = findFirstItem(item.children);
           forceUpdate();
         }
       } else if (event.key === "left" || event.key === "escape") {
@@ -189,7 +170,6 @@ export function useMenuBehavior(options: UseMenuBehaviorOptions): UseMenuBehavio
   const currentActiveIdx = activeRef.current;
   const depth = submenuStackRef.current.length;
 
-  // Apply maxVisible scroll window
   let visibleStart = 0;
   let visibleItems = currentItems;
   if (maxVisible !== undefined && currentItems.length > maxVisible) {
@@ -199,7 +179,6 @@ export function useMenuBehavior(options: UseMenuBehaviorOptions): UseMenuBehavio
     visibleItems = currentItems.slice(visibleStart, visibleStart + maxVisible);
   }
 
-  // Build breadcrumbs
   const breadcrumbs: string[] = [];
   for (const frame of submenuStackRef.current) {
     const parentItem = frame.items[frame.activeIndex];

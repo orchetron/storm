@@ -5,7 +5,7 @@
 import { describe, it, expect } from "vitest";
 import React from "react";
 import { renderForTest } from "../testing/index.js";
-import { SyntaxHighlight } from "../widgets/SyntaxHighlight.js";
+import { SyntaxHighlight } from "../widgets/index.js";
 
 describe("SyntaxHighlight", () => {
   it("renders TypeScript code", () => {

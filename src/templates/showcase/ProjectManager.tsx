@@ -1,24 +1,17 @@
-/**
- * ProjectManager — full project management TUI template.
- *
- * Board view with 4 kanban columns, timeline with milestones,
- * and settings form. Teal/Emerald color theme.
- */
-
 import React, { useState, useRef } from "react";
 import { useTui } from "../../context/TuiContext.js";
 import { useInput } from "../../hooks/useInput.js";
-import { TabbedContent } from "../../components/TabbedContent.js";
-import { Badge } from "../../components/Badge.js";
-import { Tag } from "../../components/Tag.js";
-import { Avatar } from "../../components/Avatar.js";
-import { Stepper } from "../../components/Stepper.js";
-import { GradientProgress } from "../../components/GradientProgress.js";
+import { TabbedContent } from "../../components/extras/TabbedContent.js";
+import { Badge } from "../../components/extras/Badge.js";
+import { Tag } from "../../components/extras/Tag.js";
+import { Avatar } from "../../components/extras/Avatar.js";
+import { Stepper } from "../../components/extras/Stepper.js";
+import { GradientProgress } from "../../components/effects/GradientProgress.js";
 
-import { Switch } from "../../components/Switch.js";
-import { Form } from "../../components/Form.js";
-import { Gradient } from "../../components/Gradient.js";
-import { KeyboardHelp } from "../../components/KeyboardHelp.js";
+import { Switch } from "../../components/core/Switch.js";
+import { Form } from "../../components/extras/Form.js";
+import { Gradient } from "../../components/effects/Gradient.js";
+import { KeyboardHelp } from "../../components/extras/KeyboardHelp.js";
 import { useTerminal } from "../../hooks/useTerminal.js";
 import { useColors } from "../../hooks/useColors.js";
 

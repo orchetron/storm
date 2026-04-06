@@ -18,8 +18,6 @@ export interface InspectorState {
   showComponentNames: boolean;
 }
 
-// ── Colors for different element types ─────────────────────────────
-
 const TYPE_COLORS: Record<string, number> = {
   "tui-box": 0x82aaff,         // blue
   "tui-text": 0xc3e88d,        // green

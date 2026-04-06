@@ -1,10 +1,3 @@
-/**
- * AgentChat -- Clean, warm AI chat interface.
- *
- * Uses the default Storm color theme (amber/sage).
- * Simple layout: header, scrollable conversation, input bar.
- */
-
 import React, { useState, useRef, useCallback } from "react";
 import * as path from "path";
 import { useTui } from "../../context/TuiContext.js";
@@ -12,12 +5,12 @@ import { useInput } from "../../hooks/useInput.js";
 import { useCleanup } from "../../hooks/useCleanup.js";
 import { useTerminal } from "../../hooks/useTerminal.js";
 import { useColors } from "../../hooks/useColors.js";
-import { ScrollView } from "../../components/ScrollView.js";
-import { TextInput } from "../../components/TextInput.js";
-import { MarkdownText } from "../../widgets/MarkdownText.js";
-import { SyntaxHighlight } from "../../widgets/SyntaxHighlight.js";
-import { MessageBubble } from "../../widgets/MessageBubble.js";
-import { Image } from "../../components/Image.js";
+import { ScrollView } from "../../components/core/ScrollView.js";
+import { TextInput } from "../../components/core/TextInput.js";
+import { Markdown as MarkdownText } from "../../components/extras/Markdown.js";
+import { SyntaxHighlight } from "../../widgets/dev/SyntaxHighlight.js";
+import { MessageBubble } from "../../widgets/ai/MessageBubble.js";
+import { Image } from "../../components/effects/Image.js";
 
 export interface AgentChatProps {
   title?: string;
@@ -31,50 +24,47 @@ interface ChatMsg {
 }
 
 const INITIAL_MESSAGES: ChatMsg[] = [
-  { role: "system", content: "Agent initialized. Model: command-r-plus | Context: 200K" },
-  { role: "user", content: "Explain how Storm's cell-based rendering works" },
+  { role: "system", content: "Agent initialized. Ready for input." },
+  { role: "user", content: "What's the weather like in San Francisco today?" },
   {
     role: "assistant", kind: "markdown",
-    content: "## Cell-Based Rendering\n\nStorm uses a **cell buffer** where each cell holds a character, foreground color, and background color.\n\nThe renderer maintains two buffers:\n\n1. **Front buffer** -- what's currently on screen\n2. **Back buffer** -- the next frame being composed\n\nOn each render pass, only cells that *differ* between buffers get written to the terminal. This `diff` approach minimizes escape sequences and keeps output flicker-free.",
+    content: "## Current Weather in San Francisco\n\nRight now in San Francisco it's **58°F (14°C)** with partly cloudy skies.\n\nHere's the forecast for today:\n\n1. **Morning** -- Fog clearing by 10am\n2. **Afternoon** -- Partly sunny, high of 63°F\n\nWind is coming from the west at ~12 mph. Typical for this time of year!",
   },
-  { role: "user", content: "Show me a code example" },
+  { role: "user", content: "Can you show me a code snippet to fetch weather data?" },
   {
     role: "assistant", kind: "markdown",
-    content: "Here's the core diff algorithm:",
+    content: "Sure, here's a simple example using fetch:",
   },
   {
     role: "assistant", kind: "code", lang: "typescript",
     content: [
-      "interface Cell {",
-      "  char: string;",
-      "  fg: number;   // -1 = default, 0-255 = ANSI, 0x1RRGGBB = RGB",
-      "  bg: number;",
-      "  attrs: number; // bitmask: bold | dim | italic | underline",
+      "interface WeatherResponse {",
+      "  temperature: number;",
+      "  condition: string;",
+      "  humidity: number;",
+      "  windSpeed: number;",
       "}",
       "",
-      "function diffBuffers(front: Cell[], back: Cell[]): string {",
-      "  const parts: string[] = [];",
-      "  for (let i = 0; i < back.length; i++) {",
-      "    if (front[i].fg !== back[i].fg || front[i].char !== back[i].char) {",
-      "      parts.push(cursorTo(i) + sgr(back[i]) + back[i].char);",
-      "    }",
-      "  }",
-      "  return parts.join('');  // only changed cells",
+      "async function getWeather(city: string): Promise<WeatherResponse> {",
+      "  const url = `https://api.example.com/weather?q=${city}`;",
+      "  const res = await fetch(url);",
+      "  if (!res.ok) throw new Error(`HTTP ${res.status}`);",
+      "  return res.json();",
       "}",
     ].join("\n"),
   },
-  { role: "user", content: "Can you show me the benchmark results?" },
+  { role: "user", content: "What about a chart of temperatures?" },
   {
     role: "assistant", kind: "image",
     content: "chart.png",
   },
   {
     role: "assistant", kind: "markdown",
-    content: "The chart above shows Storm rendering **6,872 FPS** at full buffer change and **25,631 FPS** on scroll — both with the adaptive WASM engine active.",
+    content: "The chart above shows the temperature trend over the past week for San Francisco.",
   },
 ];
 
-const MOCK_RESPONSE = "The diff algorithm runs in **O(n)** where `n` is the buffer size. For a typical 120x40 terminal that's only 4,800 cells -- trivially fast.\n\nCombined with viewport culling (skipping offscreen nodes during layout), Storm achieves consistent **<2ms** render times even with complex layouts.";
+const MOCK_RESPONSE = "Great question! You can use the `getWeather()` function from the example above and call it in a loop for multiple cities.\n\nFor example, `Promise.all([getWeather('SF'), getWeather('NYC')])` will fetch both in parallel.";
 
 function renderMsg(msg: ChatMsg, i: number): React.ReactElement {
   const colors = useColors();
@@ -180,15 +170,15 @@ export function AgentChat(_props: AgentChatProps): React.ReactElement {
     if (event.ctrl && (event.key === "q" || event.char === "q")) exit();
   });
 
-  const costEstimate = `$${(tokenCount * 0.000015).toFixed(2)}`;
+  const costEstimate = `$${(tokenCount * 0.00001).toFixed(2)}`;
 
   // -- Header (bordered, visible, identity) --
   const header = React.createElement("tui-box", {
     borderStyle: "round", borderColor: colors.brand.primary, paddingX: 1, flexDirection: "column", width: width - 2,
   },
     React.createElement("tui-box", { flexDirection: "row", justifyContent: "space-between" },
-      React.createElement("tui-text", { bold: true, color: colors.brand.primary }, "\u26A1 STORM AGENT"),
-      React.createElement("tui-text", { color: colors.text.secondary }, "command-r-plus"),
+      React.createElement("tui-text", { bold: true, color: colors.brand.primary }, "Chat Demo"),
+      React.createElement("tui-text", { color: colors.text.secondary }, "demo-model"),
     ),
     React.createElement("tui-box", { flexDirection: "row", justifyContent: "space-between" },
       React.createElement("tui-text", { dim: true }, `${tokenCount.toLocaleString()} tokens \u00B7 ${costEstimate}`),

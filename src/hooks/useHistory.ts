@@ -1,9 +1,3 @@
-/**
- * useHistory — navigation history with back/forward (like browser history).
- *
- * Uses useRef + forceUpdate() for imperative state management.
- */
-
 import { useRef, useCallback } from "react";
 import { useForceUpdate } from "./useForceUpdate.js";
 

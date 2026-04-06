@@ -1,29 +1,25 @@
-/** FinancialDashboard -- Bloomberg-style trading terminal.
- * Gold/Amber theme with live-updating prices, sparklines, gauges,
- * news feed, and portfolio allocation. 15+ components. */
-
 import React, { useState, useRef } from "react";
 import { useTui } from "../../context/TuiContext.js";
 import { useInput } from "../../hooks/useInput.js";
 import { useCleanup } from "../../hooks/useCleanup.js";
 import { useTerminal } from "../../hooks/useTerminal.js";
-import { Gradient } from "../../components/Gradient.js";
-import { Card } from "../../components/Card.js";
-import { DataGrid } from "../../components/DataGrid.js";
-import type { DataGridColumn } from "../../components/DataGrid.js";
-import { Gauge } from "../../components/Gauge.js";
-import { Sparkline } from "../../components/Sparkline.js";
-import { GradientProgress } from "../../components/GradientProgress.js";
-import { RichLog } from "../../components/RichLog.js";
-import type { LogEntry } from "../../components/RichLog.js";
-import { KeyboardHelp } from "../../components/KeyboardHelp.js";
-import { Badge } from "../../components/Badge.js";
-import { Divider } from "../../components/Divider.js";
-import { Separator } from "../../components/Separator.js";
-import { Spinner } from "../../components/Spinner.js";
-import { Header } from "../../components/Header.js";
-import { ScrollView } from "../../components/ScrollView.js";
-import { LineChart } from "../../components/LineChart.js";
+import { Gradient } from "../../components/effects/Gradient.js";
+import { Card } from "../../components/extras/Card.js";
+import { DataGrid } from "../../components/data/DataGrid.js";
+import type { DataGridColumn } from "../../components/data/DataGrid.js";
+import { Gauge } from "../../components/data/Gauge.js";
+import { Sparkline } from "../../components/data/Sparkline.js";
+import { GradientProgress } from "../../components/effects/GradientProgress.js";
+import { RichLog } from "../../components/data/RichLog.js";
+import type { LogEntry } from "../../components/data/RichLog.js";
+import { KeyboardHelp } from "../../components/extras/KeyboardHelp.js";
+import { Badge } from "../../components/extras/Badge.js";
+import { Divider } from "../../components/core/Divider.js";
+import { Divider as Separator } from "../../components/core/Divider.js";
+import { Spinner } from "../../components/core/Spinner.js";
+import { Header } from "../../components/extras/Header.js";
+import { ScrollView } from "../../components/core/ScrollView.js";
+import { LineChart } from "../../components/data/LineChart.js";
 import { useColors } from "../../hooks/useColors.js";
 
 export interface FinancialDashboardProps {

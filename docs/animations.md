@@ -6,7 +6,7 @@ Storm TUI provides both imperative and declarative animation APIs. All animation
 
 | Approach | API | Best for |
 |----------|-----|----------|
-| **Imperative** | `useAnimation`, `useTween` | Spinners, progress bars, continuous animations |
+| **Imperative** | `useAnimation` | Spinners, progress bars, continuous animations |
 | **Declarative** | `useTransition`, `<Transition>`, `<AnimatePresence>` | Show/hide, enter/exit, UI state changes |
 
 Imperative hooks give you direct control over frame updates and avoid React reconciliation overhead. Declarative components are simpler to use for common enter/exit patterns.
@@ -66,49 +66,6 @@ function LoadingRow({ label, index }: { label: string; index: number }) {
   );
 }
 ```
-
-## useTween
-
-Animates a numeric value toward a target with easing. When the target changes, a new animation starts from the current interpolated position. This is the simplest way to animate a number.
-
-```ts
-function useTween(
-  target: number,
-  durationMs?: number,    // default: 150
-  easing?: EasingFn,      // default: easings.easeOut
-): UseTweenResult;
-
-interface UseTweenResult {
-  /** Current interpolated value */
-  value: number;
-  /** True while the animation is in progress */
-  animating: boolean;
-}
-```
-
-### Example: animated progress bar
-
-```tsx
-import { useTween } from "@orchetron/storm";
-
-function ProgressBar({ progress }: { progress: number }) {
-  const { value, animating } = useTween(progress, 200);
-  const width = Math.round(value * 50);
-  const bar = "\u2588".repeat(width) + "\u2591".repeat(50 - width);
-  return <Text>{bar} {Math.round(value * 100)}%</Text>;
-}
-```
-
-### Example: animated counter
-
-```tsx
-function Counter({ count }: { count: number }) {
-  const { value } = useTween(count, 300);
-  return <Text>Items: {Math.round(value)}</Text>;
-}
-```
-
-When `target` changes mid-animation, `useTween` smoothly redirects from the current interpolated position to the new target -- no jump or restart.
 
 ## useTransition
 
@@ -336,14 +293,6 @@ All animation APIs accept easing functions. Storm TUI provides these built-in op
 
 The `spring` easing is available in `useTransition` but not in the `Transition` component (which supports `linear`, `easeIn`, `easeOut`, `easeInOut`).
 
-For `useTween`, you pass the easing function directly from the `easings` object:
-
-```ts
-import { useTween, easings } from "@orchetron/storm";
-
-const { value } = useTween(target, 200, easings.easeInOut);
-```
-
 ## Performance
 
 ### Why imperative is faster
@@ -360,12 +309,10 @@ The `AnimationScheduler` further improves performance by batching all animation 
 
 **Use `useAnimation`** for frame-based animations like spinners, cycling through text frames, or anything that needs a frame counter.
 
-**Use `useTween`** for smoothly animating a single numeric value (progress, position, size) in response to prop changes. It automatically handles interruptions when the target changes mid-animation.
-
-**Use `useTransition`** when you need more control over a value animation -- delay, manual start/stop/reset, completion callbacks, or spring easing.
+**Use `useTransition`** when you need control over a value animation -- delay, manual start/stop/reset, completion callbacks, or spring easing.
 
 **Use `<Transition>`** for simple show/hide patterns where you want enter/exit animations without managing state yourself.
 
 **Use `<AnimatePresence>`** for dynamic lists where items can be added and removed, and you want exit animations before elements unmount.
 
-As a rule of thumb: start with the declarative components (`Transition`, `AnimatePresence`). Drop down to hooks (`useTween`, `useTransition`) when you need finer control. Use `useAnimation` for frame-based patterns that don't map to numeric interpolation.
+As a rule of thumb: start with the declarative components (`Transition`, `AnimatePresence`). Drop down to `useTransition` when you need finer control. Use `useAnimation` for frame-based patterns that don't map to numeric interpolation.

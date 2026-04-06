@@ -1,33 +1,8 @@
-/**
- * Theme file loading and serialization.
- *
- * Supports loading partial theme JSON files that are deep-merged with defaults.
- */
-
 import * as fs from "fs";
 import * as path from "path";
 import { colors as defaultColors, type StormColors } from "./colors.js";
 import { type DeepPartial } from "./index.js";
-
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function deepMerge<T extends Record<string, unknown>>(base: T, overrides: Record<string, unknown>): T {
-  const result = { ...base } as Record<string, unknown>;
-  for (const key of Object.keys(overrides)) {
-    // Prototype pollution protection
-    if (key === "__proto__" || key === "constructor" || key === "prototype") continue;
-    const baseVal = result[key];
-    const overVal = overrides[key];
-    if (isPlainObject(baseVal) && isPlainObject(overVal)) {
-      result[key] = deepMerge(baseVal as Record<string, unknown>, overVal);
-    } else {
-      result[key] = overVal;
-    }
-  }
-  return result as T;
-}
+import { isPlainObject, deepMerge } from "./utils.js";
 
 /**
  * Load a theme from a JSON file.

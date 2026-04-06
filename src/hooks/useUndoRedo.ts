@@ -1,12 +1,3 @@
-/**
- * useUndoRedo — generic undo/redo stack, reusable across any component.
- *
- * Push to undo stack on set(), clear redo stack. undo() pops undo and
- * pushes to redo. redo() pops redo and pushes to undo.
- *
- * Uses useRef + forceUpdate().
- */
-
 import { useRef } from "react";
 import { useForceUpdate } from "./useForceUpdate.js";
 
@@ -33,7 +24,6 @@ export function useUndoRedo<T>(options: UseUndoRedoOptions<T>): UseUndoRedoResul
   const undoStackRef = useRef<T[]>([]);
   const redoStackRef = useRef<T[]>([]);
 
-  // Initialize only once — don't reset on re-render
   const initializedRef = useRef(false);
   if (!initializedRef.current) {
     initializedRef.current = true;
@@ -47,7 +37,6 @@ export function useUndoRedo<T>(options: UseUndoRedoOptions<T>): UseUndoRedoResul
       undoStackRef.current.splice(0, undoStackRef.current.length - maxHistory);
     }
     currentRef.current = newValue;
-    // Clear redo stack on new set
     redoStackRef.current.length = 0;
     forceUpdate();
   };

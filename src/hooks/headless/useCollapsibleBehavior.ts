@@ -1,12 +1,3 @@
-/**
- * useCollapsibleBehavior — headless behavior hook for collapsible sections.
- *
- * Extracts expanded state, toggle, controlled/uncontrolled modes,
- * and animation state from the Collapsible component.
- *
- * Returns state + props objects with no JSX.
- */
-
 import { useRef, useCallback } from "react";
 import { useTui } from "../../context/TuiContext.js";
 import { useInput } from "../useInput.js";
@@ -81,7 +72,6 @@ export function useCollapsibleBehavior(options: UseCollapsibleBehaviorOptions): 
     animatingRef.current = true;
     animStartRef.current = Date.now();
 
-    // Remove previous scheduler callback
     if (unsubRef.current) {
       unsubRef.current();
       unsubRef.current = null;

@@ -1,13 +1,3 @@
-/**
- * renderToString() — render a TUI component to a string without a TTY.
- *
- * Designed for testing, CI pipelines, and programmatic rendering where
- * no terminal is attached. Uses the same reconciler and renderer as render(),
- * but writes to a virtual buffer instead of stdout.
- *
- * Returns both plain text (ANSI stripped) and styled text (with ANSI codes).
- */
-
 import React from "react";
 import Reconciler from "react-reconciler";
 import { hostConfig } from "./host.js";
@@ -20,25 +10,32 @@ import { fullSgr, RESET } from "../core/ansi.js";
 import { TuiProvider, type TuiContextValue } from "../context/TuiContext.js";
 import { TestInputManager } from "../testing/index.js";
 
-const TuiReconciler = Reconciler(hostConfig);
+export const TuiReconciler: ReturnType<typeof Reconciler> = Reconciler(hostConfig);
 
 /**
  * Defensively call the private synchronous reconciler APIs.
  * See render.ts for the full rationale — these are private React internals
  * that can break on version bumps.
  */
-function syncContainerUpdate(
+// React reconciler private API — updateContainerSync/flushSyncWork are undocumented internals
+type ReconcilerWithPrivateAPIs = typeof TuiReconciler & {
+  updateContainerSync?: (element: React.ReactElement, container: unknown, parentComponent: null, callback: null) => void;
+  flushSyncWork?: () => void;
+};
+
+export function syncContainerUpdate(
   element: React.ReactElement,
-  container: any,
+  container: ReturnType<typeof TuiReconciler.createContainer>,
 ): void {
+  const reconciler = TuiReconciler as ReconcilerWithPrivateAPIs; // React private API
   try {
-    if (typeof (TuiReconciler as any).updateContainerSync === "function") {
-      (TuiReconciler as any).updateContainerSync(element, container, null, null);
+    if (typeof reconciler.updateContainerSync === "function") {
+      reconciler.updateContainerSync(element, container, null, null);
     } else {
       TuiReconciler.updateContainer(element, container, null, null);
     }
-    if (typeof (TuiReconciler as any).flushSyncWork === "function") {
-      (TuiReconciler as any).flushSyncWork();
+    if (typeof reconciler.flushSyncWork === "function") {
+      reconciler.flushSyncWork();
     }
   } catch {
     // Fallback to public API if private APIs are removed/changed
@@ -72,29 +69,7 @@ export interface RenderToStringResult {
   input: TestInputManager;
 }
 
-/**
- * Render a React element to a string without requiring a TTY.
- *
- * This uses the same reconciler and layout engine as `render()`, but
- * paints into a buffer that is then converted to text. No terminal
- * setup, no raw mode, no alternate screen — works anywhere.
- *
- * @example
- * ```tsx
- * import { renderToString, Box, Text } from "@orchetron/tui";
- *
- * const result = renderToString(
- *   <Box flexDirection="column">
- *     <Text>Hello</Text>
- *     <Text bold>World</Text>
- *   </Box>,
- *   { width: 40, height: 5 },
- * );
- *
- * console.log(result.output);  // plain text
- * console.log(result.lines);   // ["Hello", "World", ...]
- * ```
- */
+/** Synchronous. No terminal needed. Same reconciler + layout as render(), but paints to a string buffer. */
 export function renderToString(
   element: React.ReactElement,
   options?: RenderToStringOptions,
@@ -104,7 +79,6 @@ export function renderToString(
   const renderCtx = new RenderContext();
   const testInput = new TestInputManager();
 
-  // Build a mock TuiContextValue so components using useTui() don't crash
   const mockContext: TuiContextValue = {
     screen: {
       width,
@@ -153,7 +127,6 @@ export function renderToString(
   function doRender(el: React.ReactElement): RenderToStringResult {
     currentElement = el;
 
-    // Wrap element with TuiProvider so useTui() works
     const wrapped = React.createElement(TuiProvider, { value: mockContext }, el);
 
     // Synchronously update the React tree — must use updateContainerSync +
@@ -172,7 +145,6 @@ export function renderToString(
     renderCtx.invalidateLayout();
     const result = paint(root, width, height, renderCtx);
 
-    // Convert buffer to plain text and styled text
     const plainLines = bufferToPlainLines(result.buffer);
     const styledLines = bufferToStyledLines(result.buffer);
 
@@ -198,7 +170,6 @@ export function renderToString(
     root.children.length = 0;
     root.onCommit = () => {};
 
-    // Dispose render context (clears maps, timers, image caches, etc.)
     renderCtx.dispose();
 
     // Release all input handler references
@@ -221,7 +192,9 @@ function bufferToPlainLines(buffer: ScreenBuffer): string[] {
   for (let y = 0; y < buffer.height; y++) {
     let line = "";
     for (let x = 0; x < buffer.width; x++) {
-      line += buffer.getChar(x, y);
+      const ch = buffer.getChar(x, y);
+      if (ch === "\0") continue;
+      line += ch;
     }
     lines.push(line.replace(/\s+$/, ""));
   }
@@ -235,7 +208,6 @@ function bufferToPlainLines(buffer: ScreenBuffer): string[] {
 function bufferToStyledLines(buffer: ScreenBuffer): string[] {
   const lines: string[] = [];
   for (let y = 0; y < buffer.height; y++) {
-    // Find last non-default cell
     let lastNonDefault = -1;
     for (let x = buffer.width - 1; x >= 0; x--) {
       if (buffer.getChar(x, y) !== " " || buffer.getFg(x, y) !== DEFAULT_COLOR || buffer.getBg(x, y) !== DEFAULT_COLOR || buffer.getAttrs(x, y) !== Attr.NONE) {
@@ -266,7 +238,8 @@ function bufferToStyledLines(buffer: ScreenBuffer): string[] {
         curAttrs = cAttrs;
       }
 
-      line += buffer.getChar(x, y);
+      const ch = buffer.getChar(x, y);
+      if (ch !== "\0") line += ch;
     }
 
     if (curFg !== DEFAULT_COLOR || curBg !== DEFAULT_COLOR || curAttrs !== Attr.NONE) {

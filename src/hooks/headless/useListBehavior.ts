@@ -1,12 +1,3 @@
-/**
- * useListBehavior — headless behavior hook for navigable lists.
- *
- * Extracts highlight index, keyboard navigation (up/down/home/end with wrap),
- * filter text, and selection from ListView and SelectInput components.
- *
- * Returns state + props objects with no JSX.
- */
-
 import { useRef, useCallback } from "react";
 import { useInput } from "../useInput.js";
 import { useForceUpdate } from "../useForceUpdate.js";
@@ -83,7 +74,6 @@ export function useListBehavior(options: UseListBehaviorOptions): UseListBehavio
   const onHighlightRef = useRef(onHighlight);
   onHighlightRef.current = onHighlight;
 
-  // Compute filtered items
   const filter = filterTextRef.current.toLowerCase();
   const filteredItems: readonly ListBehaviorItem[] = filter
     ? items.filter((it) => it.label.toLowerCase().includes(filter))
@@ -97,7 +87,6 @@ export function useListBehavior(options: UseListBehaviorOptions): UseListBehavio
     ? Math.min(highlightIndexRef.current, Math.max(0, filteredItems.length - 1))
     : 0;
 
-  // Notify onHighlight on index changes
   const prevIndexRef = useRef(effectiveIndex);
   if (onHighlight && effectiveIndex !== prevIndexRef.current && filteredItems.length > 0) {
     const item = filteredItems[effectiveIndex];
@@ -178,7 +167,6 @@ export function useListBehavior(options: UseListBehaviorOptions): UseListBehavio
 
   useInput(handleInput, { isActive });
 
-  // Compute visible window
   const totalFiltered = filteredItems.length;
   const visibleCount = Math.min(maxVisible, totalFiltered);
 

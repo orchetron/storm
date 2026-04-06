@@ -1,17 +1,8 @@
-/**
- * useKeyChord — two-key sequences (like Ctrl+K then S in VS Code).
- *
- * Behavior only. Listens for a first key match, then waits for
- * the second key within a timeout. If matched, fires the action.
- * If timeout or non-matching key, cancels the chord.
- *
- * Uses useRef + useInput + forceUpdate() + useCleanup.
- */
-
 import { useRef } from "react";
 import { useInput } from "./useInput.js";
 import { useCleanup } from "./useCleanup.js";
 import { useForceUpdate } from "./useForceUpdate.js";
+import { matchKeySpec } from "./key-utils.js";
 
 export interface KeyChordDef {
   first: { key: string; ctrl?: boolean; shift?: boolean; meta?: boolean };
@@ -30,17 +21,6 @@ export interface UseKeyChordResult {
   /** Currently waiting for second key (first key was pressed) */
   pendingChord: string | null; // label of the pending chord's first key
   bindings: Array<{ label: string }>;
-}
-
-function matchesSpec(
-  event: { key: string; ctrl: boolean; shift: boolean; meta: boolean },
-  spec: { key: string; ctrl?: boolean; shift?: boolean; meta?: boolean },
-): boolean {
-  if (event.key !== spec.key) return false;
-  if ((spec.ctrl ?? false) !== event.ctrl) return false;
-  if ((spec.shift ?? false) !== event.shift) return false;
-  if ((spec.meta ?? false) !== event.meta) return false;
-  return true;
 }
 
 function formatSpec(spec: { key: string; ctrl?: boolean; shift?: boolean; meta?: boolean }): string {
@@ -81,7 +61,7 @@ export function useKeyChord(options: UseKeyChordOptions): UseKeyChordResult {
         // We're waiting for the second key
         let matched = false;
         for (const chord of matchingChordsRef.current) {
-          if (matchesSpec(event, chord.second)) {
+          if (matchKeySpec(event, chord.second)) {
             clearPending();
             chord.action();
             matched = true;
@@ -95,10 +75,9 @@ export function useKeyChord(options: UseKeyChordOptions): UseKeyChordResult {
         return;
       }
 
-      // Check for first key match
       const matching: KeyChordDef[] = [];
       for (const chord of chordsRef.current) {
-        if (matchesSpec(event, chord.first)) {
+        if (matchKeySpec(event, chord.first)) {
           matching.push(chord);
         }
       }

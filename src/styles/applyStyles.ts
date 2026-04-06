@@ -1,14 +1,22 @@
-/**
- * Style extraction and merge utilities for Storm components.
- */
-
 // Keys for each tier
+const LAYOUT_KEYS = new Set([
+  "width","height","minWidth","minHeight","maxWidth","maxHeight",
+  "flex","flexGrow","flexShrink","flexBasis","flexDirection","flexWrap",
+  "gap","columnGap","rowGap",
+  "alignItems","alignSelf","justifyContent",
+  "overflow","overflowX","overflowY",
+  "display","position","top","left","right","bottom",
+  "margin","marginX","marginY","marginTop","marginBottom","marginLeft","marginRight",
+]);
+
 const CONTAINER_KEYS = new Set([
   "color","bold","dim",
-  "width","height","minWidth","maxWidth",
-  "margin","marginX","marginY","marginTop","marginBottom","marginLeft","marginRight",
+  ...LAYOUT_KEYS,
   "padding","paddingX","paddingY","paddingTop","paddingBottom","paddingLeft","paddingRight",
-  "borderStyle","borderColor","backgroundColor",
+  "borderStyle","borderColor",
+  "borderTop","borderBottom","borderLeft","borderRight",
+  "borderDimColor","borderTopDimColor","borderBottomDimColor","borderLeftDimColor","borderRightDimColor",
+  "backgroundColor","opaque",
 ]);
 
 /**
@@ -21,7 +29,6 @@ export function mergeBoxStyles(
 ): Record<string, unknown> {
   const result = { ...defaults };
 
-  // Apply individual props — user overrides win
   for (const key of Object.keys(overrides)) {
     if (overrides[key] !== undefined) {
       result[key] = overrides[key];
@@ -31,15 +38,25 @@ export function mergeBoxStyles(
   return result;
 }
 
-/**
- * Pick style props from a combined props object.
- * Returns only the style-related props, skipping undefined values.
- */
-export function pickStyleProps(props: Record<string, unknown>): Record<string, unknown> {
+/** Extract only layout props (flex, size, margin, position) from a mixed props bag. For Box/ScrollView. */
+export function pickLayoutProps<T>(props: T): Record<string, unknown> {
+  const p = props as unknown as Record<string, unknown>;
+  const result: Record<string, unknown> = {};
+  for (const key of LAYOUT_KEYS) {
+    if (key in p && p[key] !== undefined) {
+      result[key] = p[key];
+    }
+  }
+  return result;
+}
+
+/** Extract layout + visual props (border, padding, bg, color). Superset of pickLayoutProps. */
+export function pickStyleProps<T>(props: T): Record<string, unknown> {
+  const p = props as unknown as Record<string, unknown>;
   const result: Record<string, unknown> = {};
   for (const key of CONTAINER_KEYS) {
-    if (key in props && props[key] !== undefined) {
-      result[key] = props[key];
+    if (key in p && p[key] !== undefined) {
+      result[key] = p[key];
     }
   }
   return result;

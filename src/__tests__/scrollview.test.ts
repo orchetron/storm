@@ -8,7 +8,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import React from "react";
 import { renderForTest } from "../testing/index.js";
-import { ScrollView } from "../components/ScrollView.js";
+import { ScrollView } from "../components/index.js";
 
 describe("ScrollView", () => {
   it("renders children within a height constraint", () => {

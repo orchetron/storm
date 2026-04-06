@@ -1,14 +1,3 @@
-/**
- * BrailleCanvas -- high-resolution 2D drawing surface for terminal charts.
- *
- * Each terminal cell contains a 2x4 braille dot matrix (8 sub-pixels).
- * This gives effective resolution of (width*2) x (height*4) pixels
- * using Unicode braille characters (U+2800-U+28FF).
- *
- * Shared across LineChart, AreaChart, ScatterPlot, and any future
- * braille-based visualization component.
- */
-
 // Braille dot bit positions:
 // Col 0: dots 1,2,3,7 (bits 0,1,2,6)
 // Col 1: dots 4,5,6,8 (bits 3,4,5,7)

@@ -1,15 +1,7 @@
-/**
- * useTabsBehavior — headless behavior hook for tab bars.
- *
- * Extracts active key, keyboard navigation (left/right or up/down, number keys),
- * disabled tab skipping, and closable tab support from the Tabs component.
- *
- * Returns state + props objects with no JSX.
- */
-
 import { useRef, useCallback } from "react";
 import { useInput } from "../useInput.js";
 import type { KeyEvent } from "../../input/types.js";
+import { findNextNavigable as findNextNav } from "../../utils/navigation.js";
 
 export interface TabBehaviorItem {
   key: string;
@@ -48,18 +40,8 @@ export interface UseTabsBehaviorResult {
   };
 }
 
-/**
- * Find the next navigable (non-disabled) tab index in a given direction.
- * Wraps around. Returns -1 if no navigable tabs exist.
- */
-function findNextNavigable(tabs: TabBehaviorItem[], fromIndex: number, direction: 1 | -1): number {
-  const len = tabs.length;
-  if (len === 0) return -1;
-  for (let step = 1; step <= len; step++) {
-    const candidate = ((fromIndex + direction * step) % len + len) % len;
-    if (!tabs[candidate]!.disabled) return candidate;
-  }
-  return -1;
+function findNextTab(tabs: TabBehaviorItem[], fromIndex: number, direction: 1 | -1): number {
+  return findNextNav(tabs.length, fromIndex, direction, (i) => !tabs[i]!.disabled, -1);
 }
 
 export function useTabsBehavior(options: UseTabsBehaviorOptions): UseTabsBehaviorResult {
@@ -97,10 +79,10 @@ export function useTabsBehavior(options: UseTabsBehaviorOptions): UseTabsBehavio
     const nextKey = orientation === "vertical" ? "down" : "right";
 
     if (event.key === prevKey) {
-      const next = findNextNavigable(currentTabs, idx, -1);
+      const next = findNextTab(currentTabs, idx, -1);
       if (next >= 0) cb(currentTabs[next]!.key);
     } else if (event.key === nextKey) {
-      const next = findNextNavigable(currentTabs, idx, 1);
+      const next = findNextTab(currentTabs, idx, 1);
       if (next >= 0) cb(currentTabs[next]!.key);
     } else if (event.char && /^[1-9]$/.test(event.char)) {
       const numIdx = parseInt(event.char, 10) - 1;

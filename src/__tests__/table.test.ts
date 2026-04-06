@@ -5,7 +5,7 @@
 import { describe, it, expect } from "vitest";
 import React from "react";
 import { renderForTest } from "../testing/index.js";
-import { Table } from "../components/Table.js";
+import { Table } from "../components/index.js";
 
 const columns = [
   { key: "name", header: "Name" },

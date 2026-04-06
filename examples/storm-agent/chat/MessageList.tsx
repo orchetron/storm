@@ -16,14 +16,14 @@ import {
   Box,
   Text,
   BlinkDot,
-  MarkdownText,
+  Markdown,
 } from "../../../src/index.js";
 import type { Message } from "../data/types.js";
 
 // -- Theme Colors -------------------------------------------------------------
 
 const THEME = {
-  accent: "#8C8CF9",
+  accent: "#82AAFF",
   accentLight: "#BEBEEE",
   text: "#DEE1E4",
   textSecondary: "#A5A8AB",
@@ -49,10 +49,10 @@ function UserMessage({ msg }: { msg: Message }) {
 
 function AssistantMessage({ msg }: { msg: Message }) {
   return (
-    <Box flexDirection="row">
+    <Box flexDirection="row" overflow="hidden">
       <Text color={THEME.accent}>{"\u25CF "}</Text>
-      <Box flexDirection="column" flexShrink={1}>
-        <MarkdownText>{msg.content}</MarkdownText>
+      <Box flexDirection="column" flexShrink={1} overflow="hidden">
+        <Markdown content={msg.content} />
       </Box>
     </Box>
   );
@@ -60,14 +60,12 @@ function AssistantMessage({ msg }: { msg: Message }) {
 
 function ThinkingMessage({ msg }: { msg: Message }) {
   return (
-    <Box flexDirection="column">
-      {/* Header */}
+    <Box flexDirection="column" overflow="hidden">
       <Box flexDirection="row">
         <Text color={THEME.textDisabled}>{"\u2042 "}</Text>
         <Text color={THEME.textDisabled} dim>Thinking...</Text>
       </Box>
-      {/* Content indented 2 spaces, all dimmed */}
-      <Box paddingLeft={2} flexShrink={1}>
+      <Box paddingLeft={2} flexShrink={1} overflow="hidden">
         <Text color={THEME.textDisabled} dim>{msg.content}</Text>
       </Box>
     </Box>
@@ -161,7 +159,7 @@ export interface MessageListProps {
 
 export function MessageList({ messages }: MessageListProps): React.ReactElement {
   return (
-    <Box flexDirection="column" gap={1}>
+    <Box flexDirection="column" gap={2}>
       {messages.map((msg) => {
         switch (msg.type) {
           case "user":

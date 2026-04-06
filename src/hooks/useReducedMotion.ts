@@ -1,10 +1,3 @@
-/**
- * useReducedMotion — convenience hook for checking reduced-motion preference.
- *
- * Returns true if the user prefers reduced motion (e.g. no spinners, no shimmer).
- * Uses useAccessibility internally.
- */
-
 import { useAccessibility } from "./useAccessibility.js";
 
 /**

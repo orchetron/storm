@@ -1,34 +1,25 @@
-/**
- * ShowcaseAdvanced — "Advanced Components" showcase template.
- *
- * Demos: Header, Footer, ConfirmDialog, ProgressBar, VirtualList,
- * DirectoryTree, FilePicker, RichLog, Stopwatch.
- */
-
 import React from "react";
 import { colors as defaultColors } from "../../theme/colors.js";
 import { useColors } from "../../hooks/useColors.js";
 import { useTui } from "../../context/TuiContext.js";
 import { useInput } from "../../hooks/useInput.js";
-import { Header } from "../../components/Header.js";
-import { Footer } from "../../components/Footer.js";
-import { ConfirmDialog } from "../../components/ConfirmDialog.js";
-import { ProgressBar } from "../../components/ProgressBar.js";
-import { VirtualList, type VirtualListProps } from "../../components/VirtualList.js";
-import { DirectoryTree } from "../../components/DirectoryTree.js";
-import { FilePicker } from "../../components/FilePicker.js";
-import { RichLog } from "../../components/RichLog.js";
-import { Stopwatch } from "../../components/Stopwatch.js";
-import { ScrollView } from "../../components/ScrollView.js";
+import { Header } from "../../components/extras/Header.js";
+import { Footer } from "../../components/extras/Footer.js";
+import { ConfirmDialog } from "../../components/extras/ConfirmDialog.js";
+import { ProgressBar } from "../../components/core/ProgressBar.js";
+import { VirtualList, type VirtualListProps } from "../../components/core/VirtualList.js";
+import { DirectoryTree } from "../../components/extras/DirectoryTree.js";
+import { FilePicker } from "../../components/extras/FilePicker.js";
+import { RichLog } from "../../components/data/RichLog.js";
+import { Stopwatch } from "../../components/extras/Stopwatch.js";
+import { ScrollView } from "../../components/core/ScrollView.js";
 import { useTerminal } from "../../hooks/useTerminal.js";
-import type { LogEntry } from "../../components/RichLog.js";
-import type { FileNode } from "../../components/FilePicker.js";
+import type { LogEntry } from "../../components/data/RichLog.js";
+import type { FileNode } from "../../components/extras/FilePicker.js";
 
 export interface ShowcaseAdvancedProps {
   title?: string;
 }
-
-// heading and gap are plain helper functions used by ShowcaseAdvanced below
 
 const VIRTUAL_ITEMS = Array.from({ length: 100 }, (_, i) => `Item ${i + 1}`);
 

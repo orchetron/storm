@@ -1,10 +1,4 @@
-/**
- * Auto-generate lighten/darken shades from any hex color.
- *
- * From one color, generates 6 variants:
- * lighten1 (+15%), lighten2 (+30%), lighten3 (+45%)
- * darken1 (-15%), darken2 (-30%), darken3 (-45%)
- */
+
 
 export interface ColorShades {
   base: string;

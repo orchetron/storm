@@ -1,12 +1,7 @@
-/**
- * useModeCycler — cycles through an enum of modes on a specific key press.
- *
- * Uses useRef + useInput + forceUpdate().
- */
-
 import { useRef } from "react";
 import { useInput } from "./useInput.js";
 import { useForceUpdate } from "./useForceUpdate.js";
+import { matchKeySpec } from "./key-utils.js";
 
 export interface UseModeCyclerOptions<T> {
   modes: T[];
@@ -21,20 +16,6 @@ export interface UseModeCyclerResult<T> {
   mode: T;
   index: number;
   setMode: (mode: T) => void;
-}
-
-function matchesKey(
-  event: { key: string; ctrl: boolean; shift: boolean; meta: boolean },
-  spec: { key: string; ctrl?: boolean; shift?: boolean; meta?: boolean },
-): boolean {
-  if (event.key !== spec.key) return false;
-  if (spec.ctrl && !event.ctrl) return false;
-  if (!spec.ctrl && event.ctrl) return false;
-  if (spec.shift && !event.shift) return false;
-  if (!spec.shift && event.shift) return false;
-  if (spec.meta && !event.meta) return false;
-  if (!spec.meta && event.meta) return false;
-  return true;
 }
 
 export function useModeCycler<T>(options: UseModeCyclerOptions<T>): UseModeCyclerResult<T> {
@@ -67,7 +48,7 @@ export function useModeCycler<T>(options: UseModeCyclerOptions<T>): UseModeCycle
     (event) => {
       if (modes.length === 0) return;
 
-      if (matchesKey(event, cycleKey)) {
+      if (matchKeySpec(event, cycleKey)) {
         const prevIndex = indexRef.current;
         const prevMode = modes[prevIndex]!;
         indexRef.current = (prevIndex + 1) % modes.length;
@@ -77,7 +58,7 @@ export function useModeCycler<T>(options: UseModeCyclerOptions<T>): UseModeCycle
         return;
       }
 
-      if (reverseCycleKey && matchesKey(event, reverseCycleKey)) {
+      if (reverseCycleKey && matchKeySpec(event, reverseCycleKey)) {
         const prevIndex = indexRef.current;
         const prevMode = modes[prevIndex]!;
         indexRef.current = (prevIndex - 1 + modes.length) % modes.length;

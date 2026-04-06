@@ -1,11 +1,3 @@
-/**
- * useDragReorder — reorder items in a list with keyboard.
- *
- * Uses useRef + forceUpdate() + useInput for imperative state management.
- * Space/Enter starts drag, Up/Down moves the dragged item, Space/Enter drops,
- * Escape cancels and reverts.
- */
-
 import { useRef, useCallback } from "react";
 import { useInput } from "./useInput.js";
 import { useForceUpdate } from "./useForceUpdate.js";
@@ -78,7 +70,6 @@ export function useDragReorder<T>(options: UseDragReorderOptions<T>): UseDragReo
     const arr = workingItemsRef.current;
 
     if (event.key === "up" && idx > 0) {
-      // Swap with item above
       const above = arr[idx - 1] as T;
       const current = arr[idx] as T;
       arr[idx - 1] = current;
@@ -87,7 +78,6 @@ export function useDragReorder<T>(options: UseDragReorderOptions<T>): UseDragReo
       onReorderRef.current([...arr]);
       forceUpdate();
     } else if (event.key === "down" && idx < arr.length - 1) {
-      // Swap with item below
       const current = arr[idx] as T;
       const below = arr[idx + 1] as T;
       arr[idx] = below;

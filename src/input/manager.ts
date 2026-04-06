@@ -113,10 +113,8 @@ export class InputManager {
       }
     }
 
-    // Check for paste start
     const pasteStart = data.indexOf(PASTE_START);
     if (pasteStart >= 0) {
-      // Process data before paste
       if (pasteStart > 0) {
         this.processInput(data.slice(0, pasteStart));
       }
@@ -201,7 +199,6 @@ export class InputManager {
         continue;
       }
 
-      // Check if this could be the start of a mouse sequence
       if (isIncompleteMouseSequence(slice)) {
         // Wait for more data — keep in buffer
         this.mouseBuffer = slice;
@@ -212,7 +209,6 @@ export class InputManager {
       // But be careful: only pass one character/sequence at a time
       if (slice.startsWith("\x1b") && slice.length > 1) {
         // This is an ESC sequence but not a mouse one
-        // Find the end of this sequence and pass it all
         let seqEnd = 1;
         if (slice[1] === "[") {
           // CSI sequence — find terminating byte

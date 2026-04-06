@@ -5,7 +5,7 @@
 import { describe, it, expect } from "vitest";
 import React from "react";
 import { renderForTest } from "../testing/index.js";
-import { Modal } from "../components/Modal.js";
+import { Modal } from "../components/index.js";
 
 describe("Modal", () => {
   it("renders children when visible", () => {

@@ -1,11 +1,3 @@
-/**
- * Render Error Boundary — catches and tracks errors during render phases,
- * preventing cascading failures and providing structured error reporting.
- *
- * @module
- */
-
-/** Describes an error that occurred during a specific render phase. */
 export interface RenderError {
   phase: "layout" | "paint" | "diff" | "flush" | "input";
   error: Error;

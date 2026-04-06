@@ -1,10 +1,3 @@
-/**
- * useInfiniteScroll — infinite scroll / load-more pattern.
- *
- * Uses useRef + forceUpdate() for imperative state management.
- * When scroll position nears the end and hasMore is true, calls onLoadMore().
- */
-
 import { useRef, useCallback } from "react";
 import { useCleanup } from "./useCleanup.js";
 import { useForceUpdate } from "./useForceUpdate.js";

@@ -31,12 +31,8 @@
 import { createContext, useContext, createElement, type ReactNode, type ReactElement } from "react";
 import { StyleSheet, type StyleRule } from "./stylesheet.js";
 
-// ── Context ──────────────────────────────────────────────────────────
-
 /** React context that carries the active StyleSheet down the component tree. */
 export const StyleContext = createContext<StyleSheet | null>(null);
-
-// ── Provider ─────────────────────────────────────────────────────────
 
 export interface StyleProviderProps {
   sheet: StyleSheet;
@@ -52,8 +48,6 @@ export interface StyleProviderProps {
 export function StyleProvider({ sheet, children }: StyleProviderProps): ReactElement {
   return createElement(StyleContext.Provider, { value: sheet }, children);
 }
-
-// ── Hook ─────────────────────────────────────────────────────────────
 
 /**
  * Resolve computed styles for the current component from the nearest StyleSheet.

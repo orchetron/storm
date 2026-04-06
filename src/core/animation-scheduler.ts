@@ -1,14 +1,3 @@
-/**
- * AnimationScheduler — single-loop animation coordinator.
- *
- * Instead of 100 independent setInterval timers (one per Spinner/animation),
- * all animations register with a single scheduler that ticks at a fixed rate.
- * This prevents timer thrashing and ensures consistent frame timing.
- *
- * Safety: if no callbacks remain for maxIdleMs (default 5000), the timer
- * is automatically stopped to prevent timer leaks.
- */
-
 export type AnimationCallback = (frameTime: number) => void;
 
 export class AnimationScheduler {

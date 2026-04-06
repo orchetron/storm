@@ -1,14 +1,8 @@
-/**
- * ANSI escape sequence generation.
- * All sequences are returned as strings — no stdout writes here.
- */
-
 import { Attr, DEFAULT_COLOR, isRgbColor, rgbR, rgbG, rgbB } from "./types.js";
 
 export const ESC = "\x1b";
 export const CSI = `${ESC}[`;
 
-// ── Color depth downgrading ────────────────────────────────────────
 // By default we emit truecolor (24-bit). Call setColorDepth() from
 // Screen.start() to downgrade for terminals that lack support.
 
@@ -21,12 +15,9 @@ export function setColorDepth(depth: ColorDepth): void {
   colorDepth = depth;
 }
 
-/** Get the current color depth. */
 export function getColorDepth(): ColorDepth {
   return colorDepth;
 }
-
-// ── ANSI 16 basic color table (RGB approximations) ─────────────────
 
 const ANSI_16_RGB: ReadonlyArray<readonly [number, number, number]> = [
   [0, 0, 0],       // 0  black
@@ -53,7 +44,6 @@ const ANSI_16_RGB: ReadonlyArray<readonly [number, number, number]> = [
  * the grayscale ramp (indices 232-255), picking whichever is closer.
  */
 export function rgbTo256(r: number, g: number, b: number): number {
-  // Check the 6x6x6 cube (indices 16-231)
   // Each axis maps 0-255 to 0-5
   const ri = r < 48 ? 0 : r < 115 ? 1 : Math.min(5, Math.round((r - 35) / 40));
   const gi = g < 48 ? 0 : g < 115 ? 1 : Math.min(5, Math.round((g - 35) / 40));
@@ -66,7 +56,6 @@ export function rgbTo256(r: number, g: number, b: number): number {
   const cubeB = bi === 0 ? 0 : 55 + bi * 40;
   const cubeDist = (r - cubeR) ** 2 + (g - cubeG) ** 2 + (b - cubeB) ** 2;
 
-  // Check the grayscale ramp (indices 232-255, values 8,18,28,...,238)
   const gray = Math.round((r * 0.299 + g * 0.587 + b * 0.114 - 8) / 10);
   const grayIdx = Math.max(0, Math.min(23, gray));
   const grayVal = 8 + grayIdx * 10;
@@ -92,9 +81,6 @@ export function rgbTo16(r: number, g: number, b: number): number {
   return bestIdx;
 }
 
-// ── Cursor ──────────────────────────────────────────────────────────
-
-/** Move cursor to absolute position (1-indexed) */
 export function cursorTo(row: number, col: number): string {
   return `${CSI}${row + 1};${col + 1}H`;
 }
@@ -117,7 +103,6 @@ export function cursorBack(n: number): string {
 
 export const CURSOR_HIDE = `${CSI}?25l`;
 
-// ── Synchronized output ─────────────────────────────────────────
 // Tells the terminal to buffer writes and display atomically.
 // Prevents tearing during scroll. Supported by iTerm2, kitty, etc.
 
@@ -127,20 +112,14 @@ export const CURSOR_SHOW = `${CSI}?25h`;
 export const CURSOR_SAVE = `${ESC}7`;
 export const CURSOR_RESTORE = `${ESC}8`;
 
-// ── Clear ───────────────────────────────────────────────────────────
-
 export const CLEAR_SCREEN = `${CSI}2J`;
 export const CLEAR_LINE = `${CSI}2K`;
 export const CLEAR_LINE_RIGHT = `${CSI}0K`;
 export const CLEAR_LINE_LEFT = `${CSI}1K`;
 export const CLEAR_DOWN = `${CSI}J`;
 
-// ── Screen ──────────────────────────────────────────────────────────
-
 export const ALT_SCREEN_ENTER = `${CSI}?1049h`;
 export const ALT_SCREEN_EXIT = `${CSI}?1049l`;
-
-// ── Scroll regions ──────────────────────────────────────────────────
 
 /** Set scroll region (1-indexed, inclusive) */
 export function setScrollRegion(top: number, bottom: number): string {
@@ -163,8 +142,6 @@ export function scrollDownN(n: number): string {
   return n > 0 ? `${CSI}${n}T` : "";
 }
 
-// ── Mouse ───────────────────────────────────────────────────────────
-
 /** Enable button event tracking (1002) + SGR extended mode (1006) */
 export const MOUSE_ENABLE = `${CSI}?1002h${CSI}?1006h`;
 export const MOUSE_DISABLE = `${CSI}?1002l${CSI}?1006l`;
@@ -173,85 +150,73 @@ export const MOUSE_DISABLE = `${CSI}?1002l${CSI}?1006l`;
 export const MOUSE_ENABLE_ALL = `${CSI}?1003h${CSI}?1006h`;
 export const MOUSE_DISABLE_ALL = `${CSI}?1003l${CSI}?1006l`;
 
-// ── Focus ───────────────────────────────────────────────────────────
-
 export const FOCUS_ENABLE = `${CSI}?1004h`;
 export const FOCUS_DISABLE = `${CSI}?1004l`;
 export const FOCUS_IN = `${CSI}I`;
 export const FOCUS_OUT = `${CSI}O`;
-
-// ── Bracketed paste ─────────────────────────────────────────────────
 
 export const BRACKETED_PASTE_ENABLE = `${CSI}?2004h`;
 export const BRACKETED_PASTE_DISABLE = `${CSI}?2004l`;
 export const PASTE_START = `${CSI}200~`;
 export const PASTE_END = `${CSI}201~`;
 
-// ── Style / SGR ─────────────────────────────────────────────────────
-
 export const RESET = `${CSI}0m`;
 
-export function fgColor(c: number): string {
-  if (c === DEFAULT_COLOR) return `${CSI}39m`;
+const _SGR_CACHE_MAX = 512;
+const _fgCache = new Map<string, string>();
+const _bgCache = new Map<string, string>();
+const _fullSgrCache = new Map<string, string>();
+function _cacheSet(cache: Map<string, string>, key: string, value: string): void {
+  cache.set(key, value);
+  if (cache.size > _SGR_CACHE_MAX) { const first = cache.keys().next().value; if (first !== undefined) cache.delete(first); }
+}
 
-  // Non-RGB palette colors (0-255) — emit directly at appropriate depth
+export function fgColor(c: number): string {
+  const key = `${colorDepth},${c}`;
+  const cached = _fgCache.get(key);
+  if (cached !== undefined) return cached;
+  const result = _fgColorInner(c);
+  _cacheSet(_fgCache, key, result);
+  return result;
+}
+
+// Shared fg/bg color builder — only the SGR code offsets differ
+function _colorInner(c: number, dflt: number, base8: number, bright8: number, idx: string, rgb: string): string {
+  if (c === DEFAULT_COLOR) return `${CSI}${dflt}m`;
   if (!isRgbColor(c)) {
     if (colorDepth === "basic") return "";
     if (colorDepth === "16") {
-      if (c < 8) return `${CSI}${30 + c}m`;
-      if (c < 16) return `${CSI}${90 + c - 8}m`;
-      // 256-palette index → approximate to 16
-      // For indices 16-255, extract the closest 16-color match
-      return `${CSI}${30 + rgbTo16FromPalette256(c)}m`;
+      if (c < 8) return `${CSI}${base8 + c}m`;
+      if (c < 16) return `${CSI}${bright8 + c - 8}m`;
+      return `${CSI}${base8 + rgbTo16FromPalette256(c)}m`;
     }
-    if (c < 8) return `${CSI}${30 + c}m`;
-    if (c < 16) return `${CSI}${90 + c - 8}m`;
-    return `${CSI}38;5;${c}m`;
+    if (c < 8) return `${CSI}${base8 + c}m`;
+    if (c < 16) return `${CSI}${bright8 + c - 8}m`;
+    return `${CSI}${idx}${c}m`;
   }
-
-  // RGB color — downgrade based on colorDepth
   const r = rgbR(c), g = rgbG(c), b = rgbB(c);
   if (colorDepth === "basic") return "";
   if (colorDepth === "16") {
-    const idx = rgbTo16(r, g, b);
-    if (idx < 8) return `${CSI}${30 + idx}m`;
-    return `${CSI}${90 + idx - 8}m`;
+    const i = rgbTo16(r, g, b);
+    if (i < 8) return `${CSI}${base8 + i}m`;
+    return `${CSI}${bright8 + i - 8}m`;
   }
-  if (colorDepth === "256") {
-    return `${CSI}38;5;${rgbTo256(r, g, b)}m`;
-  }
-  return `${CSI}38;2;${r};${g};${b}m`;
+  if (colorDepth === "256") return `${CSI}${idx}${rgbTo256(r, g, b)}m`;
+  return `${CSI}${rgb}${r};${g};${b}m`;
 }
+
+function _fgColorInner(c: number): string { return _colorInner(c, 39, 30, 90, "38;5;", "38;2;"); }
 
 export function bgColor(c: number): string {
-  if (c === DEFAULT_COLOR) return `${CSI}49m`;
-
-  // Non-RGB palette colors (0-255) — emit directly at appropriate depth
-  if (!isRgbColor(c)) {
-    if (colorDepth === "basic") return "";
-    if (colorDepth === "16") {
-      if (c < 8) return `${CSI}${40 + c}m`;
-      if (c < 16) return `${CSI}${100 + c - 8}m`;
-      return `${CSI}${40 + rgbTo16FromPalette256(c)}m`;
-    }
-    if (c < 8) return `${CSI}${40 + c}m`;
-    if (c < 16) return `${CSI}${100 + c - 8}m`;
-    return `${CSI}48;5;${c}m`;
-  }
-
-  // RGB color — downgrade based on colorDepth
-  const r = rgbR(c), g = rgbG(c), b = rgbB(c);
-  if (colorDepth === "basic") return "";
-  if (colorDepth === "16") {
-    const idx = rgbTo16(r, g, b);
-    if (idx < 8) return `${CSI}${40 + idx}m`;
-    return `${CSI}${100 + idx - 8}m`;
-  }
-  if (colorDepth === "256") {
-    return `${CSI}48;5;${rgbTo256(r, g, b)}m`;
-  }
-  return `${CSI}48;2;${r};${g};${b}m`;
+  const key = `${colorDepth},${c}`;
+  const cached = _bgCache.get(key);
+  if (cached !== undefined) return cached;
+  const result = _bgColorInner(c);
+  _cacheSet(_bgCache, key, result);
+  return result;
 }
+
+function _bgColorInner(c: number): string { return _colorInner(c, 49, 40, 100, "48;5;", "48;2;"); }
 
 /**
  * Approximate a 256-palette index (16-255) to the nearest ANSI 16 color.
@@ -298,6 +263,10 @@ export function sgrAttrs(attrs: number): string {
  * for colored underline (supported by Kitty, WezTerm, Ghostty, foot, Alacritty).
  */
 export function fullSgr(fg: number, bg: number, attrs: number, ulColor: number = DEFAULT_COLOR): string {
+  const cacheKey = `${colorDepth},${fg},${bg},${attrs},${ulColor}`;
+  const cached = _fullSgrCache.get(cacheKey);
+  if (cached !== undefined) return cached;
+
   let out = RESET;
   if (attrs !== 0) out += sgrAttrs(attrs);
   if (fg !== DEFAULT_COLOR) out += fgColor(fg);
@@ -309,6 +278,7 @@ export function fullSgr(fg: number, bg: number, attrs: number, ulColor: number =
       out += `${CSI}58;2;${rgbR(ulColor)};${rgbG(ulColor)};${rgbB(ulColor)}m`;
     }
   }
+  _cacheSet(_fullSgrCache, cacheKey, out);
   return out;
 }
 

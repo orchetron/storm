@@ -1,9 +1,3 @@
-/**
- * useClipboard — copy/read clipboard via OSC 52 escape sequences.
- *
- * Uses the eager registration pattern (useRef, no useState/useEffect).
- */
-
 import { useRef } from "react";
 import { useTui } from "../context/TuiContext.js";
 

@@ -20,16 +20,12 @@ import type { RenderMiddleware } from "../core/middleware.js";
 import { parseColor, Attr } from "../core/types.js";
 import { colors } from "../theme/index.js";
 
-// ── Theme-derived color constants ──────────────────────────────────
-
 const COL_BRAND     = parseColor(colors.brand.primary);
 const COL_BRAND_LT  = parseColor(colors.brand.light);
 const COL_TEXT_PRI   = parseColor(colors.text.primary);
 const COL_TEXT_DIM   = parseColor(colors.text.dim);
 const COL_SURF_OVERLAY = parseColor(colors.surface.overlay);
 const COL_WARNING    = parseColor(colors.warning);
-
-// ── Types ──────────────────────────────────────────────────────────
 
 export interface FrameSnapshot {
   /** Frame number */
@@ -62,8 +58,6 @@ export interface TimeTravelState {
   /** Current snapshot being viewed (null if not active) */
   currentSnapshot: FrameSnapshot | null;
 }
-
-// ── Circular buffer ────────────────────────────────────────────────
 
 class CircularBuffer<T> {
   private buffer: Array<T | undefined>;
@@ -104,8 +98,6 @@ class CircularBuffer<T> {
   }
 }
 
-// ── Count changed cells ────────────────────────────────────────────
-
 function countChangedCells(
   prevChars: string[],
   prevFgs: Int32Array,
@@ -133,8 +125,6 @@ function countChangedCells(
   }
   return changed;
 }
-
-// ── Main factory ───────────────────────────────────────────────────
 
 /**
  * Creates a time-travel debugging system.
@@ -306,11 +296,9 @@ export function createTimeTravel(options?: {
     // Fill the status bar background
     buffer.fill(0, statusY, width, 1, " ", COL_TEXT_PRI, COL_SURF_OVERLAY);
 
-    // Write the [Time Travel] prefix in brand color
     const prefixEnd = "[Time Travel]".length;
     buffer.writeString(0, statusY, "[Time Travel]", COL_WARNING, COL_SURF_OVERLAY, Attr.BOLD, width);
 
-    // Write the rest in dimmer text
     const rest = label.slice(prefixEnd);
     buffer.writeString(prefixEnd, statusY, rest, COL_TEXT_DIM, COL_SURF_OVERLAY, Attr.NONE, width);
 

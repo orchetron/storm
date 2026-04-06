@@ -13,10 +13,8 @@ export { useStdin, type UseStdinResult } from "./useStdin.js";
 export { useStdout, type UseStdoutResult } from "./useStdout.js";
 export { useStderr, type UseStderrResult } from "./useStderr.js";
 export { useFocusManager, type UseFocusManagerResult } from "./useFocusManager.js";
-export { useIsScreenReaderEnabled } from "./useIsScreenReaderEnabled.js";
 export { useAnimation, type UseAnimationOptions, type UseAnimationResult } from "./useAnimation.js";
 export { usePaste } from "./usePaste.js";
-export { useKeyboardShortcuts, type Shortcut } from "./useKeyboardShortcuts.js";
 export { useInterval } from "./useInterval.js";
 export { useTimeout } from "./useTimeout.js";
 export { useVirtualList, type VirtualListOptions, type VirtualListResult } from "./useVirtualList.js";
@@ -27,7 +25,6 @@ export { useAdaptive } from "./useAdaptive.js";
 export { usePluginManager } from "./usePlugin.js";
 export { usePluginProps } from "./usePluginProps.js";
 export { useAnnounce, type UseAnnounceResult } from "./useAnnounce.js";
-export { useTween, type UseTweenResult } from "./useTween.js";
 export { useTextCycler, type UseTextCyclerOptions, type UseTextCyclerResult } from "./useTextCycler.js";
 export { useCollapsibleContent, type UseCollapsibleContentOptions, type UseCollapsibleContentResult } from "./useCollapsibleContent.js";
 export { useModeCycler, type UseModeCyclerOptions, type UseModeCyclerResult } from "./useModeCycler.js";
@@ -54,14 +51,12 @@ export { usePersistentState, memoryStorage, type UsePersistentStateOptions, type
 export { useContextMenu, type UseContextMenuOptions, type UseContextMenuResult, type ContextMenuItem } from "./useContextMenu.js";
 export { useDragReorder, type UseDragReorderOptions, type UseDragReorderResult } from "./useDragReorder.js";
 export { useInfiniteScroll, type UseInfiniteScrollOptions, type UseInfiniteScrollResult } from "./useInfiniteScroll.js";
-export { useClipboardAction, type UseClipboardActionOptions, type UseClipboardActionResult } from "./useClipboardAction.js";
+export { useCopyPasteBuffer, type UseCopyPasteBufferOptions, type UseCopyPasteBufferResult } from "./useCopyPasteBuffer.js";
 export { useLocale } from "./useLocale.js";
-export { useDirection } from "./useDirection.js";
 export { useTransition, type TransitionConfig, type UseTransitionResult } from "./useTransition.js";
 export { useStyleSheet } from "./useStyleSheet.js";
 export { useBuffer, type BufferAccess } from "./useBuffer.js";
 
-// ── Headless behavior hooks ────────────────────────────────────────
 export {
   useSelectBehavior, type UseSelectBehaviorOptions, type UseSelectBehaviorResult, type SelectBehaviorOption,
   useListBehavior, type UseListBehaviorOptions, type UseListBehaviorResult, type ListBehaviorItem,
@@ -82,3 +77,4 @@ export {
 export { useTick, type UseTickOptions } from "./useTick.js";
 export { usePhaseTimer, type PhaseEntry, type UsePhaseTimerOptions, type UsePhaseTimerResult } from "./usePhaseTimer.js";
 export { useProfiler, type UseProfilerResult } from "./useProfiler.js";
+export { useImperativeAnimation, type UseImperativeAnimationOptions, type UseImperativeAnimationResult } from "./useImperativeAnimation.js";

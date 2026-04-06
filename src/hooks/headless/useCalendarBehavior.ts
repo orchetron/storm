@@ -1,16 +1,7 @@
-/**
- * useCalendarBehavior — headless behavior hook for calendar/date picker.
- *
- * Extracts selected date, focused date, keyboard navigation (arrow keys,
- * pageup/pagedown for month switching), range selection, and disabled dates
- * from the Calendar component.
- *
- * Returns state + props objects with no JSX.
- */
-
 import { useRef, useCallback } from "react";
 import { useInput } from "../useInput.js";
 import type { KeyEvent } from "../../input/types.js";
+import { getDaysInMonth, getFirstDayOfWeek } from "../../utils/date.js";
 
 export interface UseCalendarBehaviorOptions {
   year: number;
@@ -58,14 +49,6 @@ export interface UseCalendarBehaviorResult {
   nextMonth: () => void;
   /** Get props for a specific day */
   getDayProps: (day: number) => CalendarDayInfo;
-}
-
-function getDaysInMonth(year: number, month: number): number {
-  return new Date(year, month, 0).getDate();
-}
-
-function getFirstDayOfWeek(year: number, month: number): number {
-  return new Date(year, month - 1, 1).getDay();
 }
 
 export function useCalendarBehavior(options: UseCalendarBehaviorOptions): UseCalendarBehaviorResult {
@@ -172,7 +155,6 @@ export function useCalendarBehavior(options: UseCalendarBehaviorOptions): UseCal
 
   useInput(handleInput, { isActive });
 
-  // Compute range
   const rangeStartTime = rangeStart ? rangeStart.getTime() : null;
   const rangeEndTime = rangeEnd ? rangeEnd.getTime() : null;
   const hasRange = rangeStartTime !== null && rangeEndTime !== null;

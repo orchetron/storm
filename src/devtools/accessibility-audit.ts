@@ -1,7 +1,7 @@
 /**
  * Live WCAG Accessibility Audit — real-time contrast checking on rendered output.
  *
- * No other TUI framework does this. Scans every cell in the rendered buffer
+ * Scans every cell in the rendered buffer
  * and flags accessibility violations:
  *
  * 1. CONTRAST: Foreground/background color pairs that fail WCAG AA (< 4.5:1)
@@ -16,8 +16,6 @@ import type { RenderMiddleware } from "../core/middleware.js";
 import type { ScreenBuffer } from "../core/buffer.js";
 import { Attr, DEFAULT_COLOR, isRgbColor, rgb, rgbR, rgbG, rgbB } from "../core/types.js";
 import { relativeLuminance, contrastRatio } from "../core/accessibility.js";
-
-// ── ANSI 256-color palette → RGB lookup ────────────────────────────
 
 const ANSI_256_TABLE: Array<[number, number, number]> = buildAnsi256Table();
 
@@ -69,8 +67,6 @@ function buildAnsi256Table(): Array<[number, number, number]> {
   return table;
 }
 
-// ── Color → hex conversion ─────────────────────────────────────────
-
 /** Default terminal colors: white fg on black bg. */
 const DEFAULT_FG_HEX = "#D4D4D4"; // typical light gray terminal fg
 const DEFAULT_BG_HEX = "#0A0A0A"; // typical near-black terminal bg
@@ -92,8 +88,6 @@ function colorToHex(color: number, isBackground: boolean): string {
   }
   return isBackground ? DEFAULT_BG_HEX : DEFAULT_FG_HEX;
 }
-
-// ── Public types ───────────────────────────────────────────────────
 
 export interface AccessibilityViolation {
   /** Cell position */
@@ -139,8 +133,6 @@ export interface AuditReport {
   scoreAAA: number;
 }
 
-// ── Contrast ratio cache ───────────────────────────────────────────
-
 /** Cache contrast ratios by "fg|bg" key to avoid recomputing luminance. */
 const contrastCache = new Map<string, number>();
 
@@ -152,7 +144,6 @@ function cachedContrastRatio(fgHex: string, bgHex: string): number {
     contrastCache.set(key, ratio);
     // Prevent unbounded growth
     if (contrastCache.size > 4096) {
-      // Clear the oldest half
       const entries = Array.from(contrastCache.entries());
       contrastCache.clear();
       for (let i = entries.length >> 1; i < entries.length; i++) {
@@ -163,14 +154,10 @@ function cachedContrastRatio(fgHex: string, bgHex: string): number {
   return ratio;
 }
 
-// ── Summary bar colors ─────────────────────────────────────────────
-
 const SUMMARY_FG = rgb(0xD4, 0xD4, 0xD4);
 const SUMMARY_BG = rgb(0x1C, 0x1C, 0x1C);
 const SUMMARY_LABEL_FG = rgb(0x82, 0xAA, 0xFF);
 const VIOLATION_UNDERLINE_COLOR = rgb(0xFF, 0x40, 0x40);
-
-// ── Factory ────────────────────────────────────────────────────────
 
 export function createAccessibilityAudit(options?: AuditOptions): {
   /** Middleware that scans buffer and overlays violations */
@@ -215,7 +202,6 @@ export function createAccessibilityAudit(options?: AuditOptions): {
     let aaaFails = 0;
     const newViolations: AccessibilityViolation[] = [];
 
-    // Track unique (fg, bg) pairs and their counts
     const pairCounts = new Map<string, { fg: string; bg: string; ratio: number; count: number }>();
 
     for (let y = 0; y < h; y++) {
@@ -234,7 +220,6 @@ export function createAccessibilityAudit(options?: AuditOptions): {
 
         const ratio = cachedContrastRatio(fgHex, bgHex);
 
-        // Check for near-invisible text (< 1.5:1)
         if (ratio < 1.5) {
           newViolations.push({
             x, y, type: "invisible-text",
@@ -246,7 +231,6 @@ export function createAccessibilityAudit(options?: AuditOptions): {
           continue;
         }
 
-        // Check AA (< minContrast, default 4.5:1)
         if (ratio < minContrast) {
           newViolations.push({
             x, y, type: "contrast-aa",
@@ -270,7 +254,6 @@ export function createAccessibilityAudit(options?: AuditOptions): {
       }
     }
 
-    // Sort unique violations by count descending
     const uniqueViolations = Array.from(pairCounts.values()).sort((a, b) => b.count - a.count);
 
     violations = newViolations;
@@ -325,11 +308,9 @@ export function createAccessibilityAudit(options?: AuditOptions): {
     // Fill the summary bar background
     buffer.fill(0, y, buffer.width, 1, " ", SUMMARY_FG, SUMMARY_BG);
 
-    // Write the label portion with accent color
     const labelEnd = "[A11y Audit]".length;
     buffer.writeString(0, y, "[A11y Audit]", SUMMARY_LABEL_FG, SUMMARY_BG, Attr.BOLD);
 
-    // Write the rest of the summary
     const rest = summaryText.slice(labelEnd);
     buffer.writeString(labelEnd, y, rest, SUMMARY_FG, SUMMARY_BG);
   }

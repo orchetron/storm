@@ -1,11 +1,3 @@
-/**
- * useAsyncCleanup — register an async cleanup function that runs when the app unmounts.
- *
- * Similar to useCleanup, but for async operations (closing connections, flushing
- * buffers, saving state). Async cleanups run in parallel after all sync cleanups,
- * and complete before the exit promise resolves.
- */
-
 import { useRef } from "react";
 import { useTui } from "../context/TuiContext.js";
 

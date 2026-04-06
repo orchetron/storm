@@ -1,10 +1,3 @@
-/**
- * usePluginManager — access the PluginManager from components.
- *
- * Reads from TuiContext's renderContext and returns a shared PluginManager
- * instance. If none exists yet, creates a default one and caches it.
- */
-
 import { useRef } from "react";
 import { PluginManager } from "../core/plugin.js";
 

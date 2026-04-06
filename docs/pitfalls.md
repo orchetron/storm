@@ -55,7 +55,7 @@ function ChatLog({ messages }: { messages: string[] }) {
 }
 ```
 
-This is how `useScroll`, `useAnimation`, and `useTween` work internally. Follow the same pattern for any high-frequency visual update.
+This is how `useScroll` and `useAnimation` work internally. Follow the same pattern for any high-frequency visual update.
 
 ---
 
@@ -252,27 +252,9 @@ useInput((event) => {
 
 Good for: simple components with 1-3 key bindings, custom key processing logic.
 
-### useKeyboardShortcuts — declarative shortcut map
-
-Define shortcuts as data. Handles modifier matching for you.
-
-```tsx
-import { useKeyboardShortcuts } from "@orchetron/storm";
-
-useKeyboardShortcuts([
-  { key: "q", handler: handleQuit },
-  { key: "s", ctrl: true, handler: handleSave },
-  { key: "f", ctrl: true, handler: handleFind, description: "Find" },
-  { key: "return", handler: handleSubmit },
-  { key: "escape", handler: handleCancel },
-]);
-```
-
-Good for: apps with 5+ shortcuts, when you want a clean declarative style.
-
 ### useHotkey — shortcuts with display labels
 
-Like `useKeyboardShortcuts` but returns a `bindings` array you can render into a help bar.
+Returns a `bindings` array you can render into a help bar.
 
 ```tsx
 import { useHotkey } from "@orchetron/storm";
@@ -299,7 +281,7 @@ Good for: apps that show a keyboard shortcut help bar or legend.
 
 ### Decision guide
 
-Start with `useInput`. When you reach 5+ shortcuts, switch to `useKeyboardShortcuts`. If you want to render a help bar from the shortcut definitions, use `useHotkey`.
+Start with `useInput`. If you want to render a help bar from the shortcut definitions, use `useHotkey`.
 
 ---
 
@@ -371,20 +353,6 @@ function MySpinner() {
 }
 ```
 
-### useTween — animated value transitions
-
-Smoothly interpolates a number toward a target over time, with easing.
-
-```tsx
-import { useTween } from "@orchetron/storm";
-
-function AnimatedBar({ progress }: { progress: number }) {
-  const { value, animating } = useTween(progress, 200);
-  const width = Math.round(value * 50);
-  return <Text>{"\u2588".repeat(width)}</Text>;
-}
-```
-
 ### Transition — declarative enter/exit
 
 Wraps children with animated visibility transitions.
@@ -397,7 +365,7 @@ import { Transition } from "@orchetron/storm";
 </Transition>
 ```
 
-Supports `"fade"`, `"slide-down"`, and `"collapse"` types.
+Supports `"fade"`, `"slide-down"`, `"slide-up"`, `"slide-right"`, and `"collapse"` types.
 
 ### Don't use setInterval directly
 
@@ -504,14 +472,12 @@ app.requestRepaint(); // Force a repaint so plugin hooks apply
 | Scroll, cursor, animation | `useRef` + `requestRender()` | `useState` |
 | Timer cleanup | `useCleanup()` | `useEffect` cleanup |
 | Periodic callback | `useInterval()` | `setInterval` |
-| Smooth value transition | `useTween()` | Manual lerp in setInterval |
 | Frame animation | `useAnimation()` | `setInterval` + counter |
 | Force sync state commit | `flushSync(() => setState(...))` | `flushSync(() => ref.current = x)` |
 | ScrollView | `<ScrollView flex={1}>` | `<ScrollView>` (no constraint) |
 | Layout container | `<Box>` | `<Text>` |
 | Inline styled text | `<Text><Text bold>...</Text></Text>` | `<Text><Box>...</Box></Text>` |
-| 1-3 key bindings | `useInput` | `useKeyboardShortcuts` |
-| 5+ key bindings | `useKeyboardShortcuts` | `useInput` with big if/else |
+| 1-3 key bindings | `useInput` | Manual label tracking |
 | Key bindings + help bar | `useHotkey` | Manual label tracking |
 
 ---
@@ -551,14 +517,14 @@ Storm has two ways to trigger a repaint:
 const [frame, setFrame] = useState(0);
 setInterval(() => setFrame(f => f + 1), 80); // Full reconciliation 12x/sec
 
-// ✓ Right: imperative mutation for animations
+// Right: imperative mutation for animations
 const textRef = useRef<any>(null);
 setInterval(() => {
   textRef.current.text = FRAMES[frame++ % FRAMES.length];
   requestRender(); // Just repaint, no React
 }, 80);
 
-// ✓ Right: flushSync for structural changes
+// Right: flushSync for structural changes
 const handleSubmit = (text: string) => {
   flushSync(() => {
     setMessages(prev => [...prev, { role: "user", text }]);

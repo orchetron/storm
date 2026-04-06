@@ -5,13 +5,13 @@
  * Storm Agent visual design.
  */
 
-import React, { useState, useCallback, useRef } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import {
   Box,
   Text,
   useTerminal,
   useTui,
-  useCleanup,
+  useTick,
 } from "../../src/index.js";
 
 import { AGENTS } from "./data/mock-agents.js";
@@ -20,7 +20,7 @@ import { ChatScreen } from "./screens/ChatScreen.js";
 // -- Theme Colors -------------------------------------------------------------
 
 const THEME = {
-  accent: "#8C8CF9",
+  accent: "#82AAFF",
   accentLight: "#BEBEEE",
   text: "#DEE1E4",
   textSecondary: "#A5A8AB",
@@ -30,69 +30,61 @@ const THEME = {
 // -- 3D Rotating Logo (block/shade chars) -------------------------------------
 
 const LOGO_FRAMES: string[][] = [
-  // Frame 0: Front
   [
-    "  ████████  ",
-    " ██      ██ ",
-    " ██  ██  ██ ",
-    " ██      ██ ",
-    "  ████████  ",
+    "    ██    ",
+    "  ██  ██  ",
+    "██  ◆◆  ██",
+    "  ██  ██  ",
+    "    ██    ",
   ],
-  // Frame 1: Slight right
   [
-    "  ▓██████▓  ",
-    " ▓█      █▓ ",
-    " ▓█  ██  █▓ ",
-    " ▓█      █▓ ",
-    "  ▓██████▓  ",
+    "    ▓█    ",
+    "  ▓█  █▓  ",
+    "▓█  ◆◆  █▓",
+    "  ▓█  █▓  ",
+    "    ▓█    ",
   ],
-  // Frame 2: More right
   [
-    "   ▒▓████   ",
-    "  ▒▓    █▓  ",
-    "  ▒▓ ██ █▓  ",
-    "  ▒▓    █▓  ",
-    "   ▒▓████   ",
+    "    ▒▓    ",
+    "  ▒▓  ▓▒  ",
+    "▒▓  ◆◆  ▓▒",
+    "  ▒▓  ▓▒  ",
+    "    ▒▓    ",
   ],
-  // Frame 3: Edge
   [
-    "    ▒▓▓▒    ",
-    "    ▒▓▓▒    ",
-    "    ▒▓▓▒    ",
-    "    ▒▓▓▒    ",
-    "    ▒▓▓▒    ",
+    "    ▒▒    ",
+    "   ▒▒▒▒   ",
+    "  ▒▒◆◆▒▒  ",
+    "   ▒▒▒▒   ",
+    "    ▒▒    ",
   ],
-  // Frame 4: Coming back
   [
-    "   ████▓▒   ",
-    "  ▓█    ▓▒  ",
-    "  ▓█ ██ ▓▒  ",
-    "  ▓█    ▓▒  ",
-    "   ████▓▒   ",
+    "    ▓▒    ",
+    "  ▓▒  ▒▓  ",
+    "▓▒  ◆◆  ▒▓",
+    "  ▓▒  ▒▓  ",
+    "    ▓▒    ",
   ],
-  // Frame 5: Back face
   [
-    "  ▓██████▓  ",
-    " ▓█      █▓ ",
-    " ▓█  ██  █▓ ",
-    " ▓█      █▓ ",
-    "  ▓██████▓  ",
+    "    █▓    ",
+    "  █▓  ▓█  ",
+    "█▓  ◆◆  ▓█",
+    "  █▓  ▓█  ",
+    "    █▓    ",
   ],
-  // Frame 6: Almost front
   [
-    "  █▓████▓█  ",
-    " █▓      ▓█ ",
-    " █▓  ██  ▓█ ",
-    " █▓      ▓█ ",
-    "  █▓████▓█  ",
+    "    █▓    ",
+    "  ██  ▓█  ",
+    "██  ◆◆  ▓█",
+    "  ██  ▓█  ",
+    "    █▓    ",
   ],
-  // Frame 7: Nearly front
   [
-    "  ██████▓█  ",
-    " ██      ▓█ ",
-    " ██  ██  ▓█ ",
-    " ██      ▓█ ",
-    "  ██████▓█  ",
+    "    ██    ",
+    "  ██  █▓  ",
+    "██  ◆◆  █▓",
+    "  ██  █▓  ",
+    "    ██    ",
   ],
 ];
 
@@ -100,51 +92,27 @@ const LOGO_FRAMES: string[][] = [
 
 function WelcomeScreen({ onDismiss }: { onDismiss: () => void }) {
   const { width, height } = useTerminal();
-  const { requestRender } = useTui();
   const frameRef = useRef(0);
   const textNodeRef = useRef<any>(null);
   const countdownRef = useRef(3);
   const countdownTextRef = useRef<any>(null);
 
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const countdownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  // Logo rotation animation
-  if (timerRef.current === null) {
-    timerRef.current = setInterval(() => {
-      frameRef.current = (frameRef.current + 1) % LOGO_FRAMES.length;
-      if (textNodeRef.current) {
-        textNodeRef.current.text = LOGO_FRAMES[frameRef.current]!.join("\n");
-        requestRender();
-      }
-    }, 150);
-  }
-
-  // Countdown timer
-  if (countdownTimerRef.current === null) {
-    countdownTimerRef.current = setInterval(() => {
-      countdownRef.current -= 1;
-      if (countdownRef.current <= 0) {
-        if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
-        countdownTimerRef.current = null;
-        onDismiss();
-      } else {
-        if (countdownTextRef.current) {
-          countdownTextRef.current.text = `Starting in ${countdownRef.current}...`;
-          requestRender();
-        }
-      }
-    }, 1000);
-  }
-
-  useCleanup(() => {
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
+  // Logo rotation animation (imperative — no React re-render needed)
+  useTick(150, (tick) => {
+    frameRef.current = tick % LOGO_FRAMES.length;
+    if (textNodeRef.current) {
+      textNodeRef.current.text = LOGO_FRAMES[frameRef.current]!.join("\n");
     }
-    if (countdownTimerRef.current) {
-      clearInterval(countdownTimerRef.current);
-      countdownTimerRef.current = null;
+  }, { reactive: false });
+
+  // Countdown timer (reactive — updates countdown text)
+  useTick(1000, (tick) => {
+    const remaining = 3 - tick;
+    countdownRef.current = remaining;
+    if (remaining <= 0) {
+      onDismiss();
+    } else if (countdownTextRef.current) {
+      countdownTextRef.current.text = `Starting in ${remaining}...`;
     }
   });
 
@@ -206,8 +174,8 @@ export function App(): React.ReactElement {
   const defaultAgent = AGENTS[0]!;
 
   const handleWelcomeDismiss = useCallback(() => {
-    flushSync(() => setScreen("chat"));
-  }, [flushSync]);
+    setScreen("chat");
+  }, []);
 
   const handleExit = useCallback(() => {
     exit();

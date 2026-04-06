@@ -1,10 +1,3 @@
-/**
- * useAccessibility — hook providing current accessibility options.
- *
- * Reads from the TuiContext render context if available, otherwise
- * falls back to detectAccessibility(). Caches in a ref for performance.
- */
-
 import { useRef } from "react";
 import { type AccessibilityOptions, detectAccessibility } from "../core/accessibility.js";
 

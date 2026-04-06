@@ -9,7 +9,7 @@
  * - Streaming: pulsing indicator during thinking, `◆ ` prefix during response
  */
 
-import React, { useState, useCallback, useRef } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import {
   Box,
   Text,
@@ -21,6 +21,7 @@ import {
   useTerminal,
   useTui,
   useCleanup,
+  useTick,
 } from "../../../src/index.js";
 
 import type { Message } from "../data/types.js";
@@ -60,7 +61,7 @@ export function ChatScreen({ model, onExit }: ChatScreenProps): React.ReactEleme
   const { width, height } = useTerminal();
   const { flushSync, exit } = useTui();
 
-  // -- State -------------------------------------------------------------------
+  // -- State ------------------------------------------------------------------
   const [messages, setMessages] = useState<Message[]>([
     {
       id: makeId(),
@@ -70,9 +71,11 @@ export function ChatScreen({ model, onExit }: ChatScreenProps): React.ReactEleme
     },
   ]);
   const [input, setInput] = useState("");
-  const [isStreaming, setIsStreaming] = useState(false);
-  const [streamingText, setStreamingText] = useState("");
-  const [streamingType, setStreamingType] = useState<"thinking" | "response">("thinking");
+  // Streaming state in refs — useTick reactive re-renders at 50ms, not per-char
+  const isStreamingRef = useRef(false);
+  const streamingTextRef = useRef("");
+  const streamingTypeRef = useRef<"thinking" | "response">("thinking");
+  useTick(50, () => {}, { active: isStreamingRef.current });
   const [pendingApproval, setPendingApproval] = useState<PendingApproval | null>(null);
   const [showCommands, setShowCommands] = useState(false);
   const [alwaysApproveTools, setAlwaysApproveTools] = useState<Set<string>>(new Set());
@@ -94,19 +97,17 @@ export function ChatScreen({ model, onExit }: ChatScreenProps): React.ReactEleme
           onExit();
         }
         if (e.key === "l" && e.ctrl) {
-          flushSync(() =>
-            setMessages([
-              {
-                id: makeId(),
-                type: "system",
-                content: "Screen cleared.",
-                timestamp: Date.now(),
-              },
-            ]),
-          );
+          setMessages([
+            {
+              id: makeId(),
+              type: "system",
+              content: "Screen cleared.",
+              timestamp: Date.now(),
+            },
+          ]);
         }
       },
-      [flushSync, exit, onExit],
+      [exit, onExit],
     ),
   );
 
@@ -122,9 +123,9 @@ export function ChatScreen({ model, onExit }: ChatScreenProps): React.ReactEleme
 
   const handleSubmit = useCallback(
     (text: string) => {
-      if (isStreaming) return;
+      if (isStreamingRef.current) return;
 
-      flushSync(() => setShowCommands(false));
+      setShowCommands(false);
 
       // Slash command
       if (text.startsWith("/")) {
@@ -138,32 +139,28 @@ export function ChatScreen({ model, onExit }: ChatScreenProps): React.ReactEleme
         }
 
         if (text.trim() === "/clear") {
-          flushSync(() => {
-            setInput("");
-            setMessages([
-              {
-                id: makeId(),
-                type: "system",
-                content: "Screen cleared.",
-                timestamp: Date.now(),
-              },
-            ]);
-          });
-          return;
-        }
-
-        flushSync(() => {
           setInput("");
-          setMessages((prev) => [
-            ...prev,
+          setMessages([
             {
               id: makeId(),
               type: "system",
-              content: result,
+              content: "Screen cleared.",
               timestamp: Date.now(),
             },
           ]);
-        });
+          return;
+        }
+
+        setInput("");
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: makeId(),
+            type: "system",
+            content: result,
+            timestamp: Date.now(),
+          },
+        ]);
         return;
       }
 
@@ -171,52 +168,46 @@ export function ChatScreen({ model, onExit }: ChatScreenProps): React.ReactEleme
       const userText = text.trim();
       if (!userText) return;
 
-      flushSync(() => {
-        setInput("");
-        setIsStreaming(true);
-        setStreamingText("");
-        setStreamingType("thinking");
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: makeId(),
-            type: "user" as const,
-            content: userText,
-            timestamp: Date.now(),
-          },
-        ]);
-      });
+      setInput("");
+      isStreamingRef.current = true;
+      streamingTextRef.current = "";
+      streamingTypeRef.current = "thinking";
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: makeId(),
+          type: "user" as const,
+          content: userText,
+          timestamp: Date.now(),
+        },
+      ]);
 
       const cleanup = simulate(text, {
         onThinking: (accumulated) => {
-          flushSync(() => {
-            setStreamingType("thinking");
-            setStreamingText(accumulated);
-          });
+          streamingTypeRef.current = "thinking";
+          streamingTextRef.current = accumulated;
         },
 
         onMemoryOp: (action, content) => {
-          flushSync(() => {
-            setStreamingText("");
-            setMessages((prev) => [
-              ...prev,
-              {
-                id: makeId(),
-                type: "memory_op",
-                content,
-                memoryAction: action,
-                timestamp: Date.now(),
-              },
-            ]);
-          });
+          streamingTextRef.current = "";
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: makeId(),
+              type: "memory_op",
+              content,
+              memoryAction: action,
+              timestamp: Date.now(),
+            },
+          ]);
         },
 
         onToolCall: (name, params, riskLevel) => {
           return new Promise<boolean>((resolve) => {
-            // Auto-approve low-risk tools and tools the user marked "always"
-            if (riskLevel === "low" || alwaysApproveTools.has(name)) {
-              flushSync(() => {
-                setStreamingText("");
+            setAlwaysApproveTools((currentSet) => {
+              // Auto-approve low-risk tools and tools the user marked "always"
+              if (riskLevel === "low" || currentSet.has(name)) {
+                streamingTextRef.current = "";
                 setMessages((prev) => [
                   ...prev,
                   {
@@ -229,87 +220,79 @@ export function ChatScreen({ model, onExit }: ChatScreenProps): React.ReactEleme
                     timestamp: Date.now(),
                   },
                 ]);
-              });
-              resolve(true);
-              return;
-            }
-
-            // Medium/high risk — show approval prompt
-            flushSync(() => {
-              setStreamingText("");
-              setMessages((prev) => [
-                ...prev,
-                {
-                  id: makeId(),
-                  type: "function_call",
-                  content: `Requesting approval: ${name}`,
-                  toolName: name,
-                  toolParams: params,
-                  riskLevel: riskLevel as Message["riskLevel"],
-                  timestamp: Date.now(),
-                },
-              ]);
-              setPendingApproval({ toolName: name, toolParams: params, riskLevel, resolve });
+                resolve(true);
+              } else {
+                // Medium/high risk — show approval prompt
+                streamingTextRef.current = "";
+                setMessages((prev) => [
+                  ...prev,
+                  {
+                    id: makeId(),
+                    type: "function_call",
+                    content: `Requesting approval: ${name}`,
+                    toolName: name,
+                    toolParams: params,
+                    riskLevel: riskLevel as Message["riskLevel"],
+                    timestamp: Date.now(),
+                  },
+                ]);
+                setPendingApproval({ toolName: name, toolParams: params, riskLevel, resolve });
+              }
+              return currentSet; // don't change the set
             });
           });
         },
 
         onToolResult: (result) => {
-          flushSync(() => {
-            setMessages((prev) => [
-              ...prev,
-              {
-                id: makeId(),
-                type: "function_return",
-                content: result,
-                timestamp: Date.now(),
-              },
-            ]);
-          });
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: makeId(),
+              type: "function_return",
+              content: result,
+              timestamp: Date.now(),
+            },
+          ]);
         },
 
         onResponse: (accumulated) => {
-          flushSync(() => {
-            setStreamingType("response");
-            setStreamingText(accumulated);
-          });
+          streamingTypeRef.current = "response";
+          streamingTextRef.current = accumulated;
         },
 
         onComplete: (simMessages) => {
           const assistantMsg = simMessages.filter((m) => m.type === "assistant").pop();
           const thinkingMsg = simMessages.filter((m) => m.type === "thinking").pop();
 
-          flushSync(() => {
-            setIsStreaming(false);
-            setStreamingText("");
+          isStreamingRef.current = false;
+          streamingTextRef.current = "";
 
-            setMessages((prev) => {
-              const newMsgs = [...prev];
-              if (thinkingMsg) {
-                newMsgs.push({
-                  id: makeId(),
-                  type: "thinking",
-                  content: thinkingMsg.content,
-                  timestamp: thinkingMsg.timestamp,
-                });
-              }
-              if (assistantMsg) {
-                newMsgs.push({
-                  id: makeId(),
-                  type: "assistant",
-                  content: assistantMsg.content,
-                  timestamp: assistantMsg.timestamp,
-                });
-              }
-              return newMsgs;
-            });
+          setMessages((prev) => {
+            const newMsgs = [...prev];
+            if (thinkingMsg) {
+              newMsgs.push({
+                id: makeId(),
+                type: "thinking",
+                content: thinkingMsg.content,
+                timestamp: thinkingMsg.timestamp,
+              });
+            }
+            if (assistantMsg) {
+              newMsgs.push({
+                id: makeId(),
+                type: "assistant",
+                content: assistantMsg.content,
+                timestamp: assistantMsg.timestamp,
+              });
+            }
+            return newMsgs;
           });
         },
       });
 
       cleanupRef.current = cleanup;
     },
-    [isStreaming, flushSync, exit, onExit, alwaysApproveTools],
+    [exit, onExit],
   );
 
   // -- Approval Handlers -------------------------------------------------------
@@ -317,41 +300,39 @@ export function ChatScreen({ model, onExit }: ChatScreenProps): React.ReactEleme
   const handleApprove = useCallback(() => {
     if (pendingApproval) {
       pendingApproval.resolve(true);
-      flushSync(() => setPendingApproval(null));
+      setPendingApproval(null);
     }
-  }, [pendingApproval, flushSync]);
+  }, [pendingApproval]);
 
   const handleDeny = useCallback(() => {
     if (pendingApproval) {
       pendingApproval.resolve(false);
-      flushSync(() => setPendingApproval(null));
+      setPendingApproval(null);
     }
-  }, [pendingApproval, flushSync]);
+  }, [pendingApproval]);
 
   const handleAlwaysApprove = useCallback(() => {
     if (pendingApproval) {
       setAlwaysApproveTools((prev) => new Set([...prev, pendingApproval.toolName]));
       pendingApproval.resolve(true);
-      flushSync(() => setPendingApproval(null));
+      setPendingApproval(null);
     }
-  }, [pendingApproval, flushSync]);
+  }, [pendingApproval]);
 
   // -- Command Palette Handlers ------------------------------------------------
 
   const handleCommandSelect = useCallback(
     (commandName: string) => {
-      flushSync(() => {
-        setShowCommands(false);
-        setInput("");
-      });
+      setShowCommands(false);
+      setInput("");
       handleSubmit(commandName);
     },
-    [flushSync, handleSubmit],
+    [handleSubmit],
   );
 
   const handleCommandClose = useCallback(() => {
-    flushSync(() => setShowCommands(false));
-  }, [flushSync]);
+    setShowCommands(false);
+  }, []);
 
   // -- Render ------------------------------------------------------------------
 
@@ -363,7 +344,7 @@ export function ChatScreen({ model, onExit }: ChatScreenProps): React.ReactEleme
         <Text color={S.text} bold>{" storm"}</Text>
         <Text color={S.dim}>{" · "}{model}</Text>
         <Box flex={1} />
-        <Text color={isStreaming ? S.arc : S.success} wrap="truncate">{isStreaming ? "● working" : "● ready"}</Text>
+        <Text color={isStreamingRef.current ? S.arc : S.success} wrap="truncate">{isStreamingRef.current ? "● working" : "● ready"}</Text>
       </Box>
       <Box height={1} overflow="hidden">
         <Text color={S.dim}>{"\u2500".repeat(width)}</Text>
@@ -376,14 +357,14 @@ export function ChatScreen({ model, onExit }: ChatScreenProps): React.ReactEleme
           <MessageList messages={messages} />
 
           {/* Streaming indicator — thinking (mini storm logo) */}
-          {isStreaming && streamingText.length > 0 && streamingType === "thinking" && (
+          {isStreamingRef.current && streamingTextRef.current.length > 0 && streamingTypeRef.current === "thinking" && (
             <Box flexDirection="column" flexShrink={1}>
               <Box flexDirection="row">
                 <Text color={S.dim} dim>{"⟡ Reasoning..."}</Text>
               </Box>
               <Box paddingLeft={2} flexShrink={1}>
                 <StreamingText
-                  text={streamingText}
+                  text={streamingTextRef.current}
                   color={S.dim}
                   streaming
                   cursor={false}
@@ -393,12 +374,12 @@ export function ChatScreen({ model, onExit }: ChatScreenProps): React.ReactEleme
           )}
 
           {/* Streaming indicator — response */}
-          {isStreaming && streamingText.length > 0 && streamingType === "response" && (
+          {isStreamingRef.current && streamingTextRef.current.length > 0 && streamingTypeRef.current === "response" && (
             <Box flexDirection="row" flexShrink={1}>
               <Text color={S.arc}>{"◆ "}</Text>
               <Box flexDirection="column" flexShrink={1}>
                 <StreamingText
-                  text={streamingText}
+                  text={streamingTextRef.current}
                   color={S.text}
                   streaming
                   cursor={false}
@@ -408,7 +389,7 @@ export function ChatScreen({ model, onExit }: ChatScreenProps): React.ReactEleme
           )}
 
           {/* Streaming spinner when no text yet */}
-          {isStreaming && streamingText.length === 0 && (
+          {isStreamingRef.current && streamingTextRef.current.length === 0 && (
             <Box flexDirection="row">
               <Text color={S.dim}>{"⟡ Thinking..."}</Text>
             </Box>
@@ -443,7 +424,7 @@ export function ChatScreen({ model, onExit }: ChatScreenProps): React.ReactEleme
         value={input}
         onChange={handleInputChange}
         onSubmit={handleSubmit}
-        isStreaming={isStreaming}
+        isStreaming={isStreamingRef.current}
         hasPendingApproval={pendingApproval !== null}
         model={model}
       />

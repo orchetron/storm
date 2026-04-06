@@ -1,21 +1,11 @@
-/**
- * StormPersonality -- full interaction identity beyond color themes.
- *
- * A personality encapsulates colors, borders, animation timing,
- * typography, interaction style, and component defaults into a
- * single coherent identity. Components read personality via
- * usePersonality() and use it as fallback defaults that explicit
- * props override.
- */
-
-import React, { createContext, useContext, useMemo, useRef } from "react";
+import React, { createContext, useContext, useMemo } from "react";
 import type { StormColors } from "../theme/colors.js";
 import { colors as defaultColors } from "../theme/colors.js";
 import { useTheme } from "../theme/provider.js";
 import type { BorderStyle } from "./types.js";
+import { deepMerge } from "../theme/utils.js";
 
-// ── Types ──────────────────────────────────────────────────────────
-
+/** Controls colors, borders, animation timing, typography, focus indicators, and per-component defaults. */
 export interface StormPersonality {
   /** Color theme (existing StormColors). */
   colors: StormColors;
@@ -65,32 +55,6 @@ export type DeepPartialPersonality<T> = {
   [P in keyof T]?: T[P] extends Record<string, unknown> ? DeepPartialPersonality<T[P]> : T[P];
 };
 
-// ── Deep merge ─────────────────────────────────────────────────────
-
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function deepMergeObj<T extends Record<string, unknown>>(
-  base: T,
-  overrides: Record<string, unknown>,
-): T {
-  const result = { ...base } as Record<string, unknown>;
-  for (const key of Object.keys(overrides)) {
-    if (key === "__proto__" || key === "constructor" || key === "prototype") continue;
-    const baseVal = result[key];
-    const overVal = overrides[key];
-    if (isPlainObject(baseVal) && isPlainObject(overVal)) {
-      result[key] = deepMergeObj(baseVal as Record<string, unknown>, overVal);
-    } else {
-      result[key] = overVal;
-    }
-  }
-  return result as T;
-}
-
-// ── Default personality ────────────────────────────────────────────
-
 export const defaultPersonality: StormPersonality = {
   colors: defaultColors,
 
@@ -120,7 +84,7 @@ export const defaultPersonality: StormPersonality = {
 
   interaction: {
     focusIndicator: "bar",
-    selectionChar: "\u25C6",      // ◆ (diamond — the assistant symbol)
+    selectionChar: "\u25C6",      // ◆ (diamond — selection indicator)
     promptChar: "\u203A",          // ›
     cursorStyle: "block",
     collapseHint: "ctrl+o to expand",
@@ -129,8 +93,6 @@ export const defaultPersonality: StormPersonality = {
   components: {},
 };
 
-// ── Factory functions ──────────────────────────────────────────────
-
 /**
  * Create a full personality by merging partial overrides onto the
  * default personality. Only the properties you specify are replaced.
@@ -138,10 +100,7 @@ export const defaultPersonality: StormPersonality = {
 export function createPersonality(
   overrides: DeepPartialPersonality<StormPersonality>,
 ): StormPersonality {
-  return deepMergeObj(
-    defaultPersonality as unknown as Record<string, unknown>,
-    overrides as unknown as Record<string, unknown>,
-  ) as unknown as StormPersonality;
+  return deepMerge(defaultPersonality, overrides as Partial<StormPersonality>);
 }
 
 /**
@@ -152,13 +111,8 @@ export function mergePersonality(
   base: StormPersonality,
   overrides: DeepPartialPersonality<StormPersonality>,
 ): StormPersonality {
-  return deepMergeObj(
-    base as unknown as Record<string, unknown>,
-    overrides as unknown as Record<string, unknown>,
-  ) as unknown as StormPersonality;
+  return deepMerge(base, overrides as Partial<StormPersonality>);
 }
-
-// ── React context ──────────────────────────────────────────────────
 
 const PersonalityContext = createContext<StormPersonality>(defaultPersonality);
 
@@ -170,22 +124,9 @@ export function PersonalityProvider(props: {
   personality: StormPersonality;
   children: React.ReactNode;
 }): React.ReactElement {
-  const cacheRef = useRef<{
-    personality: StormPersonality;
-    value: StormPersonality;
-  } | null>(null);
-
-  // Only rebuild if personality reference changes
-  if (!cacheRef.current || cacheRef.current.personality !== props.personality) {
-    cacheRef.current = {
-      personality: props.personality,
-      value: props.personality,
-    };
-  }
-
   return React.createElement(
     PersonalityContext.Provider,
-    { value: cacheRef.current.value },
+    { value: props.personality },
     props.children,
   );
 }
@@ -205,7 +146,6 @@ export function usePersonality(): StormPersonality {
   const themeColors = useTheme().colors;
 
   return useMemo(() => {
-    // Merge the active theme colors into the personality, but only
     // when the personality uses the default color palette. Custom
     // personality colors (e.g. hackerPreset, playfulPreset) are preserved.
     const colors = base.colors === defaultPersonality.colors ? themeColors : base.colors;

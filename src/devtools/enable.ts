@@ -77,7 +77,6 @@ export function enableDevTools(
   const profilerKey = options?.profilerKey ?? "5";
   const exportKey = options?.exportKey ?? "6";
 
-  // Create all devtools instances
   const timeTravel = createTimeTravel({ maxFrames: options?.maxFrames ?? 120 });
   const heatmap = createRenderHeatmap({ cooldownFrames: 15, opacity: 0.6 });
   const a11yAudit = createAccessibilityAudit({ minContrast: options?.minContrast ?? 4.5 });
@@ -87,7 +86,6 @@ export function enableDevTools(
     panelHeight: options?.panelHeight ?? 12,
   });
 
-  // Create a RenderContext for the profiler. The profiler reads metrics, buffer,
   // and cleanup data from it. We create a fresh instance and update it from the
   // devtools-bridge middleware on each frame.
   const profilerCtx = new RenderContext();
@@ -95,7 +93,6 @@ export function enableDevTools(
   profiler.setRoot(app.root);
   profiler.start();
 
-  // Register in the global registry so useProfiler() can access it
   setActiveProfiler(profiler);
 
   // Enable crash logging
@@ -108,12 +105,10 @@ export function enableDevTools(
     });
   }
 
-  // Track profiler overlay state and layout timing
   let profilerOverlayVisible = false;
   let lastLayoutMs = 0;
   let layoutStart = 0;
 
-  // Wire the element tree
   devtools.setRoot(app.root);
 
   // Register middleware (order: time-travel first, devtools overlay last = on top)
@@ -189,7 +184,6 @@ export function enableDevTools(
     });
   });
 
-  // Handle all DevTools keyboard shortcuts in one place
   const removeKeyHandler = app.input.onKey((event) => {
     // Time-travel mode takes over arrow keys
     if (timeTravel.getState().isActive) {
@@ -210,7 +204,6 @@ export function enableDevTools(
       if (event.char === " ") { devtools.toggleCollapse(); app.requestRepaint(); return; }
     }
 
-    // Toggle shortcuts
     if (event.char === heatmapKey) { heatmap.toggle(); app.requestRepaint(); return; }
     if (event.char === auditKey) { a11yAudit.toggle(); app.requestRepaint(); return; }
     if (event.char === timeTravelKey) { timeTravel.toggle(); app.requestRepaint(); return; }
@@ -243,8 +236,6 @@ export function enableDevTools(
     profiler,
   };
 }
-
-// ── Helpers ─────────────────────────────────────────────────────────────
 
 const COL_BG = 0x1a1a2e;
 const COL_FG = 0xc0c0c0;

@@ -1,12 +1,3 @@
-/**
- * useToastBehavior — headless behavior hook for toast notifications.
- *
- * Extracts toast queue management, auto-dismiss timers, and add/remove/clear
- * from the Toast and ToastContainer components.
- *
- * Returns state + props objects with no JSX.
- */
-
 import { useRef, useCallback } from "react";
 import { useCleanup } from "../useCleanup.js";
 import { useForceUpdate } from "../useForceUpdate.js";
@@ -78,7 +69,6 @@ export function useToastBehavior(options: UseToastBehaviorOptions = {}): UseToas
 
     toastsRef.current = [...toastsRef.current, item];
 
-    // Set up auto-dismiss timer
     if (durationMs > 0) {
       const timer = setTimeout(() => {
         timersRef.current.delete(id);
@@ -93,7 +83,6 @@ export function useToastBehavior(options: UseToastBehaviorOptions = {}): UseToas
   }, [defaultDurationMs, forceUpdate]);
 
   const clearAll = useCallback(() => {
-    // Clear all timers
     for (const timer of timersRef.current.values()) {
       clearTimeout(timer);
     }

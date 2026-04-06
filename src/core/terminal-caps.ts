@@ -1,14 +1,3 @@
-/**
- * Terminal capability detection for image rendering.
- *
- * Detects the best available image rendering protocol at startup.
- * Result is cached -- detection runs once per process.
- *
- * @module
- */
-
-// ── Types ────────────────────────────────────────────────────────────
-
 export type ImageProtocol =
   | "kitty-placeholder"  // Kitty Unicode placeholders (scrollable, pixel-perfect)
   | "kitty"              // Kitty graphics (non-scrollable, pixel-perfect)
@@ -27,8 +16,6 @@ export interface TerminalImageCaps {
   supportsColoredUnderline: boolean;
   supportsSextant: boolean;  // font support for U+1FB00
 }
-
-// ── Cached result ────────────────────────────────────────────────────
 
 let cachedCaps: TerminalImageCaps | null = null;
 

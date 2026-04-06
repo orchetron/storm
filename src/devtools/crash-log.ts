@@ -20,8 +20,6 @@ import type { TuiApp } from "../reconciler/render.js";
 import type { Profiler, ProfilerSnapshot } from "./profiler.js";
 import { serializeTree } from "./tree-view.js";
 
-// ── Types ──────────────────────────────────────────────────────────────
-
 export interface CrashLogOptions {
   /** Directory to write crash logs. Default: process.cwd() */
   dir?: string;
@@ -48,8 +46,6 @@ export interface CrashLogData {
   nodeVersion: string;
   stormVersion: string;
 }
-
-// ── Implementation ─────────────────────────────────────────────────────
 
 const STORM_VERSION = "0.1.0";
 

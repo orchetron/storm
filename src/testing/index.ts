@@ -15,8 +15,6 @@ import { renderToSvg, type SvgOptions } from "./svg-renderer.js";
 
 export { renderToSvg, type SvgOptions } from "./svg-renderer.js";
 
-// ── TestInputManager ────────────────────────────────────────────────
-
 /**
  * Create a mock InputManager that can receive simulated events.
  */
@@ -58,7 +56,6 @@ export class TestInputManager {
       shift: options?.shift ?? false,
       meta: options?.meta ?? false,
     };
-    // Dispatch to prioritized handlers first (sorted by priority descending)
     if (this.prioritizedKeyHandlers.size > 0) {
       const sorted = [...this.prioritizedKeyHandlers].sort((a, b) => b.priority - a.priority);
       for (const entry of sorted) entry.handler(event);
@@ -110,8 +107,6 @@ export class TestInputManager {
 }
 
 export { TestInputManager as MockInputManager };
-
-// ── RenderResult ────────────────────────────────────────────────────
 
 export interface RenderResult {
   /** Plain text output (no ANSI) */
@@ -265,8 +260,6 @@ export function renderForTest(
   return result;
 }
 
-// ── Assertion Helpers ───────────────────────────────────────────────
-
 export interface LineAssertions {
   toContain(text: string): void;
   toEqual(text: string): void;
@@ -360,8 +353,6 @@ export function expectOutput(result: RenderResult): OutputAssertions {
   };
 }
 
-// ── Snapshot Utilities ──────────────────────────────────────────────
-
 /** In-memory snapshot store for test runs. */
 const snapshotStore = new Map<string, string>();
 
@@ -395,7 +386,6 @@ export function compareSnapshot(
     return { match: true };
   }
 
-  // Build a simple line-by-line diff
   const expectedLines = stored.split("\n");
   const actualLines = output.split("\n");
   const maxLen = Math.max(expectedLines.length, actualLines.length);
@@ -430,8 +420,6 @@ export function clearSnapshots(): void {
   snapshotStore.clear();
 }
 
-// ── File-Based Snapshot Utilities ───────────────────────────────────
-
 /**
  * Save a snapshot to a file.
  * Creates parent directories if they do not exist.
@@ -460,7 +448,6 @@ export function compareFileSnapshot(
     return { match: true, isNew: false };
   }
 
-  // Build a line-by-line diff
   const expectedLines = stored.split("\n");
   const actualLines = output.split("\n");
   const maxLen = Math.max(expectedLines.length, actualLines.length);
@@ -514,8 +501,6 @@ export function compareSvgSnapshot(
   const svg = renderToSvg(result.lines, result.styledOutput, result.width, result.height, options);
   return compareFileSnapshot(svg, filePath);
 }
-
-// ── Jest/Vitest Integration Helpers ─────────────────────────────────
 
 interface MatcherResult {
   pass: boolean;

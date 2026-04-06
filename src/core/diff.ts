@@ -1,11 +1,3 @@
-/**
- * DiffRenderer — renders buffer to terminal output.
- *
- * Uses synchronized output for atomic display.
- * Cell-level diffing: only changed cells are emitted, batched into runs.
- * Full-line rendering as fallback for WASM path or missing prevBuffer.
- */
-
 import { createRequire } from "node:module";
 import { DEFAULT_COLOR, Attr } from "./types.js";
 import { cursorTo, fullSgr, diffSgr, bgColor, RESET, CURSOR_HIDE, CURSOR_SHOW, CSI, SYNC_START, SYNC_END } from "./ansi.js";
@@ -24,7 +16,6 @@ export interface DiffResult {
   totalLines: number;
 }
 
-// ── Optional WASM acceleration ──────────────────────────────────────
 // Try to load the Rust WASM module for renderLine (3.4x faster).
 // Falls back to TypeScript if WASM is not available. Zero dependency.
 // Uses createRequire to load CJS module from ESM context (Node.js official pattern).
@@ -81,15 +72,17 @@ export class DiffRenderer {
           this.bufferA = target;
         }
       }
-      target.copyFrom(next);
+      target.copyRowsFrom(next);
       this.prevBuffer = target;
     }
   }
 
   /**
-   * Render buffer to ANSI string. Single stdout.write — atomic display.
-   * @param links - Optional link ranges from the renderer for OSC 8 hyperlink output.
-   * @param ctx - Optional render context for scroll region optimization.
+   * Diff next buffer against the previous frame and emit minimal ANSI.
+   * Pass 1: identify changed rows (cheap cell comparison).
+   * Pass 2: render changed rows -- WASM for sparse updates, TS for full repaints.
+   * Cell-level diffing kicks in when <50% of rows changed; emits only changed runs.
+   * Output is wrapped in synchronized update (DCS) for flicker-free atomic write.
    */
   render(next: ScreenBuffer, links: LinkRange[] = [], ctx?: RenderContext): DiffResult {
     // Try scroll region optimization first — ONLY for pure scroll (no content change).
@@ -120,7 +113,6 @@ export class DiffRenderer {
       arr.push(link);
     }
 
-    // Ensure WASM buffer exists if WASM is available
     const wasmAvailable = wasmModule !== null;
     if (wasmAvailable) {
       if (!this.wasmBuffer || this.wasmBuffer.get_width() !== w || this.wasmBuffer.get_height() !== h) {
@@ -140,9 +132,11 @@ export class DiffRenderer {
     const changedRows: boolean[] = [];
     let changedCount = 0;
 
-    // Pass 1: identify changed rows
+    // Pass 1: identify changed rows (skip unpainted rows)
     for (let y = 0; y < h; y++) {
-      if (this.prevBuffer && next.rowEquals(this.prevBuffer, y)) {
+      if (!next.wasRowPainted(y)) {
+        changedRows.push(false);
+      } else if (this.prevBuffer && next.rowEquals(this.prevBuffer, y)) {
         changedRows.push(false);
       } else {
         changedRows.push(true);
@@ -159,7 +153,22 @@ export class DiffRenderer {
         nextLines.push(this.prevLines[y] ?? "");
       } else {
         const hasLinks = linksByRow.has(y);
+        // WASM set_cell/render_line don't support ulColor — if any cell on
+        // this row has a non-default underline color, fall back to the TS
+        // path so the color is emitted correctly.
+        let rowHasUlColor = false;
         if (useWasm && !hasLinks) {
+          const row = next.getRowRaw(y);
+          if (row) {
+            for (let x = 0; x < w; x++) {
+              if (row.ulColors[row.base + x] !== DEFAULT_COLOR) {
+                rowHasUlColor = true;
+                break;
+              }
+            }
+          }
+        }
+        if (useWasm && !hasLinks && !rowHasUlColor) {
           // WASM fast path: fewer rows = less boundary crossing = net win + less GC
           for (let x = 0; x < w; x++) {
             this.wasmBuffer.set_cell(x, y, next.getChar(x, y).codePointAt(0) ?? 32, next.getFg(x, y), next.getBg(x, y), next.getAttrs(x, y));
@@ -188,8 +197,6 @@ export class DiffRenderer {
 
     changedCount = actualChanged;
 
-    // Build single output string.
-    //
     // Three rendering paths, selected by situation:
     //
     // 1. CELL-LEVEL DIFF (few changes, prevBuffer available, not WASM/link rows):
@@ -197,7 +204,6 @@ export class DiffRenderer {
     //    This is the primary path for typing, cursor blink, scrollbar updates.
     //
     // 2. FULL-LINE REPLACEMENT (many changes, or fallback):
-    //    Write entire line content at each changed row position.
     //    Used when >50% of rows changed (cheaper than many cursor jumps).
     //
     // 3. WASM lines and link rows always produce full renderLine strings,
@@ -212,7 +218,6 @@ export class DiffRenderer {
     parts.push(SYNC_START);
     if (this.cursorVisible) parts.push(CURSOR_HIDE);
 
-    // Build a set of rows that are fully covered by image regions (skip them)
     const imageSkipRows = new Set<number>();
     if (ctx?.imageRegions) {
       for (const [row, ranges] of ctx.imageRegions) {
@@ -226,12 +231,10 @@ export class DiffRenderer {
       // ── Cell-level diff path ──────────────────────────────────
       const prev = this.prevBuffer!;
       for (let y = 0; y < h; y++) {
-        // Skip rows entirely covered by a graphics protocol image
         if (imageSkipRows.has(y)) continue;
         // Fast path: row-level check already passed — skip entirely
         if (nextLines[y] === this.prevLines[y]) continue;
 
-        // Determine debug rainbow color for this row (if enabled)
         let debugColor: number | null = null;
         if (this.debugRainbow) {
           debugColor = RAINBOW_COLORS[this.rainbowIndex % RAINBOW_COLORS.length]!;
@@ -278,8 +281,6 @@ export class DiffRenderer {
           this.rainbowIndex++;
         }
         parts.push(nextLines[y]!);
-        // Only clear to EOL if line doesn't fill full width — writing to the
-        // last column and then emitting CSI K triggers terminal auto-wrap.
         if (!this.lineFullWidth(next, y, w)) parts.push(`${CSI}K`);
       }
     }
@@ -334,13 +335,21 @@ export class DiffRenderer {
     const runs: CellRun[] = [];
     let runStart = -1;
 
+    // Unpack raw arrays once — avoids 5 getter calls + bounds checks per cell
+    const nRow = next.getRowRaw(y);
+    const pRow = prev.getRowRaw(y);
+
     for (let x = 0; x < w; x++) {
-      const changed =
-        next.getChar(x, y) !== prev.getChar(x, y) ||
-        next.getFg(x, y) !== prev.getFg(x, y) ||
-        next.getBg(x, y) !== prev.getBg(x, y) ||
-        next.getAttrs(x, y) !== prev.getAttrs(x, y) ||
-        next.getUlColor(x, y) !== prev.getUlColor(x, y);
+      let changed: boolean;
+      if (nRow && pRow) {
+        const ni = nRow.base + x, pi = pRow.base + x;
+        changed = nRow.codes[ni] !== pRow.codes[pi] || nRow.fgs[ni] !== pRow.fgs[pi] ||
+          nRow.bgs[ni] !== pRow.bgs[pi] || nRow.attrs[ni] !== pRow.attrs[pi] || nRow.ulColors[ni] !== pRow.ulColors[pi];
+      } else {
+        changed = next.getChar(x, y) !== prev.getChar(x, y) || next.getFg(x, y) !== prev.getFg(x, y) ||
+          next.getBg(x, y) !== prev.getBg(x, y) || next.getAttrs(x, y) !== prev.getAttrs(x, y) ||
+          next.getUlColor(x, y) !== prev.getUlColor(x, y);
+      }
 
       if (changed) {
         if (runStart < 0) runStart = x;
@@ -388,8 +397,6 @@ export class DiffRenderer {
         parts.push(cursorTo(y, 0));
         if (debugRainbowColor !== null) parts.push(bgColor(debugRainbowColor));
         parts.push(this.renderLine(next, y, w, rowLinks));
-        // Only clear to EOL if line doesn't fill full width — writing to the
-        // last column and then emitting CSI K triggers terminal auto-wrap.
         if (!this.lineFullWidth(next, y, w)) parts.push(`${CSI}K`);
         return;
       }
@@ -416,11 +423,11 @@ export class DiffRenderer {
         const attrs = next.getAttrs(x, y);
         const ulColor = next.getUlColor(x, y);
 
-        // Skip wide-char placeholder cells — the preceding wide char
-        // already occupies this column visually
+        // Skip wide-char placeholder cells — the terminal renders the wide
+        // char as 2 columns with the wide char's own attributes. The
+        // placeholder's attributes don't affect terminal rendering.
         if (ch === WIDE_CHAR_PLACEHOLDER) continue;
 
-        // Emit SGR diff from current tracking state
         if (fg !== curFg || bg !== curBg || attrs !== curAttrs || ulColor !== curUlColor) {
           // When ulColor changes, we need a full SGR reset+set to ensure
           // the underline color is correctly applied
@@ -461,20 +468,26 @@ export class DiffRenderer {
    * last column, corrupting cursor position.
    */
   private lineFullWidth(buf: ScreenBuffer, y: number, w: number): boolean {
-    if (w <= 0 || y < 0 || y >= buf.height) return false;
-    const x = w - 1;
+    if (w <= 0) return false;
+    const row = buf.getRowRaw(y);
+    if (!row) return false;
+    const i = row.base + w - 1;
     return (
-      buf.getChar(x, y) !== " " ||
-      buf.getFg(x, y) !== DEFAULT_COLOR ||
-      buf.getBg(x, y) !== DEFAULT_COLOR ||
-      buf.getAttrs(x, y) !== Attr.NONE ||
-      buf.getUlColor(x, y) !== DEFAULT_COLOR
+      row.codes[i] !== 0x20 ||
+      row.fgs[i] !== DEFAULT_COLOR ||
+      row.bgs[i] !== DEFAULT_COLOR ||
+      row.attrs[i] !== Attr.NONE ||
+      row.ulColors[i] !== DEFAULT_COLOR
     );
   }
 
   /** Render one row to a styled string with minimal ANSI. */
   private renderLine(buf: ScreenBuffer, y: number, w: number, rowLinks?: LinkRange[]): string {
     if (y < 0 || y >= buf.height) return "";
+
+    const row = buf.getRowRaw(y);
+    if (!row) return "";
+    const { codes: rc, fgs: rf, bgs: rb, attrs: ra, ulColors: ru, base } = row;
 
     const parts: string[] = [];
     let curFg = DEFAULT_COLOR;
@@ -484,23 +497,25 @@ export class DiffRenderer {
     let needsReset = false;
     let inLink = false;
 
-    // Find last non-default cell using per-field accessors (no object allocation)
     let last = 0;
     for (let x = w - 1; x >= 0; x--) {
-      if (buf.getChar(x, y) !== " " || buf.getFg(x, y) !== DEFAULT_COLOR || buf.getBg(x, y) !== DEFAULT_COLOR || buf.getAttrs(x, y) !== Attr.NONE || buf.getUlColor(x, y) !== DEFAULT_COLOR) {
+      const i = base + x;
+      if (rc[i] !== 0x20 || rf[i] !== DEFAULT_COLOR || rb[i] !== DEFAULT_COLOR || ra[i] !== Attr.NONE || ru[i] !== DEFAULT_COLOR) {
         last = x + 1;
         break;
       }
     }
 
     for (let x = 0; x < last; x++) {
-      const cChar = buf.getChar(x, y);
-      const cFg = buf.getFg(x, y);
-      const cBg = buf.getBg(x, y);
-      const cAttrs = buf.getAttrs(x, y);
-      const cUlColor = buf.getUlColor(x, y);
+      const i = base + x;
+      const code = rc[i]!;
+      const cFg = rf[i]!;
+      const cBg = rb[i]!;
+      const cAttrs = ra[i]!;
+      const cUlColor = ru[i]!;
+      if (code === 0) continue; // skip wide-char placeholder — wide char covers both columns
+      const cChar = code === 0x20 ? " " : String.fromCodePoint(code);
 
-      // Check if we need to open or close a link at this position
       if (rowLinks) {
         // Close link if we've passed its end
         if (inLink) {
@@ -565,7 +580,6 @@ export class DiffRenderer {
 
     if (prev.size === 0 || curr.size === 0) return null;
 
-    // Find exactly ONE ScrollView with changed scrollTop
     let scrolled: { id: string; prev: ScrollViewFrame; curr: ScrollViewFrame } | null = null;
 
     for (const [id, currState] of curr) {
@@ -589,7 +603,6 @@ export class DiffRenderer {
     // Must fill full width for DECSTBM to work
     if (cs.screenX1 !== 0 || cs.screenX2 !== next.width) return null;
 
-    // Build the scroll command
     const parts: string[] = [];
 
     // Set scroll region (1-indexed)
@@ -604,7 +617,6 @@ export class DiffRenderer {
       parts.push(`\x1b[${absDelta}T`);
     }
 
-    // Reset scroll region
     parts.push(`\x1b[r`);
 
     // Now paint ONLY the newly revealed rows
@@ -643,14 +655,11 @@ export class DiffRenderer {
             next.getBg(scrollbarX, y) !== this.prevBuffer.getBg(scrollbarX, y) ||
             next.getAttrs(scrollbarX, y) !== this.prevBuffer.getAttrs(scrollbarX, y)) {
           parts.push(`\x1b[${y + 1};${scrollbarX + 1}H`);
-          // Write just this cell with proper color
           parts.push(this.formatCell(next, scrollbarX, y));
         }
       }
     }
 
-    // Update prevBuffer for the affected rows
-    // (so next frame's cell-level check is accurate)
     if (this.prevBuffer) {
       for (let y = cs.screenY1; y <= cs.screenY2; y++) {
         for (let x = 0; x < next.width; x++) {

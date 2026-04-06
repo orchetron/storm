@@ -1,11 +1,4 @@
-/**
- * Storm style prop interfaces — tiered customization for all components.
- *
- * Tier 1: StormTextStyleProps — color, bold, dim (inline components)
- * Tier 2: StormLayoutStyleProps — adds width, height, margin (layout components)
- * Tier 3: StormContainerStyleProps — adds padding, border, bg (container components)
- */
-
+import type { FlexDirection, FlexWrap, Align, AlignSelf, Justify, Overflow, Display, Position } from "../layout/engine.js";
 import type { BorderStyle } from "../core/types.js";
 
 export interface StormTextStyleProps {
@@ -22,7 +15,30 @@ export interface StormLayoutStyleProps extends StormTextStyleProps {
   width?: number | `${number}%`;
   height?: number | `${number}%`;
   minWidth?: number;
+  minHeight?: number;
   maxWidth?: number;
+  maxHeight?: number;
+  flex?: number;
+  flexGrow?: number;
+  flexShrink?: number;
+  flexBasis?: number;
+  flexDirection?: FlexDirection;
+  flexWrap?: FlexWrap;
+  gap?: number;
+  columnGap?: number;
+  rowGap?: number;
+  alignItems?: Align;
+  alignSelf?: AlignSelf;
+  justifyContent?: Justify;
+  overflow?: Overflow;
+  overflowX?: Overflow;
+  overflowY?: Overflow;
+  display?: Display;
+  position?: Position;
+  top?: number;
+  left?: number;
+  right?: number;
+  bottom?: number;
   margin?: number;
   marginX?: number;
   marginY?: number;
@@ -32,6 +48,7 @@ export interface StormLayoutStyleProps extends StormTextStyleProps {
   marginRight?: number;
 }
 
+/** Base style interface for all container components (Box, Card, Modal, etc). Extends layout with padding, border, bg. */
 export interface StormContainerStyleProps extends StormLayoutStyleProps {
   padding?: number;
   paddingX?: number;
@@ -42,5 +59,15 @@ export interface StormContainerStyleProps extends StormLayoutStyleProps {
   paddingRight?: number;
   borderStyle?: BorderStyle;
   borderColor?: string | number;
+  borderTop?: boolean;
+  borderBottom?: boolean;
+  borderLeft?: boolean;
+  borderRight?: boolean;
+  borderDimColor?: boolean;
+  borderTopDimColor?: boolean;
+  borderBottomDimColor?: boolean;
+  borderLeftDimColor?: boolean;
+  borderRightDimColor?: boolean;
   backgroundColor?: string | number;
+  opaque?: boolean;
 }
