@@ -294,7 +294,7 @@ function parseBlocks(content: string): Block[] {
     }
 
     // Heading
-    const headingMatch = trimmed.match(/^(#{1,6})\s+(.+)$/);
+    const headingMatch = trimmed.match(/^(#{1,6})\s(.*)$/);
     if (headingMatch) {
       const level = headingMatch[1]!.length as 1 | 2 | 3 | 4 | 5 | 6;
       blocks.push({ type: "heading", level, text: headingMatch[2]! });
