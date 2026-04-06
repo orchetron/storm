@@ -104,7 +104,7 @@ function parseValue(raw: string): unknown {
  */
 function resolveVar(value: string, variables: Map<string, string>): string {
   // Iteratively resolve var() from the inside out
-  const VAR_RE = /var\(--([a-zA-Z0-9_-]+)\s*(?:,\s*((?:[^()]*|\((?:[^()]*|\([^()]*\))*\))*))?\)/;
+  const VAR_RE = /var\(--([a-zA-Z0-9_-]+)(?:\s*,\s*([^)]*))?\)/;
   let result = value;
   let maxIterations = 50; // guard against infinite loops
   while (VAR_RE.test(result) && maxIterations-- > 0) {
@@ -167,7 +167,14 @@ export function parseStormCSS(source: string): ParsedStyleSheet {
   const blocks: RawBlock[] = [];
 
   // Strip block comments
-  let cleaned = source.replace(/\/\*[\s\S]*?\*\//g, "");
+  // Strip block comments without backtracking — find /* then scan for */
+  let cleaned = source;
+  let commentStart: number;
+  while ((commentStart = cleaned.indexOf("/*")) !== -1) {
+    const commentEnd = cleaned.indexOf("*/", commentStart + 2);
+    if (commentEnd === -1) { cleaned = cleaned.slice(0, commentStart); break; }
+    cleaned = cleaned.slice(0, commentStart) + cleaned.slice(commentEnd + 2);
+  }
   // Strip line comments (only at start of line or after whitespace/semicolons)
   cleaned = cleaned.replace(/\/\/[^\n]*/g, "");
 

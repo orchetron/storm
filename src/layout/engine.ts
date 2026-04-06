@@ -335,7 +335,8 @@ function parseGridPlacement(
   }
 
   // "start / end" syntax (1-based CSS grid lines)
-  const slashMatch = trimmed.match(/^(\d+)\s*\/\s*(.+)$/);
+  const slashIdx = trimmed.indexOf("/");
+  const slashMatch = slashIdx > 0 ? [trimmed, trimmed.slice(0, slashIdx).trim(), trimmed.slice(slashIdx + 1).trim()] : null;
   if (slashMatch) {
     const start = parseInt(slashMatch[1]!, 10) - 1; // convert to 0-based
     const endPart = slashMatch[2]!.trim();
