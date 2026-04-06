@@ -1,6 +1,6 @@
 {
   "name": "@orchetron/storm",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Storm — Compositor-based terminal UI framework. Fast. Layered. Unstoppable.",
   "type": "module",
   "main": "./dist/index.js",
