@@ -49,7 +49,7 @@ function extractHeadings(content: string): TocEntry[] {
     }
     if (inCodeBlock) continue;
 
-    const match = trimmed.match(/^(#{1,6})\s+(.+)$/);
+    const match = trimmed.match(/^(#{1,6})\s(.*)$/);
     if (match) {
       const level = match[1]!.length;
       const text = match[2]!;
