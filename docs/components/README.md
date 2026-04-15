@@ -32,7 +32,6 @@ Storm ships 97 built-in components organized by category.
 | [Visualization](visualization.md) | LineChart, AreaChart, BarChart, ScatterPlot, Heatmap, Histogram, Sparkline, Gauge, Diagram, Canvas, GradientProgress | Charts and graphs |
 | [Navigation](navigation.md) | Breadcrumb, Menu, Stepper, Paginator, KeyboardHelp, HelpPanel, CommandPalette | Navigation patterns |
 | [Content](content.md) | Card, Heading, Paragraph, Markdown, MarkdownViewer, Image, Gradient, GradientBorder, GlowText, Shadow, RichLog, Placeholder, UnorderedList, OrderedList, DefinitionList, Divider, Timer, Stopwatch, RevealTransition, Avatar, Digits, Kbd, Link, Newline, Tag | Content display |
-| [Typography](typography.md) | -- | Text rendering |
 | [Nesting Guide](nesting.md) | - | Which components work inside which |
 
 For AI/agent widgets (OperationTree, MessageBubble, StreamingText...), see [Widgets](../widgets.md).
