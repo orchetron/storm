@@ -104,6 +104,14 @@ function decodeButton(cb: number): { button: MouseButton; action: MouseAction } 
 }
 
 /**
+ * Maximum length of an incomplete SGR mouse sequence to keep buffered.
+ * A real sequence is `\x1b[<cb;x;yM` with cb/x/y up to 4 digits each,
+ * so ~20 bytes is a generous upper bound. Past this we assume the data
+ * is malformed and stop treating it as "incomplete".
+ */
+const SGR_MOUSE_MAX_LENGTH = 32;
+
+/**
  * Check if the buffer starts with an incomplete mouse sequence.
  * Used to hold the buffer and wait for more data.
  */
@@ -111,13 +119,33 @@ export function isIncompleteMouseSequence(buffer: string): boolean {
   // SGR prefix: \x1b[< — could be start of SGR mouse event
   if (buffer === "\x1b" || buffer === "\x1b[" || buffer === "\x1b[<") return true;
   if (buffer.startsWith("\x1b[<")) {
-    // We have the prefix but no terminating m or M yet
-    return buffer.length < 50 && !/[mM]/.test(buffer.slice(3));
+    // We have the prefix but no terminating m or M yet. Only a small
+    // bounded read-ahead is needed — real sequences are <20 bytes.
+    return buffer.length < SGR_MOUSE_MAX_LENGTH && !/[mM]/.test(buffer.slice(3));
   }
   // X11 prefix: \x1b[M — need 3 more bytes
   if (buffer.startsWith(X11_PREFIX)) {
     return buffer.length < X11_PREFIX.length + 3;
   }
   return false;
+}
+
+/**
+ * Return true when the buffer starts with what looks like an SGR mouse
+ * sequence (prefix `\x1b[<`) but cannot possibly be a valid one anymore —
+ * i.e., the prefix is followed by `SGR_MOUSE_MAX_LENGTH` bytes without
+ * the required terminator. Callers use this to silently drop the bad
+ * bytes instead of leaking them to the keyboard parser (where the digits
+ * and semicolons would surface on screen).
+ */
+export function looksLikeMalformedSgrMouse(buffer: string): boolean {
+  if (!buffer.startsWith("\x1b[<")) return false;
+  // There is already an `m` or `M` somewhere — parseMouseEvent should
+  // have handled it. If it didn't, the params are out of range; either
+  // way, the sequence is SGR-mouse-shaped.
+  const terminator = /[mM]/.exec(buffer);
+  if (terminator) return true;
+  // No terminator yet but the prefix is longer than any valid sequence.
+  return buffer.length >= SGR_MOUSE_MAX_LENGTH;
 }
 
