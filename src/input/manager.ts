@@ -8,7 +8,7 @@
  * This prevents mouse escape sequences from reaching the keyboard parser:
  */
 
-import { parseMouseEvent, isIncompleteMouseSequence } from "./mouse.js";
+import { parseMouseEvent, isIncompleteMouseSequence, looksLikeMalformedSgrMouse } from "./mouse.js";
 import { parseKeys } from "./keyboard.js";
 import type { KeyEvent, MouseEvent, KeyHandler, MouseHandler, PasteEvent, PasteHandler } from "./types.js";
 
@@ -137,22 +137,30 @@ export class InputManager {
   }
 
   private processInput(data: string): void {
-    // Phase 2: Extract and consume mouse sequences
-    let remaining = this.extractMouse(data);
-
-    // Phase 3: Filter focus events (use replaceAll for multiple occurrences)
-    remaining = remaining.replaceAll(FOCUS_IN, "").replaceAll(FOCUS_OUT, "");
-
-    // Phase 4: Handle ESC split across stdin chunks.
-    // If we have a held ESC from a previous chunk, prepend it.
-    if (this.escBuffer.length > 0 && remaining.length > 0) {
-      if (this.escTimer) { clearTimeout(this.escTimer); this.escTimer = null; }
-      remaining = this.escBuffer + remaining;
+    // Phase 1: If the previous chunk ended with a bare ESC we were
+    // holding, merge it back in now — so the mouse extractor sees the
+    // full sequence (e.g. a `\x1b` from the previous chunk plus `[<...M`
+    // from this one = a valid SGR mouse event).
+    let incoming = data;
+    if (this.escBuffer.length > 0 && incoming.length > 0) {
+      if (this.escTimer) {
+        clearTimeout(this.escTimer);
+        this.escTimer = null;
+      }
+      incoming = this.escBuffer + incoming;
       this.escBuffer = "";
     }
 
-    // If remaining ends with a bare ESC, hold it — it might be the
-    // start of an escape sequence split across chunks.
+    // Phase 2: Extract and consume mouse sequences.
+    let remaining = this.extractMouse(incoming);
+
+    // Phase 3: Filter focus events.
+    remaining = remaining.replaceAll(FOCUS_IN, "").replaceAll(FOCUS_OUT, "");
+
+    // Phase 4: If the keyboard remainder ends with a bare ESC, hold it —
+    // it might be a bare Escape keypress OR the start of an escape
+    // sequence split across stdin chunks. The keyboard parser's 50ms
+    // timeout fires if no more data arrives, emitting it as `escape`.
     if (remaining.endsWith("\x1b")) {
       this.escBuffer = "\x1b";
       remaining = remaining.slice(0, -1);
@@ -178,9 +186,16 @@ export class InputManager {
    * Returns the remaining data with mouse sequences stripped.
    */
   private extractMouse(data: string): string {
-    // Early size check before concatenation to prevent DoS
+    // Early size check before concatenation to prevent DoS.
+    // Preserve any trailing partial escape sequence — otherwise we drop
+    // the first half of a split-across-chunks mouse event and its bytes
+    // spill into the keyboard parser on the next iteration.
     if (this.mouseBuffer.length + data.length > MAX_BUFFER_SIZE) {
-      this.mouseBuffer = ""; // Reset instead of growing indefinitely
+      const lastEsc = this.mouseBuffer.lastIndexOf("\x1b");
+      this.mouseBuffer = lastEsc >= 0 ? this.mouseBuffer.slice(lastEsc) : "";
+      if (this.mouseBuffer.length + data.length > MAX_BUFFER_SIZE) {
+        this.mouseBuffer = "";
+      }
     }
 
     this.mouseBuffer += data;
@@ -205,15 +220,43 @@ export class InputManager {
         return keyboard;
       }
 
+      // Not a mouse sequence — but it may still be SGR-mouse-shaped
+      // (malformed or unknown encoding). Drop those bytes silently
+      // instead of leaking digits/semicolons into the keyboard parser,
+      // which is what surfaces on screen as `;;;;MMMM...` gibberish
+      // under rapid scroll.
+      if (looksLikeMalformedSgrMouse(slice)) {
+        const terminator = /[mM]/.exec(slice);
+        if (terminator) {
+          i += terminator.index + 1;
+          continue;
+        }
+        // No terminator in sight — drop the `\x1b[<` prefix and any
+        // SGR body bytes (digits and `;`) that follow. This prevents
+        // the malformed payload from being re-interpreted as individual
+        // keyboard characters.
+        let j = 3;
+        while (j < slice.length) {
+          const c = slice.charCodeAt(j);
+          if (!((c >= 0x30 && c <= 0x39) || c === 0x3b)) break;
+          j++;
+        }
+        i += j;
+        continue;
+      }
+
       // Not a mouse sequence — pass through to keyboard
       // But be careful: only pass one character/sequence at a time
       if (slice.startsWith("\x1b") && slice.length > 1) {
         // This is an ESC sequence but not a mouse one
         let seqEnd = 1;
         if (slice[1] === "[") {
-          // CSI sequence — find terminating byte
+          // CSI sequence — find terminating byte. Cap the scan so a
+          // long stretch of non-terminator bytes (possible under noisy
+          // input) can't consume arbitrarily large keyboard chunks.
           seqEnd = 2;
-          while (seqEnd < slice.length) {
+          const maxScan = Math.min(slice.length, seqEnd + 64);
+          while (seqEnd < maxScan) {
             const c = slice.charCodeAt(seqEnd);
             if (c >= 0x40 && c <= 0x7e) {
               seqEnd++;
