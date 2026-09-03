@@ -1276,7 +1276,13 @@ function paintBorder(
   dimFlags: BorderDimFlags = NO_DIM,
   inheritedBg: number = DEFAULT_COLOR,
 ): void {
-  if (style === "none" || width < 2 || height < 2) return;
+  // Two cells are needed only on an axis that draws BOTH of its sides. A
+  // left-only border is a single vertical bar, drawable at height 1, which is
+  // exactly what a one-row column is; the same holds for a top-only border at
+  // width 1.
+  const minWidth = sides.left && sides.right ? 2 : 1;
+  const minHeight = sides.top && sides.bottom ? 2 : 1;
+  if (style === "none" || width < minWidth || height < minHeight) return;
   const chars = BORDER_CHARS[style];
   const fg = color;
   const bg = DEFAULT_COLOR;
