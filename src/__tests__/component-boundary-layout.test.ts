@@ -203,3 +203,65 @@ describe("commitUpdate layout cache invalidation", () => {
     expect(result2.lines[1]).toContain("B");
   });
 });
+
+describe("Single-side borders on a one-row box", () => {
+  const SIDE = {
+    borderStyle: "single" as const,
+    borderTop: false,
+    borderBottom: false,
+    borderRight: false,
+  };
+
+  /** Two columns side by side, the right one carrying a left border. */
+  const split = (lines: readonly string[]) =>
+    React.createElement(
+      Box,
+      { flexDirection: "column", width: 40, height: 6 },
+      React.createElement(Text, null, "header"),
+      React.createElement(
+        Box,
+        { flexDirection: "row", width: 40 },
+        React.createElement(
+          Box,
+          { width: 10 },
+          React.createElement(Text, null, "left"),
+        ),
+        React.createElement(
+          Box,
+          { width: 12, flexDirection: "column", ...SIDE, borderLeft: true },
+          ...lines.map((line) => React.createElement(Text, { key: line }, line)),
+        ),
+      ),
+    );
+
+  it("draws a left border when the box is only one row tall", () => {
+    // A left-only border is a single vertical bar, so it is drawable at any
+    // height. The 2x2 minimum belongs to a border that draws BOTH sides of an
+    // axis; applying it here dropped the divider from every one-row column.
+    const { output } = renderToString(split(["one"]), { width: 40, height: 6 });
+    expect(output.split("\n")[1]).toContain("│");
+  });
+
+  it("draws it at two rows as well, so the fix is not height-specific", () => {
+    const { output } = renderToString(split(["one", "two"]), {
+      width: 40,
+      height: 6,
+    });
+    expect(output.split("\n")[1]).toContain("│");
+  });
+
+  it("still refuses a full border that cannot fit its own sides", () => {
+    // The guard is not gone, only narrowed: a box one column wide cannot hold
+    // a left AND a right border, and must draw neither.
+    const { output } = renderToString(
+      React.createElement(
+        Box,
+        { flexDirection: "column", width: 40, height: 4 },
+        React.createElement(Box, { width: 1, borderStyle: "single" as const },
+          React.createElement(Text, null, "x")),
+      ),
+      { width: 40, height: 4 },
+    );
+    expect(output).not.toContain("│");
+  });
+});
